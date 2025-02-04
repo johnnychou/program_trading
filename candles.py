@@ -10,6 +10,8 @@ import utils
 
 #global variables
 TWSE_TXF_API = 'https://mis.taifex.com.tw/futures/api/getQuoteList'
+TWSE_DATA_RATE = 0.02
+RETRY_TIMES = 10
 
 class Candles(object):
 
@@ -17,6 +19,8 @@ class Candles(object):
         self.product = product
         self.data_src = source
         self.period = period
+
+        self.candle_list = []
 
         if source == 'fubon':
             self._init_fubon_sdk()
@@ -43,7 +47,7 @@ class Candles(object):
         self.expire_month = utils.get_expiremonth()
         return
 
-    def _get_candles_from_twse(self):
+    def _get_twse_data(self):
         response = None
         market_type = utils.get_market_type()
         if market_type == '-1':
@@ -108,6 +112,69 @@ class Candles(object):
             'CVolume': vol
         }
         return filtered_data
+
+    def _get_candles_from_twse(self):
+        during_time = 0
+        copen=cclose=chigh=clow=cvolume=0
+        start = time.time()
+
+        while(during_time < self.period):
+            latest_data = self._get_twse_data()
+            if not latest_data:
+                latest_data = self._retry_get_twse_data()
+                if not latest_data:
+                    break
+            else:
+                last_price = latest_data['CLastPrice']
+                if copen == 0:
+                    copen = last_price
+                    clow = last_price
+                if chigh < last_price:
+                    chigh = last_price 
+                if clow > last_price:
+                    clow = last_price
+                cvolume += latest_data['CVolume']
+                cclose = last_price
+                ctime = latest_data['CTime']
+
+            now = time.time()
+            during_time = now-start
+            time.sleep(TWSE_DATA_RATE)
+
+        if cvolume <= 0:
+            return None
+
+        if (cclose - copen) > 0:
+            body = 1
+        elif (cclose - copen) < 0:
+            body = -1
+        else:
+            body = 0
+
+        my_candle = {
+            'body': body,
+            'open': copen,
+            'close': cclose,
+            'high': chigh,
+            'low': clow,
+            'volume': cvolume,
+            'time': ctime,
+            'period': round(during_time, 2),
+        }
+        self.candle_list.append(my_candle)
+        return self.candle_list
+
+    def _retry_get_twse_data(self, retrytimes=RETRY_TIMES):
+        data = None
+        while retrytimes > 0:
+            data = self._get_twse_data()
+            retrytimes -= 1
+            if data:
+                break
+            else:
+                print(f'Retrying to get data from twse...{retrytimes}')
+                time.sleep(1)
+        return data
 
     def _get_candles_from_fubon(self):
         return
