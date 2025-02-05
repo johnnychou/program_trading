@@ -12,14 +12,16 @@ import utils
 TWSE_TXF_API = 'https://mis.taifex.com.tw/futures/api/getQuoteList'
 TWSE_DATA_RATE = 0.02
 RETRY_TIMES = 10
+CANDLE_MAX_AMOUNT = 100
 
-class Candles(object):
-    def __init__(self, product, period, source): # (TXF/MXF/TMF, seconds, twse/fubon/csv)
+class CandleFetcher(object):
+    def __init__(self, period, product, source, data_queue): # (TXF/MXF/TMF, seconds, twse/fubon/csv)
+        self.period = period
         self.product = product
         self.data_src = source
-        self.period = period
-
-        self.candle_list = []
+        self.candles_list = []
+        #process控制
+        self.data_queue = data_queue #共享data
 
         if source == 'fubon':
             self._init_fubon_sdk()
@@ -31,14 +33,23 @@ class Candles(object):
         return
     
     def get_candles(self):
-        if self.data_src == 'twse':
-            return self._get_candles_from_twse()
-        elif self.data_src == 'fubon':
-            return self._get_candles_from_fubon()
-        elif self.data_src == 'csv':
-            return self._get_candles_from_csv()
-        else:
-            raise Exception("Data source error.")
+        while True:
+            candle = None
+            if self.data_src == 'twse':
+                candle = self._get_candles_from_twse()
+            elif self.data_src == 'fubon':
+                candle = self._get_candles_from_fubon()
+            elif self.data_src == 'csv':
+                candle = self._get_candles_from_csv()
+            else:
+                raise Exception("Data source error.")
+
+            if candle:
+                self.candles_list.append(candle)
+                self.data_queue.put((self.period, self.candles_list))
+
+            if len(self.candles_list) > CANDLE_MAX_AMOUNT:  # 限制長度
+                self.candles_list.pop(0)                    # 移除最舊的數據
 
     def _init_fubon_sdk(self):
         return
@@ -149,16 +160,18 @@ class Candles(object):
                 cclose = last_price
                 ctime = latest_data['CTime']
 
-            self.realtime_candle = {
-                'lastprice': last_price,
-                'open': copen,
-                'close': cclose,
-                'high': chigh,
-                'low': clow,
-                'volume': cvolume,
-                'time': ctime,
-                'period': round(during_time, 2),
-            }
+            # self.realtime_candle = {
+            #     'lastprice': last_price,
+            #     'open': copen,
+            #     'close': cclose,
+            #     'high': chigh,
+            #     'low': clow,
+            #     'volume': cvolume,
+            #     'time': ctime,
+            #     'period': round(during_time, 2),
+            # }
+
+            # print(self.realtime_candle)
 
             now = time.time()
             during_time = now - start
@@ -184,8 +197,7 @@ class Candles(object):
             'time': ctime,
             'period': round(during_time, 2),
         }
-        self.candle_list.append(my_candle)
-        return self.candle_list
+        return my_candle
     
     def show_realtime_candle(self):
         print(self.realtime_candle)

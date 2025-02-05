@@ -5,13 +5,34 @@ import numpy as np
 import requests as r
 import csv
 import time
+from multiprocessing import Process, Queue
 
 import candles
 
-twse_30s = candles.Candles('TXF', 30, 'twse')
+if __name__ == '__main__':
+    fetchers = []
+    data_queue = Queue()
 
-while True:
-    candles_30s = twse_30s.get_candles()
-    print(candles_30s)
-    twse_30s.show_realtime_candle()
-    time.sleep(1)
+    twse = candles.CandleFetcher(5, 'TXF', 'twse', data_queue)
+    p = Process(target=twse.get_candles)
+    p.daemon = True
+    p.start()
+    fetchers.append(p)
+
+    candles_30s = []
+
+    try:
+        while True:
+            while not data_queue.empty():  # 非阻塞檢查Queue
+                os.system('cls')
+                period, tmp_list = data_queue.get()
+                print(f"received period[{period}] data")
+                if period == 5:
+                    candles_30s = tmp_list
+                    for i in candles_30s:
+                        print(f"{i}")
+
+            time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        print("All processes stopped.")
