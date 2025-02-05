@@ -14,9 +14,9 @@ TWSE_PERIOD = 30
 if __name__ == '__main__':
     Processes = []
     data_queue = multiprocessing.Queue()
-    shared_data = multiprocessing.Manager().dict()
+    realtime_candle = multiprocessing.Manager().dict() #shared dict
 
-    twse_f = candles.CandleFetcher(TWSE_PERIOD, 'TXF', 'twse', data_queue, shared_data)
+    twse_f = candles.CandleFetcher(TWSE_PERIOD, 'TXF', 'twse', data_queue, realtime_candle)
     twse_p = multiprocessing.Process(target=twse_f.get_candles)
     twse_p.daemon = True
     twse_p.start()
@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     try:
         while True:
-            print(shared_data)
+            print(realtime_candle)
             print('================================================================================================================================')
             for i in candles_twse:
                 print(f"{i}")
