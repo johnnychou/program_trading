@@ -14,8 +14,7 @@ TWSE_DATA_RATE = 0.02
 RETRY_TIMES = 10
 
 class Candles(object):
-
-    def __init__(self, product, period, source):
+    def __init__(self, product, period, source): # (TXF/MXF/TMF, seconds, twse/fubon/csv)
         self.product = product
         self.data_src = source
         self.period = period
@@ -28,6 +27,7 @@ class Candles(object):
             self.total_vol = 0
             self.pre_vol = 0
             self._init_twse_requirement()
+            self.realtime_candle = 0
         return
     
     def get_candles(self):
@@ -107,14 +107,26 @@ class Candles(object):
         vol = self.total_vol - self.pre_vol
 
         filtered_data = {
-            'CLastPrice': float(data['CLastPrice']),
+            'CLastPrice': int(float(data['CLastPrice'])),
             'CTime': data['CTime'],
             'CVolume': vol
         }
         return filtered_data
 
+    def _retry_get_twse_data(self, retrytimes=RETRY_TIMES):
+        data = None
+        while retrytimes > 0:
+            data = self._get_twse_data()
+            retrytimes -= 1
+            if data:
+                break
+            else:
+                print(f'Retrying to get data from twse...{retrytimes}')
+                time.sleep(1)
+        return data
+
     def _get_candles_from_twse(self):
-        during_time = 0
+        during_time=0
         copen=cclose=chigh=clow=cvolume=0
         start = time.time()
 
@@ -137,8 +149,19 @@ class Candles(object):
                 cclose = last_price
                 ctime = latest_data['CTime']
 
+            self.realtime_candle = {
+                'lastprice': last_price,
+                'open': copen,
+                'close': cclose,
+                'high': chigh,
+                'low': clow,
+                'volume': cvolume,
+                'time': ctime,
+                'period': round(during_time, 2),
+            }
+
             now = time.time()
-            during_time = now-start
+            during_time = now - start
             time.sleep(TWSE_DATA_RATE)
 
         if cvolume <= 0:
@@ -163,18 +186,13 @@ class Candles(object):
         }
         self.candle_list.append(my_candle)
         return self.candle_list
+    
+    def show_realtime_candle(self):
+        print(self.realtime_candle)
+        return
 
-    def _retry_get_twse_data(self, retrytimes=RETRY_TIMES):
-        data = None
-        while retrytimes > 0:
-            data = self._get_twse_data()
-            retrytimes -= 1
-            if data:
-                break
-            else:
-                print(f'Retrying to get data from twse...{retrytimes}')
-                time.sleep(1)
-        return data
+    def get_realtime_candle(self):
+        return self.realtime_candle
 
     def _get_candles_from_fubon(self):
         return
