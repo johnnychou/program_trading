@@ -5,34 +5,40 @@ import numpy as np
 import requests as r
 import csv
 import time
-from multiprocessing import Process, Queue
+import multiprocessing
 
 import candles
 
+TWSE_PERIOD = 30
+
 if __name__ == '__main__':
-    fetchers = []
-    data_queue = Queue()
+    Processes = []
+    data_queue = multiprocessing.Queue()
+    shared_data = multiprocessing.Manager().dict()
 
-    twse_30s = candles.CandleFetcher(3, 'TXF', 'twse', data_queue)
-    twse = Process(target=twse_30s.get_candles)
-    twse.daemon = True
-    twse.start()
-    fetchers.append(twse)
+    twse_f = candles.CandleFetcher(TWSE_PERIOD, 'TXF', 'twse', data_queue, shared_data)
+    twse_p = multiprocessing.Process(target=twse_f.get_candles)
+    twse_p.daemon = True
+    twse_p.start()
+    Processes.append(twse_p)
 
-    candles_30s = []
+    candles_twse = []
 
     try:
         while True:
+            print(shared_data)
+            print('================================================================================================================================')
+            for i in candles_twse:
+                print(f"{i}")
+
             while not data_queue.empty():  # 非阻塞檢查Queue
-                os.system('cls')
                 period, tmp_list = data_queue.get()
                 print(f"received period[{period}] data")
-                if period == 3:
-                    candles_30s = tmp_list
-                    for i in candles_30s:
-                        print(f"{i}")
+                if period == TWSE_PERIOD:
+                    candles_twse = tmp_list
 
             time.sleep(0.1)
+            os.system('cls')
 
     except KeyboardInterrupt:
         print("All processes stopped.")

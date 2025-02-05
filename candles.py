@@ -15,13 +15,14 @@ RETRY_TIMES = 10
 CANDLE_MAX_AMOUNT = 100
 
 class CandleFetcher(object):
-    def __init__(self, period, product, source, data_queue): # (TXF/MXF/TMF, seconds, twse/fubon/csv)
+    def __init__(self, period, product, source, data_queue, shared_data=None): # (TXF/MXF/TMF, seconds, twse/fubon/csv)
         self.period = period
         self.product = product
         self.data_src = source
         self.candles_list = []
         #process控制
         self.data_queue = data_queue #共享data
+        self.realtime_candle = shared_data
 
         if source == 'fubon':
             self._init_fubon_sdk()
@@ -29,7 +30,6 @@ class CandleFetcher(object):
             self.total_vol = 0
             self.pre_vol = 0
             self._init_twse_requirement()
-            self.realtime_candle = 0
         return
     
     def get_candles(self):
@@ -128,7 +128,7 @@ class CandleFetcher(object):
 
     def _get_candles_from_twse(self):
         during_time=0
-        copen=cclose=chigh=clow=cvolume=0
+        copen=cclose=chigh=clow=cvolume=ctime=last_price=0
         start = time.time()
 
         while(during_time < self.period):
@@ -154,16 +154,15 @@ class CandleFetcher(object):
                 cclose = last_price
                 ctime = latest_data['CTime']
 
-                self.realtime_candle = {
-                    'lastprice': last_price,
-                    'open': copen,
-                    'close': cclose,
-                    'high': chigh,
-                    'low': clow,
-                    'volume': cvolume,
-                    'time': ctime,
-                    'period': round(during_time, 2),
-                }
+                self.realtime_candle['lastprice'] = last_price
+                self.realtime_candle['open'] = copen
+                self.realtime_candle['close'] = cclose
+                self.realtime_candle['high'] = chigh
+                self.realtime_candle['low'] = clow
+                self.realtime_candle['volume'] = cvolume
+                self.realtime_candle['time'] = ctime
+                self.realtime_candle['period'] = round(during_time, 2)
+
             now = time.time()
             during_time = now - start
             time.sleep(TWSE_DATA_RATE)
@@ -191,13 +190,6 @@ class CandleFetcher(object):
         }
         return my_candle
     
-    def show_realtime_candle(self):
-        print(self.realtime_candle)
-        return
-
-    def get_realtime_candle(self):
-        return self.realtime_candle
-
     def _get_candles_from_fubon(self):
         return
     
