@@ -13,11 +13,11 @@ if __name__ == '__main__':
     fetchers = []
     data_queue = Queue()
 
-    twse = candles.CandleFetcher(5, 'TXF', 'twse', data_queue)
-    p = Process(target=twse.get_candles)
-    p.daemon = True
-    p.start()
-    fetchers.append(p)
+    twse_30s = candles.CandleFetcher(3, 'TXF', 'twse', data_queue)
+    twse = Process(target=twse_30s.get_candles)
+    twse.daemon = True
+    twse.start()
+    fetchers.append(twse)
 
     candles_30s = []
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
                 os.system('cls')
                 period, tmp_list = data_queue.get()
                 print(f"received period[{period}] data")
-                if period == 5:
+                if period == 3:
                     candles_30s = tmp_list
                     for i in candles_30s:
                         print(f"{i}")

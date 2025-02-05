@@ -108,33 +108,23 @@ class CandleFetcher(object):
         if not data['CTotalVolume']:
             return None
 
-        self.pre_vol = self.total_vol
-        self.total_vol = int(data['CTotalVolume'])
-
-        #換日總交易量重計
-        if self.pre_vol > self.total_vol:
-            self.pre_vol = 0
+        if not self.pre_vol and not self.total_vol:
+            self.total_vol = int(data['CTotalVolume'])
+            self.pre_vol = self.total_vol
+        else:
+            self.pre_vol = self.total_vol
+            self.total_vol = int(data['CTotalVolume'])
 
         vol = self.total_vol - self.pre_vol
+        if vol <= 0:
+            return None
 
         filtered_data = {
             'CLastPrice': int(float(data['CLastPrice'])),
             'CTime': data['CTime'],
-            'CVolume': vol
+            'CVolume': vol,
         }
         return filtered_data
-
-    def _retry_get_twse_data(self, retrytimes=RETRY_TIMES):
-        data = None
-        while retrytimes > 0:
-            data = self._get_twse_data()
-            retrytimes -= 1
-            if data:
-                break
-            else:
-                print(f'Retrying to get data from twse...{retrytimes}')
-                time.sleep(1)
-        return data
 
     def _get_candles_from_twse(self):
         during_time=0
@@ -143,11 +133,15 @@ class CandleFetcher(object):
 
         while(during_time < self.period):
             latest_data = self._get_twse_data()
-            if not latest_data:
-                latest_data = self._retry_get_twse_data()
-                if not latest_data:
+            while not latest_data:
+                latest_data = self._get_twse_data()
+                now = time.time()
+                during_time = now - start
+                if during_time >= self.period:
                     break
-            else:
+                time.sleep(TWSE_DATA_RATE)
+
+            if latest_data:
                 last_price = latest_data['CLastPrice']
                 if copen == 0:
                     copen = last_price
@@ -160,22 +154,20 @@ class CandleFetcher(object):
                 cclose = last_price
                 ctime = latest_data['CTime']
 
-            # self.realtime_candle = {
-            #     'lastprice': last_price,
-            #     'open': copen,
-            #     'close': cclose,
-            #     'high': chigh,
-            #     'low': clow,
-            #     'volume': cvolume,
-            #     'time': ctime,
-            #     'period': round(during_time, 2),
-            # }
-
-            # print(self.realtime_candle)
-
+                self.realtime_candle = {
+                    'lastprice': last_price,
+                    'open': copen,
+                    'close': cclose,
+                    'high': chigh,
+                    'low': clow,
+                    'volume': cvolume,
+                    'time': ctime,
+                    'period': round(during_time, 2),
+                }
             now = time.time()
             during_time = now - start
             time.sleep(TWSE_DATA_RATE)
+        #end of while
 
         if cvolume <= 0:
             return None
