@@ -9,7 +9,7 @@ import multiprocessing
 
 import candles
 
-TWSE_PERIOD = 30
+TWSE_PERIOD = 300
 
 if __name__ == '__main__':
     Processes = []
