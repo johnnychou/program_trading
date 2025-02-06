@@ -12,7 +12,7 @@ import utils
 TWSE_TXF_API = 'https://mis.taifex.com.tw/futures/api/getQuoteList'
 TWSE_DATA_RATE = 0.02
 RETRY_TIMES = 10
-CANDLE_MAX_AMOUNT = 100
+CANDLE_MAX_AMOUNT = 50
 
 class CandleFetcher(object):
     def __init__(self, period, product, source, data_queue, shared_data=None): # (TXF/MXF/TMF, seconds, twse/fubon/csv)
@@ -55,7 +55,7 @@ class CandleFetcher(object):
         return
 
     def _init_twse_requirement(self):
-        self.expire_month = utils.get_expiremonth()
+        self.expire_month = utils.get_expiremonth_realtime()
         return
 
     def _get_twse_data(self):
@@ -192,7 +192,7 @@ class CandleFetcher(object):
     
     def _get_candles_from_fubon(self):
         return
-    
+
     def _get_candles_from_csv(self):
         return
     

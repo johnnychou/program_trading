@@ -1,0 +1,8 @@
+[2025-02-06 18:25:59.524091800 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-06 18:25:59.592686100 +08:00 INFO] this account require 2fa
+[2025-02-06 18:25:59.632790700 +08:00 INFO] [future_option_mapping]: 24.9665ms
+[2025-02-06 18:25:59.654570 +08:00 INFO] [future_option_mapping]: 17.7228ms
+[2025-02-06 18:25:59.718049900 +08:00 INFO] [future_option_mapping]: 63.0057ms
+[2025-02-06 18:25:59.755181200 +08:00 INFO] [future_option_mapping]: 24.2988ms
+[2025-02-06 18:25:59.909076900 +08:00 INFO] [get equity]: 90.2302ms
+[2025-02-06 18:26:00.198741700 +08:00 INFO] [query_single_position]: 41.808ms

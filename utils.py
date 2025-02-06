@@ -18,14 +18,45 @@ def get_market_type(): #0=日盤/regular, 1=夜盤/Afterhours -1=非交易時段
 
     return '-1' #非交易時段
 
-def get_expiremonth():
-    settlementdate = get_settlementDate()
+def get_txf_settlementDate():
+    today = datetime.date.today()
+    settlementDate = get_third_wen(today.year, today.month)
+    if today > settlementDate:
+        if today.month == 12:
+            year = today.year+1
+            next_month = 1
+        else:
+            year = today.year
+            next_month = today.month+1
+        settlementDate = get_third_wen(year, next_month)
+    return settlementDate
+
+def get_expiremonth(date=datetime.date.today()):
+    settlementdate = get_settlementDate(date)
     expiremonth = settlementdate.strftime('%Y%m')
     return expiremonth
 
-def get_settlementDate():
+def get_settlementDate(date=datetime.date.today()):
+    settlementDate = get_third_wen(date.year, date.month)
+
+    if date > settlementDate:
+        if date.month == 12:
+            year = date.year+1
+            next_month = 1
+        else:
+            year = date.year
+            next_month = date.month+1
+        settlementDate = get_third_wen(year, next_month)
+    return settlementDate
+
+def get_expiremonth_realtime():
+    settlementdate = get_settlementDate_realtime()
+    expiremonth = settlementdate.strftime('%Y%m')
+    return expiremonth
+
+def get_settlementDate_realtime():
     localtime = time.localtime()
-    today = datetime.date.today()
+    today=datetime.date.today()
     settlementDate = get_third_wen(today.year, today.month)
 
     if today >= settlementDate:
