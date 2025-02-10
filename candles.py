@@ -7,6 +7,7 @@ import csv
 import time
 
 import utils
+import fubon_api
 
 #global variables
 TWSE_TXF_API = 'https://mis.taifex.com.tw/futures/api/getQuoteList'
@@ -25,6 +26,7 @@ class CandleFetcher(object):
         self.realtime_candle = shared_data
 
         if source == 'fubon':
+            self.fub_api = None
             self._init_fubon_sdk()
         elif source == 'twse':
             self.total_vol = 0
@@ -52,6 +54,7 @@ class CandleFetcher(object):
                 self.candles_list.pop(0)                    # 移除最舊的數據
 
     def _init_fubon_sdk(self):
+        self.fub_api = fubon_api.Fubon_api()
         return
 
     def _init_twse_requirement(self):

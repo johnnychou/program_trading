@@ -2,6 +2,8 @@ import sys
 import datetime
 import time
 import requests as r
+import functools
+import traceback
 
 import fubon_neo
 from fubon_neo.sdk import FubonSDK, FutOptOrder
@@ -15,9 +17,11 @@ class Fubon_api(object):
     def __init__(self):
         self.SDK = None
         self.Account = None
+        self.Acc_futures = None
+        self.Restfut = None
         self.login_account()
-        self.SDK.init_realtime()
-        self.Acc_futures = self._get_future_account()
+        self._init_data()
+        self._set_event()
         return
     
     def login_account(self, retrytimes=6):
@@ -38,10 +42,65 @@ class Fubon_api(object):
         time.sleep(1)
         return
     
-    def _get_future_account(self):
+    def _init_data(self):
+        self.SDK.init_realtime()
+        self.Acc_futures = self.get_future_account()
+        self.Restfut = self.SDK.marketdata.rest_client.futopt
+        return
+    def get_future_account(self):
         for acc in self.Account:
             if acc.account_type == 'futopt':
                 print(f"Future account:\n{acc}")
                 return acc
         return None
-    
+
+    def _set_event(self):
+        self.SDK.set_on_event(self.on_event)
+        self.SDK.set_on_futopt_filled(self.on_filled)
+        return
+
+    def handle_exceptions(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as exp:
+                # Extract the full traceback
+                tb_lines = traceback.format_exc().splitlines()
+
+                # Find the index of the line related to the original function
+                func_line_index = next((i for i, line in enumerate(tb_lines) if func.__name__ in line), -1)
+
+                # Highlight the specific part in the traceback where the exception occurred
+                relevant_tb = "\n".join(tb_lines[func_line_index:])  # Include traceback from the function name
+
+                error_text = f"{func.__name__} exception: {exp}\nTraceback (most recent call last):\n{relevant_tb}"
+                print(error_text, file=sys.stderr)
+        return wrapper
+
+    #斷線重連
+    @handle_exceptions
+    def on_event(self, code, content):
+        print("=====Event=====")
+        print(code)
+        print(content)
+        if code == "300":
+            print("Reconnecting...")
+            try:
+                self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
+                self.login_account()
+                print("Reconnect successs.")
+                print(self.Account)
+            except Exception as e:
+                print("Reconnect failed.")
+                print(e)
+        print("=====Event=====")
+
+    #成交回報
+    @handle_exceptions
+    def on_filled(code, content):
+        print("===Filled===")
+        print(code)
+        print(content)
+        # print(content.filled_no)  # 印出成交流水號
+        print("===Filled===")
