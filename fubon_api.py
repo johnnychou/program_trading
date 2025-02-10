@@ -4,6 +4,7 @@ import time
 import requests as r
 import functools
 import traceback
+import winsound
 
 import fubon_neo
 from fubon_neo.sdk import FubonSDK, FutOptOrder
@@ -113,3 +114,40 @@ class Fubon_api(object):
             print('Get account equity error.')
         
         return equity
+
+    def send_order(self, product, decision, amount=1):
+        # 1=buy, -1=sell
+        if decision == 1:
+            buy_or_sell = BSAction.Buy
+        if decision == -1:
+            buy_or_sell = BSAction.Sell
+
+        market_type = utils.get_market_type()
+        if market_type == '-1':
+            print("Market time error.")
+            return 1
+
+        if market_type == '0':
+            market = FutOptMarketType.Future
+        if market_type == '1':
+            market = FutOptMarketType.FutureNight
+
+        order = FutOptOrder(
+            buy_sell = buy_or_sell,
+            symbol = product,
+            lot = amount,
+            market_type = market,
+            price_type = FutOptPriceType.RangeMarket,
+            time_in_force = TimeInForce.IOC,
+            order_type = FutOptOrderType.Auto,
+            user_def = "PythonAPI"
+        )
+
+        res = self.SDK.futopt.place_order(self.Acc_futures, order)
+
+        if res.is_success != True:
+            print("Failed to send order. Please check positions.")
+            return 1
+
+        winsound.Beep(3000,100)
+        return 0
