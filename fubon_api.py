@@ -104,3 +104,12 @@ class Fubon_api(object):
         print(content)
         # print(content.filled_no)  # 印出成交流水號
         print("===Filled===")
+
+    def update_account_equity(self):
+        try:
+            req = self.SDK.futopt_accounting.query_margin_equity(self.Acc_futures)
+            equity = req.data[0].today_equity
+        except:
+            print('Get account equity error.')
+        
+        return equity
