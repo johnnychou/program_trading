@@ -23,6 +23,7 @@ class Fubon_api(object):
         self.login_account()
         self._init_data()
         self._set_event()
+        self.update_position_holded()
         return
     
     def login_account(self, retrytimes=6):
@@ -39,7 +40,7 @@ class Fubon_api(object):
             time.sleep(10)
             return self.login_account(retrytimes-1)
 
-        print(f"Login sucess.\n{self.Account}")
+        print(f"Login sucess\n{self.Account}")
         time.sleep(1)
         return
     
@@ -90,10 +91,10 @@ class Fubon_api(object):
             try:
                 self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
                 self.login_account()
-                print("Reconnect successs.")
+                print("Reconnect successs")
                 print(self.Account)
             except Exception as e:
-                print("Reconnect failed.")
+                print("Reconnect failed")
                 print(e)
         print("=====Event=====")
 
@@ -106,12 +107,12 @@ class Fubon_api(object):
         # print(content.filled_no)  # 印出成交流水號
         print("===Filled===")
 
-    def update_account_equity(self):
+    def update_equity(self):
         try:
             req = self.SDK.futopt_accounting.query_margin_equity(self.Acc_futures)
             equity = req.data[0].today_equity
         except:
-            print('Get account equity error.')
+            print('Get account equity error')
         
         return equity
 
@@ -124,7 +125,7 @@ class Fubon_api(object):
 
         market_type = utils.get_market_type()
         if market_type == '-1':
-            print("Market time error.")
+            print("Market time error")
             return 1
 
         if market_type == '0':
@@ -151,3 +152,28 @@ class Fubon_api(object):
 
         winsound.Beep(3000,100)
         return 0
+    
+    def update_position_holded(self, product):
+        Buy_at = []
+        Sel_at = []
+
+        positions = self.SDK.futopt_accounting.query_single_position(self.Acc_futures)
+
+        chk_symbol = ''
+        if product == 'TX':
+            chk_symbol = 'FITX'
+        elif product == 'MXF':
+            chk_symbol = 'FIMTX'
+        else:
+            print("Product error")
+
+        if positions.data:
+            for p in positions.data:
+                if p.symbol == chk_symbol:
+                    for i in range(p.tradable_lot):
+                        if p.buy_sell == BSAction.Buy:
+                            Buy_at.append(p.price)
+                        elif p.buy_sell == BSAction.Sell:
+                            Sel_at.append(p.price)
+
+        return Buy_at, Sel_at
