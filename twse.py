@@ -128,12 +128,13 @@ class TWSE(object):
 
         while(during_time < self.period):
             latest_data = self._get_twse_data()
-            while not latest_data:
+            while not latest_data: #retry
                 latest_data = self._get_twse_data()
                 now = time.time()
                 during_time = now - start
                 if during_time >= self.period:
                     break
+                self.realtime_candle['period'] = round(during_time, 2)
                 time.sleep(TWSE_DATA_RATE)
 
             if latest_data:
