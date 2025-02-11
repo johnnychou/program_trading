@@ -1,8 +1,11 @@
 import sys
 import datetime
-import fubon_api
+import multiprocessing
+import fubon
 
 if __name__ == '__main__':
-    fub_api = fubon_api.Fubon_api()
+    data_queue = multiprocessing.Queue()
+    fubon_5m = fubon.Fubon_api(5, 'TXF', data_queue)
+    print(fubon_5m.get_trade_symbol())
     input()
     

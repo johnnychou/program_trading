@@ -15,11 +15,12 @@ sys.path.append("C:\\Users\\ChengWei\\Desktop\\my project")
 import accinfo as key
 
 class Fubon_api(object):
-    def __init__(self):
+    def __init__(self, period, product, data_queue): #period->minutes
         self.SDK = None
         self.Account = None
         self.Acc_futures = None
         self.Restfut = None
+        self.product = product
         self.login_account()
         self._init_data()
         self._set_event()
@@ -153,16 +154,16 @@ class Fubon_api(object):
         winsound.Beep(3000,100)
         return 0
     
-    def update_position_holded(self, product):
+    def update_position_holded(self):
         Buy_at = []
         Sel_at = []
 
         positions = self.SDK.futopt_accounting.query_single_position(self.Acc_futures)
 
         chk_symbol = ''
-        if product == 'TX':
+        if self.product == 'TXF':
             chk_symbol = 'FITX'
-        elif product == 'MXF':
+        elif self.product == 'MXF':
             chk_symbol = 'FIMTX'
         else:
             print("Product error")
@@ -177,3 +178,29 @@ class Fubon_api(object):
                             Sel_at.append(p.price)
 
         return Buy_at, Sel_at
+    
+    def get_trade_symbol(self):
+        settlementDate = utils.get_settlementDate_realtime()
+        market = utils.get_market_type()
+        if market == '0':
+            future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX', contractType='I', status='N')
+        else:
+            future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX',session='AFTERHOURS', contractType='I', status='N')
+        #print(future_data)
+
+        if self.product == 'TXF':
+            keyword = '臺股期貨'
+        elif self.product == 'MXF':
+            keyword = '小型臺指'
+        elif self.product == 'TMF':
+            keyword = '微型臺指'
+        else:
+            print("Product error")
+            return None
+
+        for i in range(len(future_data['data'])):
+            if (keyword in future_data['data'][i]['name']) and\
+            (future_data['data'][i]['settlementDate'] == settlementDate.isoformat()):
+                product_symbol = future_data['data'][i]['symbol']
+                break
+        return product_symbol

@@ -16,7 +16,7 @@ RETRY_TIMES = 10
 CANDLE_MAX_AMOUNT = 50
 
 class TWSE(object):
-    def __init__(self, period, product, source, data_queue, shared_data=None): # (TXF/MXF/TMF, seconds, twse/fubon/csv)
+    def __init__(self, period, product, source, data_queue, shared_data=None): # (TXF/MXF/TMF, period->seconds, twse/csv)
         self.period = period
         self.product = product
         self.data_src = source
