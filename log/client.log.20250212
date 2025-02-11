@@ -124,3 +124,49 @@
 [2025-02-12 04:23:27.861787200 +08:00 INFO] [inventory_result]: 26.9482ms
 [2025-02-12 04:23:27.870471800 +08:00 INFO] [bank remain] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
 [2025-02-12 04:23:28.463706800 +08:00 INFO] [bank remain]: 593.1801ms
+[2025-02-12 04:28:50.504539700 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-12 04:28:50.525529100 +08:00 INFO] this account require 2fa
+[2025-02-12 04:28:50.557156600 +08:00 INFO] [future_option_mapping]: 17.4875ms
+[2025-02-12 04:28:50.585985700 +08:00 INFO] [future_option_mapping]: 26.5511ms
+[2025-02-12 04:28:50.646861200 +08:00 INFO] [future_option_mapping]: 60.6303ms
+[2025-02-12 04:28:50.681321200 +08:00 INFO] [future_option_mapping]: 23.5897ms
+[2025-02-12 04:28:51.768339300 +08:00 INFO] [query_single_position]: 34.8388ms
+[2025-02-12 04:28:51.845457200 +08:00 INFO] [query_single_position]: 39.2915ms
+[2025-02-12 04:28:51.852948400 +08:00 INFO] [get inventories] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-12 04:28:51.874688200 +08:00 INFO] [inventory_result]: 21.6831ms
+[2025-02-12 04:28:51.883635 +08:00 INFO] [bank remain] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-12 04:28:52.483400100 +08:00 INFO] [bank remain]: 599.7095ms
+[2025-02-12 04:36:50.513682700 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-12 04:36:50.545697200 +08:00 INFO] this account require 2fa
+[2025-02-12 04:36:50.582874500 +08:00 INFO] [future_option_mapping]: 18.9686ms
+[2025-02-12 04:36:50.605897700 +08:00 INFO] [future_option_mapping]: 20.384ms
+[2025-02-12 04:36:50.653809100 +08:00 INFO] [future_option_mapping]: 47.6578ms
+[2025-02-12 04:36:50.685515600 +08:00 INFO] [future_option_mapping]: 21.8757ms
+[2025-02-12 04:36:51.842323800 +08:00 INFO] [query_single_position]: 41.4065ms
+[2025-02-12 04:41:49.678471500 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-12 04:41:49.700869600 +08:00 INFO] this account require 2fa
+[2025-02-12 04:41:49.757267500 +08:00 INFO] [future_option_mapping]: 24.8938ms
+[2025-02-12 04:41:49.778328500 +08:00 INFO] [future_option_mapping]: 17.3388ms
+[2025-02-12 04:41:49.834734200 +08:00 INFO] [future_option_mapping]: 55.941ms
+[2025-02-12 04:41:49.871354100 +08:00 INFO] [future_option_mapping]: 24.0322ms
+[2025-02-12 04:44:27.964879800 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-12 04:44:27.991729800 +08:00 INFO] this account require 2fa
+[2025-02-12 04:44:28.044641700 +08:00 INFO] [future_option_mapping]: 20.7744ms
+[2025-02-12 04:44:28.071690400 +08:00 INFO] [future_option_mapping]: 23.7216ms
+[2025-02-12 04:44:28.125896300 +08:00 INFO] [future_option_mapping]: 53.9573ms
+[2025-02-12 04:44:28.162950500 +08:00 INFO] [future_option_mapping]: 26.7703ms
+[2025-02-12 04:44:29.272277500 +08:00 INFO] [query_single_position]: 44.653ms
+[2025-02-12 04:45:23.032277800 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-12 04:45:23.053209 +08:00 INFO] this account require 2fa
+[2025-02-12 04:45:23.090219500 +08:00 INFO] [future_option_mapping]: 17.7431ms
+[2025-02-12 04:45:23.115775400 +08:00 INFO] [future_option_mapping]: 23.2907ms
+[2025-02-12 04:45:23.158308800 +08:00 INFO] [future_option_mapping]: 42.2964ms
+[2025-02-12 04:45:23.198954100 +08:00 INFO] [future_option_mapping]: 30.0104ms
+[2025-02-12 04:45:24.288586600 +08:00 INFO] [query_single_position]: 33.825ms
+[2025-02-12 05:04:01.727979100 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-12 05:04:01.783127700 +08:00 INFO] this account require 2fa
+[2025-02-12 05:04:01.834526300 +08:00 INFO] [future_option_mapping]: 31.1976ms
+[2025-02-12 05:04:01.865237400 +08:00 INFO] [future_option_mapping]: 25.0599ms
+[2025-02-12 05:04:01.935198500 +08:00 INFO] [future_option_mapping]: 69.5496ms
+[2025-02-12 05:04:01.972159900 +08:00 INFO] [future_option_mapping]: 18.1857ms
+[2025-02-12 05:04:03.105754100 +08:00 INFO] [query_single_position]: 34.8312ms

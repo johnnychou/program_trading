@@ -7,7 +7,7 @@ import traceback
 import winsound
 
 import fubon_neo
-from fubon_neo.sdk import FubonSDK, FutOptOrder
+from fubon_neo.sdk import FubonSDK, Mode, FutOptOrder
 from fubon_neo.constant import TimeInForce, FutOptOrderType, FutOptPriceType, FutOptMarketType, CallPut, BSAction
 import utils
 
@@ -50,7 +50,7 @@ class Fubon_api(object):
         return
     
     def _init_data(self):
-        self.SDK.init_realtime()
+        self.SDK.init_realtime(Mode.Normal)
         self.Acc_futures = self.get_future_account()
         self.Restfut = self.SDK.marketdata.rest_client.futopt
         return
@@ -228,3 +228,22 @@ class Fubon_api(object):
         self.candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
         #self.data_queue.put((self.period, self.candles_list))
         return self.candles_list
+    
+    def subscribe_candles(self):
+        market = utils.get_market_type()
+        if market == '0':
+            afterhours = False
+        else:
+            afterhours = True
+
+        futopt = self.SDK.marketdata.websocket_client.futopt
+        futopt.on('message', self.handle_message)
+        futopt.connect()
+        futopt.subscribe({ 
+            'channel': 'candles', 
+            'symbol': self.get_trade_symbol(),
+            'afterHours' : afterhours,
+        })
+
+    def handle_message(self, message):
+        print(f'market data message: {message}')
