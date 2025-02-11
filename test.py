@@ -7,7 +7,7 @@ import csv
 import time
 import multiprocessing
 
-import candles
+import twse
 
 TWSE_PERIOD = 60
 
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     data_queue = multiprocessing.Queue()
     realtime_candle = multiprocessing.Manager().dict() #shared dict
 
-    twse_f = candles.CandleFetcher(TWSE_PERIOD, 'TXF', 'twse', data_queue, realtime_candle)
+    twse_f = twse.TWSE(TWSE_PERIOD, 'TXF', 'twse', data_queue, realtime_candle)
     twse_p = multiprocessing.Process(target=twse_f.get_candles)
     twse_p.daemon = True
     twse_p.start()

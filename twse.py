@@ -7,7 +7,7 @@ import csv
 import time
 
 import utils
-import fubon_api
+import fubon
 
 #global variables
 TWSE_TXF_API = 'https://mis.taifex.com.tw/futures/api/getQuoteList'
@@ -15,7 +15,7 @@ TWSE_DATA_RATE = 0.02
 RETRY_TIMES = 10
 CANDLE_MAX_AMOUNT = 50
 
-class CandleFetcher(object):
+class TWSE(object):
     def __init__(self, period, product, source, data_queue, shared_data=None): # (TXF/MXF/TMF, seconds, twse/fubon/csv)
         self.period = period
         self.product = product
@@ -25,13 +25,11 @@ class CandleFetcher(object):
         self.data_queue = data_queue #共享data
         self.realtime_candle = shared_data
 
-        if source == 'fubon':
-            self.fub_api = None
-            self._init_fubon_sdk()
-        elif source == 'twse':
+        if source == 'twse':
             self.total_vol = 0
             self.pre_vol = 0
             self._init_twse_requirement()
+
         return
     
     def get_candles(self):
@@ -39,8 +37,6 @@ class CandleFetcher(object):
             candle = None
             if self.data_src == 'twse':
                 candle = self._get_candles_from_twse()
-            elif self.data_src == 'fubon':
-                candle = self._get_candles_from_fubon()
             elif self.data_src == 'csv':
                 candle = self._get_candles_from_csv()
             else:
@@ -52,10 +48,6 @@ class CandleFetcher(object):
 
             if len(self.candles_list) > CANDLE_MAX_AMOUNT:  # 限制長度
                 self.candles_list.pop(0)                    # 移除最舊的數據
-
-    def _init_fubon_sdk(self):
-        self.fub_api = fubon_api.Fubon_api()
-        return
 
     def _init_twse_requirement(self):
         self.expire_month = utils.get_expiremonth_realtime()
@@ -193,9 +185,6 @@ class CandleFetcher(object):
         }
         return my_candle
     
-    def _get_candles_from_fubon(self):
-        return
-
     def _get_candles_from_csv(self):
         return
     
