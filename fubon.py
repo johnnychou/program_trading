@@ -14,13 +14,17 @@ import utils
 sys.path.append("C:\\Users\\ChengWei\\Desktop\\my project")
 import accinfo as key
 
+CANDLE_MAX_AMOUNT = 50
+
 class Fubon_api(object):
     def __init__(self, period, product, data_queue): #period->minutes
         self.SDK = None
         self.Account = None
         self.Acc_futures = None
         self.Restfut = None
+        self.period = period
         self.product = product
+        self.data_queue = data_queue
         self.login_account()
         self._init_data()
         self._set_event()
@@ -159,7 +163,7 @@ class Fubon_api(object):
         Sel_at = []
 
         positions = self.SDK.futopt_accounting.query_single_position(self.Acc_futures)
-
+        print(positions)
         chk_symbol = ''
         if self.product == 'TXF':
             chk_symbol = 'FITX'
@@ -176,7 +180,9 @@ class Fubon_api(object):
                             Buy_at.append(p.price)
                         elif p.buy_sell == BSAction.Sell:
                             Sel_at.append(p.price)
-
+        print('====================================================')
+        print(Buy_at)
+        print(Sel_at)
         return Buy_at, Sel_at
     
     def get_trade_symbol(self):
@@ -204,3 +210,21 @@ class Fubon_api(object):
                 product_symbol = future_data['data'][i]['symbol']
                 break
         return product_symbol
+    
+    def chk_inventories(self): #股票庫存
+        inventories = self.SDK.accounting.inventories(self.Account[0])
+        print(inventories)
+
+    def chk_remainings(self): #帳戶餘額
+        balance = self.SDK.accounting.bank_remain(self.Account[0])
+        print(f"Account Balance: {balance}")
+
+    def get_candles(self):
+        market = utils.get_market_type()
+        if market == '0':
+            data = self.Restfut.intraday.candles(symbol=self.get_trade_symbol(), timeframe=self.period)
+        else:
+            data = self.Restfut.intraday.candles(symbol=self.get_trade_symbol(), timeframe=self.period, session='afterhours')
+        self.candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
+        #self.data_queue.put((self.period, self.candles_list))
+        return self.candles_list
