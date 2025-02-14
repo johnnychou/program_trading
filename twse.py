@@ -33,6 +33,7 @@ class TWSE(object):
         return
     
     def get_candles(self):
+        utils.sync_time(self.period/60)
         while True:
             candle = None
             if self.data_src == 'twse':

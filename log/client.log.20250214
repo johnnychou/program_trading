@@ -1,0 +1,72 @@
+[2025-02-14 15:24:12.021802900 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-14 15:24:12.101348600 +08:00 INFO] this account require 2fa
+[2025-02-14 15:24:12.150174600 +08:00 INFO] [future_option_mapping]: 18.0756ms
+[2025-02-14 15:24:12.175746100 +08:00 INFO] [future_option_mapping]: 23.176ms
+[2025-02-14 15:24:12.235290900 +08:00 INFO] [future_option_mapping]: 59.2673ms
+[2025-02-14 15:24:12.273981800 +08:00 INFO] [future_option_mapping]: 27.3429ms
+[2025-02-14 15:24:13.445850100 +08:00 INFO] [query_single_position]: 40.3209ms
+[2025-02-14 15:24:13.582590 +08:00 INFO] [query_single_position]: 29.1688ms
+[2025-02-14 15:24:13.590598900 +08:00 INFO] [get inventories] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 15:24:13.612699300 +08:00 INFO] [inventory_result]: 22.0728ms
+[2025-02-14 15:24:13.623832100 +08:00 INFO] [bank remain] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 15:24:14.231678700 +08:00 INFO] [bank remain]: 607.8073ms
+[2025-02-14 17:57:26.197374500 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-14 17:57:26.247999100 +08:00 INFO] this account require 2fa
+[2025-02-14 17:57:26.317331400 +08:00 INFO] [future_option_mapping]: 37.1575ms
+[2025-02-14 17:57:26.340957400 +08:00 INFO] [future_option_mapping]: 18.6764ms
+[2025-02-14 17:57:26.397419600 +08:00 INFO] [future_option_mapping]: 56.024ms
+[2025-02-14 17:57:26.437040100 +08:00 INFO] [future_option_mapping]: 28.9116ms
+[2025-02-14 17:57:27.669249100 +08:00 INFO] [query_single_position]: 44.5809ms
+[2025-02-14 17:57:27.748566800 +08:00 INFO] [query_single_position]: 34.0963ms
+[2025-02-14 17:57:27.754794300 +08:00 INFO] [get inventories] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:57:27.778569100 +08:00 INFO] [inventory_result]: 23.735ms
+[2025-02-14 17:57:27.779467 +08:00 INFO] [bank remain] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:57:28.447578600 +08:00 INFO] [bank remain]: 668.0479ms
+[2025-02-14 17:58:00.114044600 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-14 17:58:00.135692400 +08:00 INFO] this account require 2fa
+[2025-02-14 17:58:00.198160 +08:00 INFO] [future_option_mapping]: 30.3374ms
+[2025-02-14 17:58:00.225099900 +08:00 INFO] [future_option_mapping]: 23.3057ms
+[2025-02-14 17:58:00.277776100 +08:00 INFO] [future_option_mapping]: 52.4056ms
+[2025-02-14 17:58:00.306219700 +08:00 INFO] [future_option_mapping]: 16.5764ms
+[2025-02-14 17:58:01.495736700 +08:00 INFO] [query_single_position]: 62.9758ms
+[2025-02-14 17:58:01.576435200 +08:00 INFO] [query_single_position]: 39.7701ms
+[2025-02-14 17:58:01.583558200 +08:00 INFO] [get inventories] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:58:01.606516600 +08:00 INFO] [inventory_result]: 22.9009ms
+[2025-02-14 17:58:01.607654400 +08:00 INFO] [bank remain] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:58:02.207763300 +08:00 INFO] [bank remain]: 600.0615ms
+[2025-02-14 17:58:07.896038400 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-14 17:58:07.916841200 +08:00 INFO] this account require 2fa
+[2025-02-14 17:58:07.955319700 +08:00 INFO] [future_option_mapping]: 18.3944ms
+[2025-02-14 17:58:07.981803800 +08:00 INFO] [future_option_mapping]: 24.0397ms
+[2025-02-14 17:58:08.025982400 +08:00 INFO] [future_option_mapping]: 43.9319ms
+[2025-02-14 17:58:08.062412700 +08:00 INFO] [future_option_mapping]: 17.9546ms
+[2025-02-14 17:58:09.163031700 +08:00 INFO] [query_single_position]: 39.9072ms
+[2025-02-14 17:58:09.261090 +08:00 INFO] [query_single_position]: 53.1469ms
+[2025-02-14 17:58:09.265994400 +08:00 INFO] [get inventories] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:58:09.289212 +08:00 INFO] [inventory_result]: 23.166ms
+[2025-02-14 17:58:09.290219300 +08:00 INFO] [bank remain] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:58:09.896326200 +08:00 INFO] [bank remain]: 605.9852ms
+[2025-02-14 17:58:22.255409900 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-14 17:58:22.275453400 +08:00 INFO] this account require 2fa
+[2025-02-14 17:58:22.340656800 +08:00 INFO] [future_option_mapping]: 35.7225ms
+[2025-02-14 17:58:22.364451800 +08:00 INFO] [future_option_mapping]: 21.5128ms
+[2025-02-14 17:58:22.425493200 +08:00 INFO] [future_option_mapping]: 60.8069ms
+[2025-02-14 17:58:22.463433500 +08:00 INFO] [future_option_mapping]: 27.7156ms
+[2025-02-14 17:58:23.629724600 +08:00 INFO] [query_single_position]: 39.6654ms
+[2025-02-14 17:58:23.710519800 +08:00 INFO] [query_single_position]: 39.5075ms
+[2025-02-14 17:58:23.718051500 +08:00 INFO] [get inventories] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:58:23.739660600 +08:00 INFO] [inventory_result]: 21.543ms
+[2025-02-14 17:58:23.740885800 +08:00 INFO] [bank remain] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:58:24.342215500 +08:00 INFO] [bank remain]: 601.2994ms
+[2025-02-14 17:58:45.247721200 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-14 17:58:45.276685100 +08:00 INFO] this account require 2fa
+[2025-02-14 17:58:45.326131100 +08:00 INFO] [future_option_mapping]: 18.3491ms
+[2025-02-14 17:58:45.351647400 +08:00 INFO] [future_option_mapping]: 23.4296ms
+[2025-02-14 17:58:45.395232500 +08:00 INFO] [future_option_mapping]: 43.3294ms
+[2025-02-14 17:58:45.437770 +08:00 INFO] [future_option_mapping]: 30.0578ms
+[2025-02-14 17:58:46.581616200 +08:00 INFO] [query_single_position]: 32.9435ms
+[2025-02-14 17:58:46.659284600 +08:00 INFO] [query_single_position]: 38.2967ms
+[2025-02-14 17:58:46.665950700 +08:00 INFO] [get inventories] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:58:46.693395500 +08:00 INFO] [inventory_result]: 27.3915ms
+[2025-02-14 17:58:46.694328 +08:00 INFO] [bank remain] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-02-14 17:58:47.261841700 +08:00 INFO] [bank remain]: 567.4618ms
