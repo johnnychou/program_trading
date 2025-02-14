@@ -45,10 +45,8 @@ class TWSE(object):
 
             if candle:
                 self.candles_list.append(candle)
+                self.candles_list = self.candles_list[-CANDLE_MAX_AMOUNT:]
                 self.data_queue.put((self.period, self.candles_list))
-
-            if len(self.candles_list) > CANDLE_MAX_AMOUNT:  # 限制長度
-                self.candles_list.pop(0)                    # 移除最舊的數據
 
     def _init_twse_requirement(self):
         self.expire_month = utils.get_expiremonth_realtime()

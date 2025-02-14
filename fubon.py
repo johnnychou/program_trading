@@ -24,22 +24,13 @@ class Fubon_api(object):
         if product not in ('TXF', 'MXF', 'TMF'):
             raise ValueError("Invalid product. It should be TXF, MXF, or TMF.")
 
-        self.SDK = None
-        self.Account = None
-        self.Acc_futures = None
-        self.Restfut = None
         self.period = period
         self.product = product
         self.data_queue = data_queue
-        self.login_account()
-        self._init_data()
-        self._set_event()
-        self.update_position_holded()
         return
-    
+       
     def login_account(self, retrytimes=6):
         try:
-            self.SDK = FubonSDK()
             self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
         except Exception as error:
             print(f"Exception: {error}")
@@ -51,14 +42,23 @@ class Fubon_api(object):
             time.sleep(10)
             return self.login_account(retrytimes-1)
 
-        print(f"Login sucess\n{self.Account}")
+        print(f"===Login sucess===\n{self.Account}")
         time.sleep(1)
         return
     
     def _init_data(self):
+        self.Account = None
+        self.Acc_futures = None
+        self.Restfut = None
+        self.Trade_symbol = None
+        self.SDK = FubonSDK()
+        self.login_account()
         self.SDK.init_realtime(Mode.Normal)
-        self.Acc_futures = self.get_future_account()
         self.Restfut = self.SDK.marketdata.rest_client.futopt
+        self.Acc_futures = self.get_future_account()
+        self.Trade_symbol = self.get_trade_symbol()
+        self._set_event()
+        self.update_position_holded()
         return
     def get_future_account(self):
         for acc in self.Account:
@@ -226,23 +226,26 @@ class Fubon_api(object):
         print(f"Account Balance: {balance}")
 
     def get_candles(self):
-        #utils.sync_time(self.period)
-        market = utils.get_market_type()
-        if market == '0':
-            data = self.Restfut.intraday.candles(symbol=self.get_trade_symbol(), timeframe=str(self.period))
-        else:
-            data = self.Restfut.intraday.candles(symbol=self.get_trade_symbol(), timeframe=str(self.period), session='afterhours')
-        self.candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
-        
-        #檢查最後一筆資料是不是完整candle
-        # localtime = time.localtime()
-        # last_data_min = int(self.candles_list[-1]['date'].split('T')[1].split(':')[1])
-        # if last_data_min == localtime.tm_min:
-        #     print(f'=====del {self.candles_list[-1]}=====')
-        #     del self.candles_list[-1]
-
-        #self.data_queue.put((self.period, self.candles_list))
-        return self.candles_list
+        self._init_data()
+        while True:
+            utils.sync_time(self.period)
+            market = utils.get_market_type()
+            if market == '0':
+                data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
+            else:
+                data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
+            self.candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
+            
+            #檢查最後一筆資料是不是完整candle
+            # localtime = time.localtime()
+            # last_data_min = int(self.candles_list[-1]['date'].split('T')[1].split(':')[1])
+            # if last_data_min == localtime.tm_min:
+            #     print(f'=====del {self.candles_list[-1]}=====')
+            #     del self.candles_list[-1]
+            
+            self.data_queue.put((self.period, self.candles_list))
+            time.sleep(2)
+            #return self.candles_list
     
     def handle_message(self, message):
         print(f'market data message: {message}')

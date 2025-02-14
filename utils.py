@@ -2,7 +2,7 @@ import time
 import datetime
 
 def sync_time(period): #period->minutes
-    if period < 1:
+    if period < 1: #秒級K線均同步開始於0秒
         period = 1
     localtime = time.localtime()
     while True:
