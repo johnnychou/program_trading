@@ -7,11 +7,13 @@ def sync_time(period): #period->minutes
     localtime = time.localtime()
     while True:
         while localtime.tm_sec != 0:
-            print(f'time synchronizing... {period-(localtime.tm_min % period)-1}:{60-localtime.tm_sec}')
+            #print(f'time synchronizing... {period-(localtime.tm_min % period)-1}:{60-localtime.tm_sec}')
             time.sleep(0.1)
             localtime = time.localtime()
         if (localtime.tm_min % period) == 0:
             break
+        time.sleep(1)
+        localtime = time.localtime()
     return
 
 def get_market_type(): #0=日盤/regular, 1=夜盤/Afterhours -1=非交易時段

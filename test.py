@@ -13,7 +13,8 @@ import fubon
 PRODUCT = 'MXF'
 TWSE_PERIOD = 30
 FUBON_PERIOD_1 = 1
-FUBON_PERIOD_2 = 5
+FUBON_PERIOD_5 = 5
+FUBON_PERIOD_15 = 15
 
 if __name__ == '__main__':
     Processes = []
@@ -32,18 +33,38 @@ if __name__ == '__main__':
     fubon_p1.start()
     Processes.append(fubon_p1)
 
+    fubon_5m = fubon.Fubon_api(FUBON_PERIOD_5, PRODUCT, data_queue)
+    fubon_p5 = multiprocessing.Process(target=fubon_5m.get_candles)
+    fubon_p5.daemon = True
+    fubon_p5.start()
+    Processes.append(fubon_p5)
+
+    fubon_15m = fubon.Fubon_api(FUBON_PERIOD_15, PRODUCT, data_queue)
+    fubon_p15 = multiprocessing.Process(target=fubon_15m.get_candles)
+    fubon_p15.daemon = True
+    fubon_p15.start()
+    Processes.append(fubon_p15)
+
     candles_twse_30s = []
     candles_fubon_1m = []
+    candles_fubon_5m = []
+    candles_fubon_15m = []
 
     try:
         while True:
             print(realtime_candle)
-            print('================================================================================================================================')
-            for i in candles_twse_30s:
-                print(f"{i}")
-            print('================================================================================================================================')
-            for i in candles_fubon_1m:
-                print(f"{i}")
+            # print('===30s=============================================================================================================================')
+            # for i in candles_twse_30s:
+            #     print(f"{i}")
+            # print('===1m=============================================================================================================================')
+            # for i in candles_fubon_1m:
+            #     print(f"{i}")
+            # print('===5m=============================================================================================================================')
+            # for i in candles_fubon_5m:
+            #     print(f"{i}")
+            # print('===15m=============================================================================================================================')
+            # for i in candles_fubon_15m:
+            #     print(f"{i}")
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_list = data_queue.get()
@@ -52,6 +73,10 @@ if __name__ == '__main__':
                     candles_twse_30s = tmp_list
                 elif period == FUBON_PERIOD_1:
                     candles_fubon_1m = tmp_list
+                elif period == FUBON_PERIOD_5:
+                    candles_fubon_5m = tmp_list
+                elif period == FUBON_PERIOD_15:
+                    candles_fubon_15m = tmp_list
 
             time.sleep(0.1)
             os.system('cls')
