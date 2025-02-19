@@ -1,9 +1,36 @@
+import numpy as np
+
+def atr_calculation(candles_list, period, atr_record):
+    if len(candles_list) < period:
+        return 0
+
+    if not atr_record[-1]:
+        candles = candles_list[-period:]
+        tr = 0
+        for i in len(candles):
+            if i == 0:
+                tr += candles[0]['high'] - candles[0]['low']
+            else:
+                tr += max(candles[i]['high'] - candles[i]['low'],
+                          np.abs(candles[i]['high'] - candles[i-1]['close']),
+                          np.abs(candles[i]['low'] - candles[i-1]['close']))
+        atr = round(tr/period, 2)
+    else:
+        atr = atr_record[-1]
+        data = candles_list[-1]
+        pre_data = candles_list[-2]
+        tr = max(data['high'] - data['low'],
+                 np.abs(data['high'] - pre_data['close']),
+                 np.abs(data['low'] - pre_data['close']))
+        atr = round((((period-1)*atr)+tr)/period, 2)
+    
+    return atr
 
 def find_peak_from_candles(candles_list, period):
     if len(candles_list) < period:
         return 0
     candles = candles_list[-period:]
-    for i in range(period):
+    for i in len(candles):
         if i == 0:
             max_p = candles[0]['high']
             min_p = candles[0]['low']
@@ -36,4 +63,6 @@ def kd_calculation(candles_list, period, kd_record): # 1=buy,-1=sell, 0=wait
     d = 2/3*(pre_d) + 1/3*k
 
     return [k, d]
+
+
 
