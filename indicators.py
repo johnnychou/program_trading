@@ -64,5 +64,30 @@ def kd_calculation(candles_list, period, kd_record): # 1=buy,-1=sell, 0=wait
 
     return [k, d]
 
+def price_ma(candles_list, period):
+    if len(candles_list) < period:
+        return 0
+    p_ma = 0
+    candles = candles_list[-period:]
+    for i in len(candles):
+        p_ma += candles[i]['close']
+    p_ma = p_ma / period
+    return round(p_ma, 2)
 
+def bollinger_bands_calculation(candles_list, period):
+    if len(candles_list) < period:
+        return 0
+
+    std = 0
+    ma = price_ma(candles_list, period)
+    
+    for data in candles_list[-period:]:
+        std += (data['close'] - ma)**2
+
+    std = (std/period)**0.5
+
+    # Calculate upper and lower bands
+    upper = round(ma + (std * 2), 2)
+    lower = round(ma - (std * 2), 2)
+    return [upper, ma, lower]
 
