@@ -102,4 +102,21 @@ def bollinger_bands_calculation(candles_list, period):
     lower = round(ma - (std * 2), 2)
     return [upper, ma, lower]
 
-
+def rsi_calculation(candles_list, period):
+    if len(candles_list) < period:
+        return 0
+    data = candles_list[-period:]
+    up_wave = 0
+    dn_wave = 0
+    for i in len(data):
+        if i == 0:
+            continue
+        else:
+            if data[i]['close'] > data[i-1]['close']:
+                up_wave += (data[i]['close'] - data[i-1]['close'])
+            elif data[i]['close'] < data[i-1]['close']:
+                dn_wave += (data[i-1]['close'] - data[i]['close'])
+    up_wave_avg = up_wave/period
+    dn_wave_avg = dn_wave/period
+    rsi = round((up_wave_avg/(up_wave_avg+dn_wave_avg))*100, 2)
+    return rsi
