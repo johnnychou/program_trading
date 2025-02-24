@@ -228,25 +228,35 @@ class Fubon_api(object):
     def get_candles(self):
         self._init_data()
         while True:
-            utils.sync_time(self.period)
+            #utils.sync_time(self.period)
             market = utils.get_market_type()
             if market == '0':
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
             else:
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
-            self.candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
+            candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
             
             #檢查最後一筆資料是不是完整candle
             # localtime = time.localtime()
-            # last_data_min = int(self.candles_list[-1]['date'].split('T')[1].split(':')[1])
+            # last_data_min = int(candles_list[-1]['date'].split('T')[1].split(':')[1])
             # if last_data_min == localtime.tm_min:
-            #     print(f'=====del {self.candles_list[-1]}=====')
-            #     del self.candles_list[-1]
-            
-            self.data_queue.put((self.period, self.candles_list))
+            #     print(f'=====del {candles_list[-1]}=====')
+            #     del candles_list[-1]
+
+            self.data_queue.put((self.period, candles_list))
             time.sleep(2)
-            #return self.candles_list
-    
+
+    def get_candles_list(self):
+        self._init_data()
+        market = utils.get_market_type()
+        if market == '0':
+            data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
+        else:
+            data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
+
+        candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
+        return candles_list
+
     def handle_message(self, message):
         print(f'market data message: {message}')
 

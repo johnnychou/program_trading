@@ -1,0 +1,14 @@
+[2025-02-24 16:22:20.655484500 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-24 16:22:20.706416300 +08:00 INFO] this account require 2fa
+[2025-02-24 16:22:20.742969800 +08:00 INFO] [future_option_mapping]: 18.2337ms
+[2025-02-24 16:22:20.766878400 +08:00 INFO] [future_option_mapping]: 21.4077ms
+[2025-02-24 16:22:20.814762800 +08:00 INFO] [future_option_mapping]: 47.5614ms
+[2025-02-24 16:22:20.848280300 +08:00 INFO] [future_option_mapping]: 23.3849ms
+[2025-02-24 16:22:22.035140900 +08:00 INFO] [query_single_position]: 38.2149ms
+[2025-02-24 16:28:10.386453200 +08:00 INFO] [login] personal_id="F128108470"
+[2025-02-24 16:28:10.426389800 +08:00 INFO] this account require 2fa
+[2025-02-24 16:28:10.473459400 +08:00 INFO] [future_option_mapping]: 17.5648ms
+[2025-02-24 16:28:10.502274700 +08:00 INFO] [future_option_mapping]: 26.6194ms
+[2025-02-24 16:28:10.555489500 +08:00 INFO] [future_option_mapping]: 52.9267ms
+[2025-02-24 16:28:10.595197500 +08:00 INFO] [future_option_mapping]: 29.3213ms
+[2025-02-24 16:28:11.757089500 +08:00 INFO] [query_single_position]: 45.022ms
