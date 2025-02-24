@@ -74,6 +74,17 @@ def price_ma(candles_list, period):
     p_ma = p_ma / period
     return round(p_ma, 2)
 
+def price_ema(candles_list, period, ema_record):
+    if len(candles_list) < period:
+        return 0
+    else:
+        if not ema_record[-1]:
+            ema = price_ma(candles_list, period)
+        else:
+            a = 2/(period+1)
+            ema = (candles_list[-1]['close'] - ema_record[-1])*a + ema_record[-1]
+    return round(ema, 2)
+
 def bollinger_bands_calculation(candles_list, period):
     if len(candles_list) < period:
         return 0
@@ -90,4 +101,5 @@ def bollinger_bands_calculation(candles_list, period):
     upper = round(ma + (std * 2), 2)
     lower = round(ma - (std * 2), 2)
     return [upper, ma, lower]
+
 
