@@ -1,13 +1,13 @@
 import numpy as np
 
-def atr_calculation(candles_list, period, atr_record):
+def atr_calculation(candles_list, period, atr_record=[]):
     if len(candles_list) < period:
         return 0
 
-    if not atr_record[-1]:
+    if not atr_record:
         candles = candles_list[-period:]
         tr = 0
-        for i in len(candles):
+        for i in range(len(candles)):
             if i == 0:
                 tr += candles[0]['high'] - candles[0]['low']
             else:
@@ -30,7 +30,7 @@ def find_peak_from_candles(candles_list, period):
     if len(candles_list) < period:
         return 0
     candles = candles_list[-period:]
-    for i in len(candles):
+    for i in range(len(candles)):
         if i == 0:
             max_p = candles[0]['high']
             min_p = candles[0]['low']
@@ -41,7 +41,7 @@ def find_peak_from_candles(candles_list, period):
                 min_p = candles[i]['low']
     return max_p, min_p
 
-def kd_calculation(candles_list, period, kd_record): # 1=buy,-1=sell, 0=wait
+def kd_calculation(candles_list, period, kd_record=[]): # 1=buy,-1=sell, 0=wait
     if len(candles_list) < period:
         return 0
 
@@ -51,12 +51,12 @@ def kd_calculation(candles_list, period, kd_record): # 1=buy,-1=sell, 0=wait
     if (max_price - min_price) == 0:
         return 0
     
-    if kd_record[-1]:
-        pre_k = kd_record[-1][0]
-        pre_d = kd_record[-1][1]
-    else:
+    if not kd_record:
         pre_k = 50
         pre_d = 50
+    else:
+        pre_k = kd_record[-1][0]
+        pre_d = kd_record[-1][1]
 
     rsv = ((last_price - min_price) / (max_price - min_price)) * 100
     k = 2/3*(pre_k) + 1/3*rsv
@@ -64,30 +64,47 @@ def kd_calculation(candles_list, period, kd_record): # 1=buy,-1=sell, 0=wait
 
     return [k, d]
 
-def price_ma(candles_list, period):
+def candles_sma(candles_list, period):
     if len(candles_list) < period:
         return 0
     candles = candles_list[-period:]
-    ma = sum(candles)/len(candles)
-    return round(ma, 2)
+    sum = 0
+    for i in range(len(candles)):
+        sum += candles[i]['close']
+    sma = sum / period
+    return round(sma, 2)
 
-def price_ema(candles_list, period, ema_record):
+def candles_ema(candles_list, period, ema_record=[]):
     if len(candles_list) < period:
         return 0
     else:
-        if not ema_record[-1]:
-            ema = price_ma(candles_list, period)
+        if not ema_record:
+            ema = candles_sma(candles_list, period)
         else:
             a = 2/(period+1)
             ema = (candles_list[-1]['close'] - ema_record[-1])*a + ema_record[-1]
+        ema_record.append(round(ema, 2))
     return round(ema, 2)
+
+def exponential_moving_average(num_list, period, ema_record=[]):
+    if len(num_list) < period:
+        return 0
+    else:
+        if not ema_record:
+            num_list = num_list[-period:]
+            ema = sum(num_list)/len(num_list)
+        else:
+            a = 2/(period+1)
+            ema = (num_list[-1] - ema_record[-1])*a + ema_record[-1]
+        ema_record.append(round(ema, 2))
+    return ema_record
 
 def bollinger_bands_calculation(candles_list, period):
     if len(candles_list) < period:
         return 0
 
     std = 0
-    ma = price_ma(candles_list, period)
+    ma = candles_sma(candles_list, period)
     
     for data in candles_list[-period:]:
         std += (data['close'] - ma)**2
@@ -124,7 +141,7 @@ def macd_calculation(candles_list, macd_dif_list, macd_histogram, p1=12, p2=26, 
     if ema_short and ema_long:
         dif = round(ema_short-ema_long, 2) #DIF快線
         macd_dif_list.append(dif)
-        dea = price_ema(macd_dif_list, p3, dea) #DEA慢線
+        dea = exponential_moving_average(macd_dif_list, p3, dea) #DEA慢線
         if dea:
             macd_histogram.append(round(dif-dea, 2)) #直方圖
         if len(macd_histogram) > 4:
