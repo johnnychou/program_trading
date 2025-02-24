@@ -67,12 +67,9 @@ def kd_calculation(candles_list, period, kd_record): # 1=buy,-1=sell, 0=wait
 def price_ma(candles_list, period):
     if len(candles_list) < period:
         return 0
-    p_ma = 0
     candles = candles_list[-period:]
-    for i in len(candles):
-        p_ma += candles[i]['close']
-    p_ma = p_ma / period
-    return round(p_ma, 2)
+    ma = sum(candles)/len(candles)
+    return round(ma, 2)
 
 def price_ema(candles_list, period, ema_record):
     if len(candles_list) < period:
@@ -120,3 +117,16 @@ def rsi_calculation(candles_list, period):
     dn_wave_avg = dn_wave/period
     rsi = round((up_wave_avg/(up_wave_avg+dn_wave_avg))*100, 2)
     return rsi
+
+def macd_calculation(candles_list, macd_dif_list, macd_histogram, p1=12, p2=26, p3=9):
+    ema_short = price_ema(candles_list, p1, ema_short)
+    ema_long  = price_ema(candles_list, p2, ema_long)
+    if ema_short and ema_long:
+        dif = round(ema_short-ema_long, 2) #DIF快線
+        macd_dif_list.append(dif)
+        dea = price_ema(macd_dif_list, p3, dea) #DEA慢線
+        if dea:
+            macd_histogram.append(round(dif-dea, 2)) #直方圖
+        if len(macd_histogram) > 4:
+            macd_histogram = macd_histogram[-4:]
+    return macd_dif_list, macd_histogram
