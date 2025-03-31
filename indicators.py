@@ -4,76 +4,85 @@ import pandas as pd
 MA_PREFIX = 'ma_'
 EMA_PREFIX = 'ema_'
 ATR_PREFIX = 'atr_'
+KD_PREFIX = 'kd_'
 
-
-def indicator_ma(df, period, column='close'):
+def indicator_ma(df, period):
+    """
+    計算 DataFrame 中指定欄位的簡單移動平均線 (SMA)，並優化效能。
+    """
     key = MA_PREFIX + str(period)
-    if len(df) >= period:
-        ma = df[column].rolling(window=period).mean()
-        df[key] = ma
-    else:
-        df[key] = 0
-    return
 
-def indicator_ema(df, period, column='close'):
-    key = EMA_PREFIX + str(period)
-    if len(df) >= period:
-        ema = df[column].ewm(span=period, adjust=False).mean()
-        df[key] = ema
-    else:
-        df[key] = 0
-    return
-
-def calculate_atr(df, period=14):
-    key = ATR_PREFIX + str(period)
-    if len(df) >= period:
-        high_low = df['high'] - df['low']
-        high_close = abs(df['high'] - df['close'].shift())
-        low_close = abs(df['low'] - df['close'].shift())
-        tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
-        atr = tr.rolling(window=period).mean()
-        df[key] = atr
-    else:
-        df[key] = 0
-    return
-
-def find_peak_from_candles(candles_list, period):
-    if len(candles_list) < period:
-        return 0
-    candles = candles_list[-period:]
-    for i in range(len(candles)):
-        if i == 0:
-            max_p = candles[0]['high']
-            min_p = candles[0]['low']
+    if key not in df.columns:  # 首次計算
+        df[key] = df['close'].rolling(window=period).mean().round().fillna(0).astype(int)  # 首次計算時，將 NaN 填 0
+    else:  # 後續計算
+        if len(df) >= period:
+            # 只計算最後一個值
+            ma = df['close'].iloc[-period:].mean().round().astype(int)
+            df.loc[df.index[-1], key] = ma
         else:
-            if max_p < candles[i]['high']:
-                max_p = candles[i]['high']
-            if min_p > candles[i]['low']:
-                min_p = candles[i]['low']
-    return max_p, min_p
+            df.loc[df.index[-1], key] = 0  # 資料不足填 0
+    return
 
-def kd_calculation(candles_list, period, kd_record=[]): # 1=buy,-1=sell, 0=wait
-    if len(candles_list) < period:
-        return 0
 
-    max_price, min_price = find_peak_from_candles(candles_list, period)
-    last_price = candles_list[-1]['close']
+def indicator_ema(df, period):
+    """
+    計算 DataFrame 中指定欄位的指數移動平均線 (EMA)，並優化效能。
+    """
+    key = EMA_PREFIX + str(period)
 
-    if (max_price - min_price) == 0:
-        return 0
-    
-    if not kd_record:
-        pre_k = 50
-        pre_d = 50
+    if key not in df.columns:  # 首次計算
+        df[key] = df['close'].ewm(span=period, adjust=False).mean().round().fillna(0).astype(int)
+    else:  # 後續計算
+        if len(df) >= period:
+            ema = (df['close'].iloc[-1] * 2 + df[key].iloc[-2] * (period - 1)) / (period + 1)
+            df.loc[df.index[-1], key] = int(round(ema))
+        else:
+            df.loc[df.index[-1], key] = 0
+    return
+
+def indicator_atr(df, period=14):
+    key = ATR_PREFIX + str(period)
+    if key not in df.columns:  # 首次计算
+        tr1 = df['high'] - df['low']
+        tr2 = abs(df['high'] - df['close'].shift())
+        tr3 = abs(df['low'] - df['close'].shift())
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+        df[key] = tr.rolling(window=period).mean().round(1).fillna(0)
     else:
-        pre_k = kd_record[-1][0]
-        pre_d = kd_record[-1][1]
+        tr1 = df['high'].iloc[-1] - df['low'].iloc[-1]
+        tr2 = abs(df['high'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
+        tr3 = abs(df['low'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
+        tr_current = max(tr1, tr2, tr3)
 
-    rsv = ((last_price - min_price) / (max_price - min_price)) * 100
-    k = 2/3*(pre_k) + 1/3*rsv
-    d = 2/3*(pre_d) + 1/3*k
+        atr_prev = df[key].iloc[-1]
+        atr = (atr_prev * (period - 1) + tr_current) / period if len(df) >= period else tr_current
+        df.loc[df.index[-1], key] = atr.round(1)
+    return
 
-    return [round(k, 2), round(d, 2)]
+def calculate_kd(df, n=9, k=3, d=3):
+    """計算 DataFrame 的 KD 指標。
+
+    Args:
+        df (pd.DataFrame): 包含 'high'、'low' 和 'close' 欄位的 DataFrame。
+        n (int): 計算 RSV 的週期，預設為 9。
+        k (int): 計算 K 值的 SMA 週期，預設為 3。
+        d (int): 計算 D 值的 SMA 週期，預設為 3。
+    """
+    key = KD_PREFIX + str(n)
+    # 計算 RSV
+    low_list = df['low'].rolling(n, min_periods=n).min()
+    high_list = df['high'].rolling(n, min_periods=n).max()
+    rsv = (df['close'] - low_list) / (high_list - low_list) * 100
+
+    # 計算 K 值
+    k_value = rsv.rolling(k, min_periods=k).mean()
+
+    # 計算 D 值
+    d_value = k_value.rolling(d, min_periods=d).mean()
+
+    df[key] = [k_value, d_value, rsv]
+    return
 
 def exponential_moving_average(num_list, period, ema_record=[]):
     if len(num_list) < period:
