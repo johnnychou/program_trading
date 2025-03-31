@@ -6,7 +6,7 @@ EMA_PREFIX = 'ema_'
 ATR_PREFIX = 'atr_'
 KD_PREFIX = 'kd_'
 RSI_PREFIX = 'rsi_'
-BB_PREFIX = 'bb_'
+BB_PREFIX = 'bbands_'
 MACD_PREFIX = 'macd_'
 
 def indicator_ma(df, period):
@@ -166,5 +166,33 @@ def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
             df.loc[df.index[-1], key] = [0, 0, 0]
     return
 
-def indicator_bollingsband(df, period=20):
+def indicator_bollingsband(df, period=20, std_dev=2):
+    """
+    計算 DataFrame 的布林通道 (基于 'close' 欄位)。
+
+    Args:
+        df (pd.DataFrame): 包含收盤價 ('close') 的 DataFrame。
+        period (int): 計算移動平均線的週期，預設為 20。
+        std_dev (int): 標準差的倍數，用於計算上下軌，預設為 2。
+    """
+    key = BB_PREFIX + str(period)
+
+    if key not in df.columns:
+        mid_band = df['close'].rolling(window=period).mean().fillna(0)
+        std = df['close'].rolling(window=period).std().fillna(0)
+        upper_band = mid_band + std_dev * std
+        lower_band = mid_band - std_dev * std
+
+        df[key] = list(zip(mid_band.round(1), upper_band.round(1), lower_band.round(1)))
+
+    else:
+        if len(df) >= period:
+            mid_band = df['close'].rolling(window=period).mean().iloc[-1]
+            std = df['close'].rolling(window=period).std().iloc[-1]
+            upper_band = mid_band + std_dev * std
+            lower_band = mid_band - std_dev * std
+
+            df.loc[df.index[-1], key] = [mid_band.round(1), upper_band.round(1), lower_band.round(1)]
+        else:
+            df.loc[df.index[-1], key] = [0, 0, 0]
     return
