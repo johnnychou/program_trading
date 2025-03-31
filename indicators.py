@@ -1,5 +1,7 @@
 import numpy as np
 
+EMA_PREFIX = 'ema_'
+
 def atr_calculation(candles_list, period, atr_record=[]):
     if len(candles_list) < period:
         return 0
@@ -75,10 +77,13 @@ def candles_sma(candles_list, period):
     return round(sma, 2)
 
 def indicator_ema(df, period, column='close'):
+    key = EMA_PREFIX + str(period)
     if len(df) >= period:
         ema = df[column].ewm(span=period, adjust=False).mean()
-        return ema
-    return None
+        df[key] = ema
+    else:
+        df[key] = 0
+    return
 
 def exponential_moving_average(num_list, period, ema_record=[]):
     if len(num_list) < period:
