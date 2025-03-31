@@ -74,17 +74,11 @@ def candles_sma(candles_list, period):
     sma = sum / period
     return round(sma, 2)
 
-def candles_ema(candles_list, period, ema_record=[]):
-    if len(candles_list) < period:
-        return 0
-    else:
-        if not ema_record:
-            ema = candles_sma(candles_list, period)
-        else:
-            a = 2/(period+1)
-            ema = (candles_list[-1]['close'] - ema_record[-1])*a + ema_record[-1]
-        ema_record.append(round(ema, 2))
-    return round(ema, 2)
+def indicator_ema(df, period, column='close'):
+    if len(df) >= period:
+        ema = df[column].ewm(span=period, adjust=False).mean()
+        return ema
+    return None
 
 def exponential_moving_average(num_list, period, ema_record=[]):
     if len(num_list) < period:
@@ -136,8 +130,8 @@ def rsi_calculation(candles_list, period):
     return rsi
 
 def macd_calculation(candles_list, macd_dif_list, macd_histogram, p1=12, p2=26, p3=9):
-    ema_short = candles_ema(candles_list, p1, ema_short)
-    ema_long  = candles_ema(candles_list, p2, ema_long)
+    ema_short = indicator_ema(candles_list, p1, ema_short)
+    ema_long  = indicator_ema(candles_list, p2, ema_long)
     if ema_short and ema_long:
         dif = round(ema_short-ema_long, 2) #DIF快線
         macd_dif_list.append(dif)
