@@ -86,6 +86,9 @@ if __name__ == '__main__':
     indicators.indicator_rsi(test_df, 10)
     print('================================================')
     print(test_df)
+    indicators.indicator_macd(test_df)
+    print('================================================')
+    print(test_df)
 
     new_data = create_sample_dataframe(total_minutes=1)
     new_df = pd.DataFrame(new_data)

@@ -131,7 +131,40 @@ def indicator_rsi(df, period=10):
             df.loc[df.index[-1], key] = 0
     return
 
-def indicator_bollingsband(df, period=20):
+def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
+    """
+    計算 DataFrame 的移動平均收斂發散指標 (MACD)。
+
+    Args:
+        df (pd.DataFrame): 包含 'close' 欄位的 DataFrame。
+        fast_period (int): 計算快線 EMA 的週期，預設為 12。
+        slow_period (int): 計算慢線 EMA 的週期，預設為 26。
+        signal_period (int): 計算 MACD 線 EMA 的週期，預設為 9。
+    """
+    key = MACD_PREFIX + str(fast_period) + '_' + str(slow_period) + '_' + str(signal_period)
+
+    if key not in df.columns:  # 首次計算
+        fast_ema = df['close'].ewm(span=fast_period, adjust=False).mean()
+        slow_ema = df['close'].ewm(span=slow_period, adjust=False).mean()
+        macd_line = fast_ema - slow_ema
+        signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
+        hist = macd_line - signal_line
+
+        df[key] = list(zip(macd_line.round(1), signal_line.round(1), hist.round(1)))
+
+    else:  # 後續計算
+        if len(df) >= slow_period:  # 確保有足夠的資料計算慢線 EMA
+            fast_ema = (df['close'].iloc[-1] * (2 / (fast_period + 1)) + df['close'].iloc[-2] * (1 - (2 / (fast_period + 1)))) if len(df) > 1 else df['close'].iloc[-1]
+            slow_ema = (df['close'].iloc[-1] * (2 / (slow_period + 1)) + df['close'].iloc[-2] * (1 - (2 / (slow_period + 1)))) if len(df) > 1 else df['close'].iloc[-1]
+            macd_line = fast_ema - slow_ema
+            signal_line = (macd_line * (2 / (signal_period + 1)) + df[key].iloc[-1][1] * (1 - (2 / (signal_period + 1)))) if len(df) >= signal_period else macd_line
+            hist = macd_line - signal_line
+
+            df.loc[df.index[-1], key] = [macd_line.round(1), signal_line.round(1), hist.round(1)]
+        else:
+            # 資料不足時的處理
+            df.loc[df.index[-1], key] = [0, 0, 0]
     return
-def indicator_macd(df, period=26):
+
+def indicator_bollingsband(df, period=20):
     return
