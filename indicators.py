@@ -1,32 +1,41 @@
 import numpy as np
+import pandas as pd
 
+MA_PREFIX = 'ma_'
 EMA_PREFIX = 'ema_'
+ATR_PREFIX = 'atr_'
 
-def atr_calculation(candles_list, period, atr_record=[]):
-    if len(candles_list) < period:
-        return 0
 
-    if not atr_record:
-        candles = candles_list[-period:]
-        tr = 0
-        for i in range(len(candles)):
-            if i == 0:
-                tr += candles[0]['high'] - candles[0]['low']
-            else:
-                tr += max(candles[i]['high'] - candles[i]['low'],
-                          np.abs(candles[i]['high'] - candles[i-1]['close']),
-                          np.abs(candles[i]['low'] - candles[i-1]['close']))
-        atr = round(tr/period, 2)
+def indicator_ma(df, period, column='close'):
+    key = MA_PREFIX + str(period)
+    if len(df) >= period:
+        ma = df[column].rolling(window=period).mean()
+        df[key] = ma
     else:
-        atr = atr_record[-1]
-        data = candles_list[-1]
-        pre_data = candles_list[-2]
-        tr = max(data['high'] - data['low'],
-                 np.abs(data['high'] - pre_data['close']),
-                 np.abs(data['low'] - pre_data['close']))
-        atr = round((((period-1)*atr)+tr)/period, 2)
-    
-    return atr
+        df[key] = 0
+    return
+
+def indicator_ema(df, period, column='close'):
+    key = EMA_PREFIX + str(period)
+    if len(df) >= period:
+        ema = df[column].ewm(span=period, adjust=False).mean()
+        df[key] = ema
+    else:
+        df[key] = 0
+    return
+
+def calculate_atr(df, period=14):
+    key = ATR_PREFIX + str(period)
+    if len(df) >= period:
+        high_low = df['high'] - df['low']
+        high_close = abs(df['high'] - df['close'].shift())
+        low_close = abs(df['low'] - df['close'].shift())
+        tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        atr = tr.rolling(window=period).mean()
+        df[key] = atr
+    else:
+        df[key] = 0
+    return
 
 def find_peak_from_candles(candles_list, period):
     if len(candles_list) < period:
@@ -65,25 +74,6 @@ def kd_calculation(candles_list, period, kd_record=[]): # 1=buy,-1=sell, 0=wait
     d = 2/3*(pre_d) + 1/3*k
 
     return [round(k, 2), round(d, 2)]
-
-def candles_sma(candles_list, period):
-    if len(candles_list) < period:
-        return 0
-    candles = candles_list[-period:]
-    sum = 0
-    for i in range(len(candles)):
-        sum += candles[i]['close']
-    sma = sum / period
-    return round(sma, 2)
-
-def indicator_ema(df, period, column='close'):
-    key = EMA_PREFIX + str(period)
-    if len(df) >= period:
-        ema = df[column].ewm(span=period, adjust=False).mean()
-        df[key] = ema
-    else:
-        df[key] = 0
-    return
 
 def exponential_moving_average(num_list, period, ema_record=[]):
     if len(num_list) < period:
