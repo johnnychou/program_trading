@@ -5,6 +5,7 @@ import numpy as np
 import requests as r
 import csv
 import time
+import pandas as pd
 
 import utils
 import fubon
@@ -17,7 +18,8 @@ CANDLE_MAX_AMOUNT = 50
 
 class TWSE(object):
     def __init__(self, period, product, source, data_queue, shared_data=None): # (TXF/MXF/TMF, period->seconds, twse/csv)
-        self.period = period
+        self.key = period
+        self.period = self.period_to_seconds(period)
         self.product = product
         self.data_src = source
         self.candles_list = []
@@ -31,7 +33,19 @@ class TWSE(object):
             self._init_twse_requirement()
 
         return
-    
+
+    def period_to_seconds(self, period_str):
+        value = int(period_str[:-1])  # 提取數值
+        unit = period_str[-1]       # 提取單位
+
+        if unit == 's':
+            return value
+        elif unit == 'm':
+            return value * 60
+        elif unit == 'h':
+            return value * 60 * 60
+        return None  # 如果單位不正確，則傳回 None
+
     def get_candles(self):
         utils.sync_time(self.period/60)
         while True:
@@ -46,7 +60,7 @@ class TWSE(object):
             if candle:
                 self.candles_list.append(candle)
                 self.candles_list = self.candles_list[-CANDLE_MAX_AMOUNT:]
-                self.data_queue.put((self.period, self.candles_list))
+                self.data_queue.put((self.key, self.candles_list))
 
     def _init_twse_requirement(self):
         self.expire_month = utils.get_expiremonth_realtime()

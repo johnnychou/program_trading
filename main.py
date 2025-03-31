@@ -6,15 +6,16 @@ import requests as r
 import csv
 import time
 import multiprocessing
+import pandas as pd
 
 import twse
 import fubon
 
 PRODUCT = 'MXF'
-TWSE_PERIOD = 30
-FUBON_PERIOD_1 = 1
-FUBON_PERIOD_5 = 5
-FUBON_PERIOD_15 = 15
+TWSE_PERIOD = '30s'
+FUBON_PERIOD_1 = '1m'
+FUBON_PERIOD_5 = '5m'
+FUBON_PERIOD_15 = '15m'
 
 if __name__ == '__main__':
     Processes = []

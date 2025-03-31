@@ -1,0 +1,28 @@
+[2025-03-31 07:54:08.268083900 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 07:54:08.313462900 +08:00 INFO] this account require 2fa
+[2025-03-31 07:54:08.362966200 +08:00 INFO] [future_option_mapping]: 17.3996ms
+[2025-03-31 07:54:08.386963100 +08:00 INFO] [future_option_mapping]: 21.6977ms
+[2025-03-31 07:54:08.435099300 +08:00 INFO] [future_option_mapping]: 47.8684ms
+[2025-03-31 07:54:08.467639600 +08:00 INFO] [future_option_mapping]: 22.3881ms
+[2025-03-31 07:54:10.082813200 +08:00 INFO] [query_single_position]: 35.4339ms
+[2025-03-31 10:07:26.913354500 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:07:26.915305 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:07:26.926316700 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:07:26.959172200 +08:00 INFO] this account require 2fa
+[2025-03-31 10:07:26.959205300 +08:00 INFO] this account require 2fa
+[2025-03-31 10:07:26.976218600 +08:00 INFO] this account require 2fa
+[2025-03-31 10:07:26.996315900 +08:00 INFO] [future_option_mapping]: 18.4804ms
+[2025-03-31 10:07:26.996347600 +08:00 INFO] [future_option_mapping]: 18.5425ms
+[2025-03-31 10:07:27.022248800 +08:00 INFO] [future_option_mapping]: 23.4003ms
+[2025-03-31 10:07:27.023247500 +08:00 INFO] [future_option_mapping]: 23.9712ms
+[2025-03-31 10:07:27.025854100 +08:00 INFO] [future_option_mapping]: 30.0319ms
+[2025-03-31 10:07:27.055493600 +08:00 INFO] [future_option_mapping]: 27.3982ms
+[2025-03-31 10:07:27.081292200 +08:00 INFO] [future_option_mapping]: 57.8315ms
+[2025-03-31 10:07:27.086906900 +08:00 INFO] [future_option_mapping]: 64.4028ms
+[2025-03-31 10:07:27.116127 +08:00 INFO] [future_option_mapping]: 60.4223ms
+[2025-03-31 10:07:27.119910300 +08:00 INFO] [future_option_mapping]: 17.5463ms
+[2025-03-31 10:07:27.120022900 +08:00 INFO] [future_option_mapping]: 16.167ms
+[2025-03-31 10:07:27.152149800 +08:00 INFO] [future_option_mapping]: 23.8526ms
+[2025-03-31 10:07:28.322854300 +08:00 INFO] [query_single_position]: 28.1953ms
+[2025-03-31 10:07:28.335874500 +08:00 INFO] [query_single_position]: 40.3787ms
+[2025-03-31 10:07:28.335881300 +08:00 INFO] [query_single_position]: 34.1458ms

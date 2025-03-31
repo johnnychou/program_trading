@@ -19,16 +19,27 @@ CANDLE_MAX_AMOUNT = 30
 
 class Fubon_api(object):
     def __init__(self, period, product, data_queue): #period->minutes
-        if period not in (1, 5, 10, 15, 30, 60):
-            raise ValueError("Invalid period. It should be 1, 5, 10, 15, 30, or 60.")
         if product not in ('TXF', 'MXF', 'TMF'):
             raise ValueError("Invalid product. It should be TXF, MXF, or TMF.")
 
-        self.period = period
+        self.period = self.period_minute(period)
+        if self.period not in (1, 5, 10, 15, 30, 60):
+            raise ValueError("Invalid period. It should be 1, 5, 10, 15, 30, or 60.")
+
+        self.key = period
         self.product = product
         self.data_queue = data_queue
         return
-       
+
+    def period_minute(self, period_str):
+        value = int(period_str[:-1])  # 提取數值
+        unit = period_str[-1]       # 提取單位
+
+        if unit != 'm':
+            raise ValueError("Invalid period. It should have [m] at last.")
+
+        return value  # 如果單位不正確，則傳回 None
+
     def login_account(self, retrytimes=6):
         try:
             self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
@@ -243,7 +254,7 @@ class Fubon_api(object):
             #     print(f'=====del {candles_list[-1]}=====')
             #     del candles_list[-1]
 
-            self.data_queue.put((self.period, candles_list))
+            self.data_queue.put((self.key, candles_list))
             time.sleep(2)
 
     def get_candles_list(self):
