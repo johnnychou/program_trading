@@ -80,6 +80,9 @@ if __name__ == '__main__':
     indicators.indicator_atr(test_df, 14)
     print('================================================')
     print(test_df)
+    indicators.indicator_kd(test_df, 9)
+    print('================================================')
+    print(test_df)
 
     # data_queue = multiprocessing.Queue()
     # fubon_1m = fubon.Fubon_api(1, 'MXF', data_queue)

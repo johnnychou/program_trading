@@ -42,7 +42,7 @@ def indicator_ema(df, period):
 
 def indicator_atr(df, period=14):
     key = ATR_PREFIX + str(period)
-    if key not in df.columns:  # 首次计算
+    if key not in df.columns:  # 首次計算
         tr1 = df['high'] - df['low']
         tr2 = abs(df['high'] - df['close'].shift())
         tr3 = abs(df['low'] - df['close'].shift())
@@ -60,7 +60,7 @@ def indicator_atr(df, period=14):
         df.loc[df.index[-1], key] = atr.round(1)
     return
 
-def calculate_kd(df, n=9, k=3, d=3):
+def indicator_kd(df, n=9, k=3, d=3):
     """計算 DataFrame 的 KD 指標。
 
     Args:
@@ -70,18 +70,27 @@ def calculate_kd(df, n=9, k=3, d=3):
         d (int): 計算 D 值的 SMA 週期，預設為 3。
     """
     key = KD_PREFIX + str(n)
-    # 計算 RSV
-    low_list = df['low'].rolling(n, min_periods=n).min()
-    high_list = df['high'].rolling(n, min_periods=n).max()
-    rsv = (df['close'] - low_list) / (high_list - low_list) * 100
 
-    # 計算 K 值
-    k_value = rsv.rolling(k, min_periods=k).mean()
+    if key not in df.columns:  # 首次計算
+        low_n = df['low'].rolling(window=n).min()
+        high_n = df['high'].rolling(window=n).max()
+        rsv = ((df['close'] - low_n) / (high_n - low_n) * 100).round(1).fillna(50)
+        k_values = rsv.rolling(window=k).mean().round(1).fillna(50)
+        d_values = k_values.rolling(window=d).mean().round(1).fillna(50)
 
-    # 計算 D 值
-    d_value = k_value.rolling(d, min_periods=d).mean()
+        df[key] = list(zip(k_values, d_values, rsv))
+    else:  # 後續計算
+        if len(df) >= n:
+            low_n = df['low'].iloc[-n:].min()
+            high_n = df['high'].iloc[-n:].max()
+            rsv = (df['close'].iloc[-1] - low_n) / (high_n - low_n) * 100
 
-    df[key] = [k_value, d_value, rsv]
+            k_value = df[key].iloc[-k:].apply(lambda x: x[0]).mean()
+            d_value = df[key].iloc[-d:].apply(lambda x: x[1]).mean()
+
+            df.loc[df.index[-1], key] = [k_value, d_value, rsv]
+        else:
+            df.loc[df.index[-1], key] = [50, 50, 0]
     return
 
 def exponential_moving_average(num_list, period, ema_record=[]):
