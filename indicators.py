@@ -5,6 +5,9 @@ MA_PREFIX = 'ma_'
 EMA_PREFIX = 'ema_'
 ATR_PREFIX = 'atr_'
 KD_PREFIX = 'kd_'
+RSI_PREFIX = 'rsi_'
+BB_PREFIX = 'bb_'
+MACD_PREFIX = 'macd_'
 
 def indicator_ma(df, period):
     """
@@ -93,64 +96,42 @@ def indicator_kd(df, n=9, k=3, d=3):
             df.loc[df.index[-1], key] = [50, 50, 0]
     return
 
-def exponential_moving_average(num_list, period, ema_record=[]):
-    if len(num_list) < period:
-        return 0
+def indicator_rsi(df, period=10):
+    key = RSI_PREFIX + str(period)
+
+    if key not in df.columns:
+        delta = df['close'].diff()
+        up = delta.where(delta > 0, 0)
+        down = -delta.where(delta < 0, 0)
+
+        avg_gain = up.rolling(window=period).mean().fillna(0)
+        avg_loss = down.rolling(window=period).mean().fillna(0)
+
+        rs = avg_gain / avg_loss.replace(0, 1e-10)
+        rsi = (100 - (100 / (1 + rs)))
+
+        df[key] = rsi.round(1)
     else:
-        if not ema_record:
-            num_list = num_list[-period:]
-            ema = sum(num_list)/len(num_list)
+        if len(df) >= period:
+            delta = df['close'].diff()
+            up = delta.iloc[-1:].where(delta.iloc[-1:] > 0, 0).sum()
+            down = -delta.iloc[-1:].where(delta.iloc[-1:] < 0, 0).sum()
+
+            avg_gain_prev = df[key].iloc[-14:].diff().where(df[key].iloc[-14:].diff() > 0, 0).mean() if len(df) > period else 0
+            avg_loss_prev = -df[key].iloc[-14:].diff().where(df[key].iloc[-14:].diff() < 0, 0).mean() if len(df) > period else 0
+
+            avg_gain = (avg_gain_prev * (period - 1) + up) / period if period > 1 else up
+            avg_loss = (avg_loss_prev * (period - 1) + down) / period if period > 1 else down
+
+            rs = avg_gain / avg_loss.replace(0, 1e-10)
+            rsi = 100 - (100 / (1 + rs))
+
+            df.loc[df.index[-1], key] = rsi.round(1)
         else:
-            a = 2/(period+1)
-            ema = (num_list[-1] - ema_record[-1])*a + ema_record[-1]
-        ema_record.append(round(ema, 2))
-    return ema_record
+            df.loc[df.index[-1], key] = 0
+    return
 
-def bollinger_bands_calculation(candles_list, period):
-    if len(candles_list) < period:
-        return 0
-
-    std = 0
-    ma = candles_sma(candles_list, period)
-    
-    for data in candles_list[-period:]:
-        std += (data['close'] - ma)**2
-
-    std = (std/period)**0.5
-
-    # Calculate upper and lower bands
-    upper = round(ma + (std * 2), 2)
-    lower = round(ma - (std * 2), 2)
-    return [upper, ma, lower]
-
-def rsi_calculation(candles_list, period):
-    if len(candles_list) < period:
-        return 0
-    data = candles_list[-period:]
-    up_wave = 0
-    dn_wave = 0
-    for i in range(len(data)):
-        if i == 0:
-            continue
-        else:
-            if data[i]['close'] > data[i-1]['close']:
-                up_wave += (data[i]['close'] - data[i-1]['close'])
-            elif data[i]['close'] < data[i-1]['close']:
-                dn_wave += (data[i-1]['close'] - data[i]['close'])
-    up_wave_avg = up_wave/period
-    dn_wave_avg = dn_wave/period
-    rsi = round((up_wave_avg/(up_wave_avg+dn_wave_avg))*100, 2)
-    return rsi
-
-def macd_calculation(candles_list, macd_dif_list, macd_histogram, p1=12, p2=26, p3=9):
-    ema_short = indicator_ema(candles_list, p1, ema_short)
-    ema_long  = indicator_ema(candles_list, p2, ema_long)
-    if ema_short and ema_long:
-        dif = round(ema_short-ema_long, 2) #DIF快線
-        macd_dif_list.append(dif)
-        dea = exponential_moving_average(macd_dif_list, p3, dea) #DEA慢線
-        if dea:
-            macd_histogram.append(round(dif-dea, 2)) #直方圖
-        if len(macd_histogram) > 4:
-            macd_histogram = macd_histogram[-4:]
-    return macd_dif_list, macd_histogram
+def indicator_bollingsband(df, period=20):
+    return
+def indicator_macd(df, period=26):
+    return

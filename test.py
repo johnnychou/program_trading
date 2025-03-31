@@ -83,6 +83,13 @@ if __name__ == '__main__':
     indicators.indicator_kd(test_df, 9)
     print('================================================')
     print(test_df)
+    indicators.indicator_rsi(test_df, 10)
+    print('================================================')
+    print(test_df)
+
+    new_data = create_sample_dataframe(total_minutes=1)
+    new_df = pd.DataFrame(new_data)
+    df = pd.concat([test_df, new_df], ignore_index=True)
 
     # data_queue = multiprocessing.Queue()
     # fubon_1m = fubon.Fubon_api(1, 'MXF', data_queue)
