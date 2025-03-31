@@ -26,3 +26,59 @@
 [2025-03-31 10:07:28.322854300 +08:00 INFO] [query_single_position]: 28.1953ms
 [2025-03-31 10:07:28.335874500 +08:00 INFO] [query_single_position]: 40.3787ms
 [2025-03-31 10:07:28.335881300 +08:00 INFO] [query_single_position]: 34.1458ms
+[2025-03-31 10:14:39.585513200 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:14:39.587004700 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:14:39.587046500 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:14:39.615519500 +08:00 INFO] this account require 2fa
+[2025-03-31 10:14:39.635970900 +08:00 INFO] this account require 2fa
+[2025-03-31 10:14:39.635983600 +08:00 INFO] this account require 2fa
+[2025-03-31 10:14:39.652671200 +08:00 INFO] [future_option_mapping]: 18.1324ms
+[2025-03-31 10:14:39.683638200 +08:00 INFO] [future_option_mapping]: 28.7991ms
+[2025-03-31 10:14:39.685182900 +08:00 INFO] [future_option_mapping]: 18.0829ms
+[2025-03-31 10:14:39.685269500 +08:00 INFO] [future_option_mapping]: 18.1567ms
+[2025-03-31 10:14:39.710667700 +08:00 INFO] [future_option_mapping]: 23.0228ms
+[2025-03-31 10:14:39.710673400 +08:00 INFO] [future_option_mapping]: 22.7536ms
+[2025-03-31 10:14:39.738044100 +08:00 INFO] [future_option_mapping]: 54.1443ms
+[2025-03-31 10:14:39.772063200 +08:00 INFO] [future_option_mapping]: 61.1317ms
+[2025-03-31 10:14:39.773474200 +08:00 INFO] [future_option_mapping]: 62.589ms
+[2025-03-31 10:14:39.775564200 +08:00 INFO] [future_option_mapping]: 23.4303ms
+[2025-03-31 10:14:39.807177500 +08:00 INFO] [future_option_mapping]: 16.8548ms
+[2025-03-31 10:14:39.809348100 +08:00 INFO] [future_option_mapping]: 22.5908ms
+[2025-03-31 10:14:40.978561500 +08:00 INFO] [query_single_position]: 76.8026ms
+[2025-03-31 10:14:40.978567600 +08:00 INFO] [query_single_position]: 89.1717ms
+[2025-03-31 10:14:40.995059300 +08:00 INFO] [query_single_position]: 28.9361ms
+[2025-03-31 10:15:53.504090700 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:15:53.524885100 +08:00 INFO] this account require 2fa
+[2025-03-31 10:15:53.562358400 +08:00 INFO] [future_option_mapping]: 18.3908ms
+[2025-03-31 10:15:53.593878300 +08:00 INFO] [future_option_mapping]: 29.2613ms
+[2025-03-31 10:15:53.650526300 +08:00 INFO] [future_option_mapping]: 56.408ms
+[2025-03-31 10:15:53.686981200 +08:00 INFO] [future_option_mapping]: 24.1441ms
+[2025-03-31 10:15:54.839215300 +08:00 INFO] [query_single_position]: 35.4935ms
+[2025-03-31 10:18:19.367553900 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:18:19.388326600 +08:00 INFO] this account require 2fa
+[2025-03-31 10:18:19.450793700 +08:00 INFO] [future_option_mapping]: 30.3408ms
+[2025-03-31 10:18:19.483301500 +08:00 INFO] [future_option_mapping]: 30.1181ms
+[2025-03-31 10:18:19.540039 +08:00 INFO] [future_option_mapping]: 56.4235ms
+[2025-03-31 10:18:19.576431600 +08:00 INFO] [future_option_mapping]: 23.9174ms
+[2025-03-31 10:18:20.808573300 +08:00 INFO] [query_single_position]: 29.5543ms
+[2025-03-31 10:37:16.082930400 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:37:16.085908900 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:37:16.092897400 +08:00 INFO] [login] personal_id="F128108470"
+[2025-03-31 10:37:16.119966300 +08:00 INFO] this account require 2fa
+[2025-03-31 10:37:16.119970900 +08:00 INFO] this account require 2fa
+[2025-03-31 10:37:16.121457900 +08:00 INFO] this account require 2fa
+[2025-03-31 10:37:16.169150300 +08:00 INFO] [future_option_mapping]: 17.7806ms
+[2025-03-31 10:37:16.174272300 +08:00 INFO] [future_option_mapping]: 34.7595ms
+[2025-03-31 10:37:16.174607300 +08:00 INFO] [future_option_mapping]: 35.088ms
+[2025-03-31 10:37:16.200658500 +08:00 INFO] [future_option_mapping]: 29.3606ms
+[2025-03-31 10:37:16.200664300 +08:00 INFO] [future_option_mapping]: 24.1829ms
+[2025-03-31 10:37:16.201652400 +08:00 INFO] [future_option_mapping]: 23.2799ms
+[2025-03-31 10:37:16.255233700 +08:00 INFO] [future_option_mapping]: 54.1723ms
+[2025-03-31 10:37:16.256057300 +08:00 INFO] [future_option_mapping]: 53.9824ms
+[2025-03-31 10:37:16.273824100 +08:00 INFO] [future_option_mapping]: 72.7758ms
+[2025-03-31 10:37:16.291815200 +08:00 INFO] [future_option_mapping]: 24.0109ms
+[2025-03-31 10:37:16.292668300 +08:00 INFO] [future_option_mapping]: 23.7369ms
+[2025-03-31 10:37:16.309730100 +08:00 INFO] [future_option_mapping]: 23.8105ms
+[2025-03-31 10:37:17.466623200 +08:00 INFO] [query_single_position]: 29.8337ms
+[2025-03-31 10:37:17.546655900 +08:00 INFO] [query_single_position]: 35.8425ms
+[2025-03-31 10:37:17.557646200 +08:00 INFO] [query_single_position]: 35.1888ms

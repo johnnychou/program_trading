@@ -46,14 +46,24 @@ if __name__ == '__main__':
     fubon_p15.start()
     Processes.append(fubon_p15)
 
-    candles_twse_30s = []
-    candles_fubon_1m = []
-    candles_fubon_5m = []
-    candles_fubon_15m = []
+    candles_twse_30s = pd.DataFrame()
+    candles_fubon_1m = pd.DataFrame()
+    candles_fubon_5m = pd.DataFrame()
+    candles_fubon_15m = pd.DataFrame()
 
     try:
         while True:
             print(realtime_candle)
+            print('===30s=============================================================================================================================')
+            print(f"{candles_twse_30s}")
+            print('===1m=============================================================================================================================')
+            print(f"{candles_fubon_1m}")
+            print('===5m=============================================================================================================================')
+            print(f"{candles_fubon_5m}")
+            print('===15m=============================================================================================================================')
+            print(f"{candles_fubon_15m}")
+
+
             # print('===30s=============================================================================================================================')
             # for i in candles_twse_30s:
             #     print(f"{i}")
@@ -68,16 +78,16 @@ if __name__ == '__main__':
             #     print(f"{i}")
 
             while not data_queue.empty():  # 非阻塞檢查Queue
-                period, tmp_list = data_queue.get()
+                period, tmp_df = data_queue.get()
                 print(f"received period[{period}] data")
                 if period == TWSE_PERIOD:
-                    candles_twse_30s = tmp_list
+                    candles_twse_30s = tmp_df
                 elif period == FUBON_PERIOD_1:
-                    candles_fubon_1m = tmp_list
+                    candles_fubon_1m = tmp_df
                 elif period == FUBON_PERIOD_5:
-                    candles_fubon_5m = tmp_list
+                    candles_fubon_5m = tmp_df
                 elif period == FUBON_PERIOD_15:
-                    candles_fubon_15m = tmp_list
+                    candles_fubon_15m = tmp_df
 
             time.sleep(0.1)
             os.system('cls')

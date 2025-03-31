@@ -22,7 +22,7 @@ class TWSE(object):
         self.period = self.period_to_seconds(period)
         self.product = product
         self.data_src = source
-        self.candles_list = []
+        self.df = pd.DataFrame(columns=['body', 'open', 'close', 'high', 'low', 'volume', 'time'])
         #process控制
         self.data_queue = data_queue #共享data
         self.realtime_candle = shared_data
@@ -58,9 +58,10 @@ class TWSE(object):
                 raise Exception("Data source error.")
 
             if candle:
-                self.candles_list.append(candle)
-                self.candles_list = self.candles_list[-CANDLE_MAX_AMOUNT:]
-                self.data_queue.put((self.key, self.candles_list))
+                new_data = pd.DataFrame(candle)
+                df = pd.concat([self.df, new_data], ignore_index=True)
+                df = df.iloc[-CANDLE_MAX_AMOUNT:]
+                self.data_queue.put((self.key, self.df))
 
     def _init_twse_requirement(self):
         self.expire_month = utils.get_expiremonth_realtime()
@@ -147,7 +148,7 @@ class TWSE(object):
                 during_time = now - start
                 if during_time >= self.period:
                     break
-                self.realtime_candle['period'] = round(during_time, 2)
+                self.realtime_candle['cnt'] = round(during_time, 2)
                 time.sleep(TWSE_DATA_RATE)
 
             if latest_data:
@@ -170,7 +171,7 @@ class TWSE(object):
                 self.realtime_candle['low'] = clow
                 self.realtime_candle['volume'] = cvolume
                 self.realtime_candle['time'] = ctime
-                self.realtime_candle['period'] = round(during_time, 2)
+                self.realtime_candle['cnt'] = round(during_time, 2)
 
             now = time.time()
             during_time = now - start
@@ -195,7 +196,6 @@ class TWSE(object):
             'low': clow,
             'volume': cvolume,
             'time': ctime,
-            'period': round(during_time, 2),
         }
         return my_candle
     
