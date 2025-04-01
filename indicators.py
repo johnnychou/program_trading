@@ -58,9 +58,44 @@ def indicator_atr(df, period=14):
         tr3 = abs(df['low'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
         tr_current = max(tr1, tr2, tr3)
 
-        atr_prev = df[key].iloc[-1]
+        atr_prev = df[key].iloc[-2]
         atr = (atr_prev * (period - 1) + tr_current) / period if len(df) >= period else tr_current
         df.loc[df.index[-1], key] = atr.round(1)
+    return
+
+def indicator_rsi(df, period=10):
+    key = RSI_PREFIX + str(period)
+
+    if key not in df.columns:
+        delta = df['close'].diff()
+        up = delta.where(delta > 0, 0)
+        down = -delta.where(delta < 0, 0)
+
+        avg_gain = up.rolling(window=period).mean().fillna(0)
+        avg_loss = down.rolling(window=period).mean().fillna(0)
+
+        rs = avg_gain / avg_loss.replace(0, 1e-10) # Pandas Series
+        rsi = (100 - (100 / (1 + rs)))
+
+        df[key] = rsi.round(1)
+    else:
+        if len(df) >= period:
+            delta = df['close'].diff()
+            up = delta.iloc[-1:].where(delta.iloc[-1:] > 0, 0).sum()
+            down = -delta.iloc[-1:].where(delta.iloc[-1:] < 0, 0).sum()
+
+            avg_gain_prev = df[key].iloc[-14:].diff().where(df[key].iloc[-14:].diff() > 0, 0).mean() if len(df) > period else 0
+            avg_loss_prev = -df[key].iloc[-14:].diff().where(df[key].iloc[-14:].diff() < 0, 0).mean() if len(df) > period else 0
+
+            avg_gain = (avg_gain_prev * (period - 1) + up) / period if period > 1 else up
+            avg_loss = (avg_loss_prev * (period - 1) + down) / period if period > 1 else down
+
+            rs = avg_gain / (avg_loss if avg_loss != 0 else 1e-10) # 避免除0
+            rsi = 100 - (100 / (1 + rs))
+
+            df.loc[df.index[-1], key] = rsi.round(1)
+        else:
+            df.loc[df.index[-1], key] = 0
     return
 
 def indicator_kd(df, n=9, k=3, d=3):
@@ -86,49 +121,22 @@ def indicator_kd(df, n=9, k=3, d=3):
         if len(df) >= n:
             low_n = df['low'].iloc[-n:].min()
             high_n = df['high'].iloc[-n:].max()
-            rsv = (df['close'].iloc[-1] - low_n) / (high_n - low_n) * 100
 
-            k_value = df[key].iloc[-k:].apply(lambda x: x[0]).mean()
-            d_value = df[key].iloc[-d:].apply(lambda x: x[1]).mean()
+            k_prev = df[key].iloc[-2][0]
+            d_prev = df[key].iloc[-2][1]
 
-            df.loc[df.index[-1], key] = [k_value, d_value, rsv]
+            if high_n == low_n:
+                k_value = k_prev
+                d_value = d_prev
+                rsv = 0
+            else:
+                rsv = (df['close'].iloc[-1] - low_n) / (high_n - low_n) * 100
+                k_value = (2 / 3) * k_prev + (1 / 3) * rsv
+                d_value = (2 / 3) * d_prev + (1 / 3) * k_value
+
+            df.at[df.index[-1], key] = (k_value.round(1), d_value.round(1), rsv.round(1))
         else:
-            df.loc[df.index[-1], key] = [50, 50, 0]
-    return
-
-def indicator_rsi(df, period=10):
-    key = RSI_PREFIX + str(period)
-
-    if key not in df.columns:
-        delta = df['close'].diff()
-        up = delta.where(delta > 0, 0)
-        down = -delta.where(delta < 0, 0)
-
-        avg_gain = up.rolling(window=period).mean().fillna(0)
-        avg_loss = down.rolling(window=period).mean().fillna(0)
-
-        rs = avg_gain / avg_loss.replace(0, 1e-10)
-        rsi = (100 - (100 / (1 + rs)))
-
-        df[key] = rsi.round(1)
-    else:
-        if len(df) >= period:
-            delta = df['close'].diff()
-            up = delta.iloc[-1:].where(delta.iloc[-1:] > 0, 0).sum()
-            down = -delta.iloc[-1:].where(delta.iloc[-1:] < 0, 0).sum()
-
-            avg_gain_prev = df[key].iloc[-14:].diff().where(df[key].iloc[-14:].diff() > 0, 0).mean() if len(df) > period else 0
-            avg_loss_prev = -df[key].iloc[-14:].diff().where(df[key].iloc[-14:].diff() < 0, 0).mean() if len(df) > period else 0
-
-            avg_gain = (avg_gain_prev * (period - 1) + up) / period if period > 1 else up
-            avg_loss = (avg_loss_prev * (period - 1) + down) / period if period > 1 else down
-
-            rs = avg_gain / avg_loss.replace(0, 1e-10)
-            rsi = 100 - (100 / (1 + rs))
-
-            df.loc[df.index[-1], key] = rsi.round(1)
-        else:
-            df.loc[df.index[-1], key] = 0
+            df.at[df.index[-1], key] = (50, 50, 0)
     return
 
 def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
@@ -157,13 +165,12 @@ def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
             fast_ema = (df['close'].iloc[-1] * (2 / (fast_period + 1)) + df['close'].iloc[-2] * (1 - (2 / (fast_period + 1)))) if len(df) > 1 else df['close'].iloc[-1]
             slow_ema = (df['close'].iloc[-1] * (2 / (slow_period + 1)) + df['close'].iloc[-2] * (1 - (2 / (slow_period + 1)))) if len(df) > 1 else df['close'].iloc[-1]
             macd_line = fast_ema - slow_ema
-            signal_line = (macd_line * (2 / (signal_period + 1)) + df[key].iloc[-1][1] * (1 - (2 / (signal_period + 1)))) if len(df) >= signal_period else macd_line
+            signal_line = (macd_line * (2 / (signal_period + 1)) + df[key].iloc[-2][1] * (1 - (2 / (signal_period + 1)))) if len(df) >= signal_period else macd_line
             hist = macd_line - signal_line
 
-            df.loc[df.index[-1], key] = [macd_line.round(1), signal_line.round(1), hist.round(1)]
+            df.at[df.index[-1], key] = (macd_line.round(1), signal_line.round(1), hist.round(1))
         else:
-            # 資料不足時的處理
-            df.loc[df.index[-1], key] = [0, 0, 0]
+            df.at[df.index[-1], key] = (0, 0, 0)
     return
 
 def indicator_bollingsband(df, period=20, std_dev=2):
@@ -192,7 +199,7 @@ def indicator_bollingsband(df, period=20, std_dev=2):
             upper_band = mid_band + std_dev * std
             lower_band = mid_band - std_dev * std
 
-            df.loc[df.index[-1], key] = [mid_band.round(1), upper_band.round(1), lower_band.round(1)]
+            df.at[df.index[-1], key] = (mid_band.round(1), upper_band.round(1), lower_band.round(1))
         else:
-            df.loc[df.index[-1], key] = [0, 0, 0]
+            df.at[df.index[-1], key] = (0, 0, 0)
     return
