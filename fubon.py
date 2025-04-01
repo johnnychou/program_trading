@@ -78,7 +78,6 @@ class Fubon_api(object):
         #檢查最後一筆資料是不是完整candle
         localtime = time.localtime()
         last_data_min = int(candles_list[-1]['date'].split('T')[1].split(':')[1])
-
         if last_data_min == localtime.tm_min:
             del candles_list[-1]
     

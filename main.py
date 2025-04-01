@@ -77,7 +77,8 @@ if __name__ == '__main__':
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
-                print(f"received period[{period}] data")
+                # print(f"received period[{period}] data")
+                # print(f"{tmp_df}")
                 if period == TWSE_PERIOD:
                     df_twse_30s = tmp_df
                 elif period == FUBON_PERIOD_1:
