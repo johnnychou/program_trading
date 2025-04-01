@@ -58,9 +58,9 @@ class TWSE(object):
                 raise Exception("Data source error.")
 
             if candle:
-                new_data = pd.DataFrame(candle)
-                df = pd.concat([self.df, new_data], ignore_index=True)
-                df = df.iloc[-CANDLE_MAX_AMOUNT:]
+                new_row = pd.DataFrame([candle])
+                self.df = pd.concat([self.df, new_row], ignore_index=True)
+                self.df = self.df.iloc[-CANDLE_MAX_AMOUNT:]
                 self.data_queue.put((self.key, self.df))
 
     def _init_twse_requirement(self):
@@ -189,13 +189,13 @@ class TWSE(object):
             body = 0
 
         my_candle = {
+            'time': ctime,
             'body': body,
             'open': copen,
-            'close': cclose,
             'high': chigh,
             'low': clow,
+            'close': cclose,
             'volume': cvolume,
-            'time': ctime,
         }
         return my_candle
     

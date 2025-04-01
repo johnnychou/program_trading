@@ -10,12 +10,24 @@ import pandas as pd
 
 import twse
 import fubon
+import indicators
 
 PRODUCT = 'MXF'
 TWSE_PERIOD = '30s'
 FUBON_PERIOD_1 = '1m'
 FUBON_PERIOD_5 = '5m'
 FUBON_PERIOD_15 = '15m'
+
+def indicators_calculation(df):
+    indicators.indicator_ma(df, 10)
+    indicators.indicator_ema(df, 5)
+    indicators.indicator_atr(df, 14)
+    indicators.indicator_rsi(df, 10)
+    indicators.indicator_kd(df, 9)
+    indicators.indicator_macd(df)
+    indicators.indicator_bollingsband(df, 20)
+    return
+
 
 if __name__ == '__main__':
     Processes = []
@@ -46,48 +58,34 @@ if __name__ == '__main__':
     fubon_p15.start()
     Processes.append(fubon_p15)
 
-    candles_twse_30s = pd.DataFrame()
-    candles_fubon_1m = pd.DataFrame()
-    candles_fubon_5m = pd.DataFrame()
-    candles_fubon_15m = pd.DataFrame()
+    df_twse_30s = pd.DataFrame()
+    df_fubon_1m = pd.DataFrame()
+    df_fubon_5m = pd.DataFrame()
+    df_fubon_15m = pd.DataFrame()
 
     try:
         while True:
             print(realtime_candle)
             print('===30s=============================================================================================================================')
-            print(f"{candles_twse_30s}")
+            print(f"{df_twse_30s}")
             print('===1m=============================================================================================================================')
-            print(f"{candles_fubon_1m}")
+            print(f"{df_fubon_1m}")
             print('===5m=============================================================================================================================')
-            print(f"{candles_fubon_5m}")
+            print(f"{df_fubon_5m}")
             print('===15m=============================================================================================================================')
-            print(f"{candles_fubon_15m}")
-
-
-            # print('===30s=============================================================================================================================')
-            # for i in candles_twse_30s:
-            #     print(f"{i}")
-            # print('===1m=============================================================================================================================')
-            # for i in candles_fubon_1m:
-            #     print(f"{i}")
-            # print('===5m=============================================================================================================================')
-            # for i in candles_fubon_5m:
-            #     print(f"{i}")
-            # print('===15m=============================================================================================================================')
-            # for i in candles_fubon_15m:
-            #     print(f"{i}")
+            print(f"{df_fubon_15m}")
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
                 print(f"received period[{period}] data")
                 if period == TWSE_PERIOD:
-                    candles_twse_30s = tmp_df
+                    df_twse_30s = tmp_df
                 elif period == FUBON_PERIOD_1:
-                    candles_fubon_1m = tmp_df
+                    df_fubon_1m = tmp_df
                 elif period == FUBON_PERIOD_5:
-                    candles_fubon_5m = tmp_df
+                    df_fubon_5m = tmp_df
                 elif period == FUBON_PERIOD_15:
-                    candles_fubon_15m = tmp_df
+                    df_fubon_15m = tmp_df
 
             time.sleep(0.1)
             os.system('cls')
