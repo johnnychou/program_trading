@@ -42,7 +42,10 @@ class Fubon_api(object):
         return value  # 如果單位不正確，則傳回 None
 
     def get_candles(self):
-        self._init_data()
+        candles_list = self.get_candles_list()
+        df = pd.DataFrame(candles_list)
+        self.data_queue.put((self.key, df))
+
         while True:
             utils.sync_time(self.period)
             market = utils.get_market_type()
@@ -56,7 +59,6 @@ class Fubon_api(object):
             localtime = time.localtime()
             last_data_min = int(candles_list[-1]['date'].split('T')[1].split(':')[1])
             if last_data_min == localtime.tm_min:
-                print(f'=====del {candles_list[-1]}=====')
                 del candles_list[-1]
 
             df = pd.DataFrame(candles_list)
@@ -65,13 +67,21 @@ class Fubon_api(object):
 
     def get_candles_list(self):
         self._init_data()
+        candles_list = []
         market = utils.get_market_type()
         if market == '0':
             data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
         else:
             data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
-
         candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
+
+        #檢查最後一筆資料是不是完整candle
+        localtime = time.localtime()
+        last_data_min = int(candles_list[-1]['date'].split('T')[1].split(':')[1])
+
+        if last_data_min == localtime.tm_min:
+            del candles_list[-1]
+    
         return candles_list
 
     def login_account(self, retrytimes=6):
