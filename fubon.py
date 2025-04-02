@@ -25,10 +25,13 @@ class Fubon_trade(object):
         self.Restfut = None
         self.Trade_symbol = None
         self.product = product
-        self.SDK = FubonSDK()
 
+        self.SDK = FubonSDK()
         self.login_account()
+        self.SDK.init_realtime(Mode.Normal)
+        self.Restfut = self.SDK.marketdata.rest_client.futopt
         self.Acc_futures = self.get_future_account()
+        self.Trade_symbol = self.get_trade_symbol()
         self._set_event()
         return
 
@@ -107,16 +110,20 @@ class Fubon_trade(object):
         # print(content.filled_no)  # 印出成交流水號
         print("===Filled===")
 
-    def update_equity(self):
+    def update_margin_equity(self):
         try:
             req = self.SDK.futopt_accounting.query_margin_equity(self.Acc_futures)
+            print(req)
             equity = req.data[0].today_equity
+            initial_margin = req.data[0].initial_margin
+            maintenance_margin = req.data[0].maintenance_margin
+
         except:
             print('Get account equity error')
         
-        return equity
+        return equity, [initial_margin, maintenance_margin]
 
-    def send_order(self, product, decision, amount=1):
+    def send_order(self, decision, amount=1):
         # 1=buy, -1=sell
         if decision == 1:
             buy_or_sell = BSAction.Buy
@@ -135,7 +142,7 @@ class Fubon_trade(object):
 
         order = FutOptOrder(
             buy_sell = buy_or_sell,
-            symbol = product,
+            symbol = self.Trade_symbol,
             lot = amount,
             market_type = market,
             price_type = FutOptPriceType.RangeMarket,

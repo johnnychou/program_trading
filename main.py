@@ -31,7 +31,12 @@ def indicators_calculation(df):
 
 if __name__ == '__main__':
 
-    #Fubon_data = fubon.Fubon_trade('TMF')
+    Buy_at = []
+    Sell_at = []
+    Trade_record = []
+    
+    fubon_acc = fubon.Fubon_trade('TMF')
+    Buy_at, Sell_at = fubon_acc.update_position_holded()
 
 
     Processes = []
