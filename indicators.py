@@ -61,11 +61,11 @@ def indicator_rsi(df, period=10):
         up = delta.where(delta > 0, 0)
         down = -delta.where(delta < 0, 0)
 
-        avg_gain = up.rolling(window=period).mean().fillna(0).astype(float)
-        avg_loss = down.rolling(window=period).mean().fillna(0).astype(float)
+        avg_gain = up.rolling(window=period).mean().astype(float)
+        avg_loss = down.rolling(window=period).mean().astype(float)
 
         rs = avg_gain / avg_loss
-        rsi = (100 - (100 / (1 + rs)))
+        rsi = (100 - (100 / (1 + rs))).fillna(0).astype(float)
 
         df[key] = rsi.round(1)
     else:
