@@ -64,7 +64,7 @@ def indicator_rsi(df, period=10):
         avg_gain = up.rolling(window=period).mean().fillna(0).astype(float)
         avg_loss = down.rolling(window=period).mean().fillna(0).astype(float)
 
-        rs = avg_gain / avg_loss.replace(0, 1e-10) # Pandas Series
+        rs = avg_gain / avg_loss
         rsi = (100 - (100 / (1 + rs)))
 
         df[key] = rsi.round(1)
@@ -80,7 +80,7 @@ def indicator_rsi(df, period=10):
             avg_gain = (avg_gain_prev * (period - 1) + up) / period if period > 1 else up
             avg_loss = (avg_loss_prev * (period - 1) + down) / period if period > 1 else down
 
-            rs = avg_gain / (avg_loss if avg_loss != 0 else 1e-10) # 避免除0
+            rs = avg_gain / avg_loss
             rsi = 100 - (100 / (1 + rs))
 
             df.loc[df.index[-1], key] = rsi.round(1)
@@ -100,47 +100,42 @@ def indicator_kd(df, n=9, k=3, d=3):
     key = KD_PREFIX + str(n)
 
     if key not in df.columns:  # 首次計算
-        k_values = [50] * n  # 前 n 筆 K 值設為 50
-        d_values = [50] * n  # 前 n 筆 D 值設為 50
-        rsv_values = [0] * n  # 前 n 筆 RSV 值設為 0
-        
-        # 計算第 n 筆資料後開始的值
-        for i in range(n, len(df)):
-            # 計算 RSV
-            low_n = df['low'].iloc[i-n:i].min()  # 取最近 n 筆資料中的最低價
-            high_n = df['high'].iloc[i-n:i].max()  # 取最近 n 筆資料中的最高價
-            rsv = (df['close'].iloc[i] - low_n) / (high_n - low_n) * 100
+        k_values = [50] * len(df)
+        d_values = [50] * len(df)
+        rsv_values = [0] * len(df)
 
-            # 計算 K 和 D
-            k_value = (1 - (1/k)) * k_values[-1] + (1/k) * rsv
-            d_value = (1 - (1/d)) * d_values[-1] + (1/d) * k_value
+        if len(df) >= n:
+            for i in range(n - 1, len(df)):
+                low_n = df['low'].iloc[i - n + 1 : i + 1].min()
+                high_n = df['high'].iloc[i - n + 1 : i + 1].max()
+                if high_n == low_n:
+                    rsv = 0
+                else:
+                    rsv = (df['close'].iloc[i] - low_n) / (high_n - low_n) * 100
 
-            # 儲存結果
-            k_values.append(k_value.round(1))
-            d_values.append(d_value.round(1))
-            rsv_values.append(rsv.round(1))
+                k_values[i] = (1 - (1 / k)) * k_values[i - 1] + (1 / k) * rsv
+                d_values[i] = (1 - (1 / d)) * d_values[i - 1] + (1 / d) * k_values[i]
+                rsv_values[i] = rsv
 
-        # 初始化 KD 和 RSV
-        df[key] = list(zip(k_values, d_values, rsv_values))
+        df[key] = list(zip(pd.Series(k_values).round(1), pd.Series(d_values).round(1), pd.Series(rsv_values).round(1)))
+    
     else:  # 後續計算
         if len(df) >= n:
-            # 計算 RSV
             low_n = df['low'].iloc[-n:].min()
             high_n = df['high'].iloc[-n:].max()
-            rsv = (df['close'].iloc[-1] - low_n) / (high_n - low_n) * 100
+            if high_n == low_n:
+                rsv = 0
+            else:
+                rsv = (df['close'].iloc[-1] - low_n) / (high_n - low_n) * 100
 
-            # 取前一筆資料的 K 和 D
-            k_prev = df[key].iloc[-2][0] if len(df[key]) > 1 else 50
-            d_prev = df[key].iloc[-2][1] if len(df[key]) > 1 else 50
+            k_prev = df[key].iloc[-2][0]
+            d_prev = df[key].iloc[-2][1]
 
-            # 計算 K 和 D
-            k_value = (1 - (1/k)) * k_prev + (1/k) * rsv
-            d_value = (1 - (1/d)) * d_prev + (1/d) * k_value
+            k_value = (1 - (1 / k)) * k_prev + (1 / k) * rsv
+            d_value = (1 - (1 / d)) * d_prev + (1 / d) * k_value
 
-            # 更新資料
-            df.at[df.index[-1], key] = (k_value.round(1), d_value.round(1), rsv.round(1))
+            df.at[df.index[-1], key] = (round(k_value,1), round(d_value,1), round(rsv,1))
         else:
-            # 第 n 筆之前維持 (50, 50, 0)
             df.at[df.index[-1], key] = (50, 50, 0)
 
     return
@@ -190,22 +185,11 @@ def indicator_bollingsband(df, period=20, std_dev=2):
     """
     key = BB_PREFIX + str(period)
 
-    if key not in df.columns:
-        mid_band = df['close'].rolling(window=period).mean().fillna(0).astype(int)
-        std = df['close'].rolling(window=period).std().fillna(0).astype(int)
-        upper_band = mid_band + std_dev * std
-        lower_band = mid_band - std_dev * std
+    mid_band = df['close'].rolling(window=period, min_periods=1).mean().astype(int)
+    std = df['close'].rolling(window=period, min_periods=1).std().astype(float)
+    upper_band = mid_band + std_dev * std
+    lower_band = mid_band - std_dev * std
 
-        df[key] = list(zip(mid_band.round(1), upper_band.round(1), lower_band.round(1)))
+    df[key] = list(zip(mid_band.round(1), upper_band.round(1), lower_band.round(1)))
 
-    else:
-        if len(df) >= period:
-            mid_band = df['close'].rolling(window=period).mean().iloc[-1]
-            std = df['close'].rolling(window=period).std().iloc[-1]
-            upper_band = mid_band + std_dev * std
-            lower_band = mid_band - std_dev * std
-
-            df.at[df.index[-1], key] = (mid_band.round(1), upper_band.round(1), lower_band.round(1))
-        else:
-            df.at[df.index[-1], key] = (0, 0, 0)
     return
