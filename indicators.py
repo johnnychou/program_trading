@@ -110,53 +110,46 @@ def indicator_kd(df, n=9, k=3, d=3):
     key = KD_PREFIX + str(n)
 
     if key not in df.columns:  # 首次計算
+        # 計算 RSV
         low_n = df['low'].rolling(window=n).min()
         high_n = df['high'].rolling(window=n).max()
-        differ = high_n - low_n
+        rsv = ((df['close'] - low_n) / (high_n - low_n) * 100).round(1).fillna(0)
+        
+        # 設定第一筆 K 和 D 為 50，RSV 為 0
+        k_values = [50]  # 第一筆 K 設為 50
+        d_values = [50]  # 第一筆 D 設為 50
+        
+        # 從第二筆資料開始計算
+        for i in range(1, len(df)):  # 改為 len(df)
+            k_value = (1 - (1/k)) * k_values[-1] + (1/k) * rsv.iloc[i]
+            d_value = (1 - (1/d)) * d_values[-1] + (1/d) * k_value
+            k_values.append(k_value.round(1))
+            d_values.append(d_value.round(1))
 
-        rsv_values = []
-        k_values = []
-        d_values = []
-
-        for i in range(len(df)):
-            if pd.isna(differ[i]) or differ[i] == 0:
-                if i == 0:
-                    rsv_values.append(0)  # 第一筆資料RSV為0
-                    k_values.append(50)  # 第一筆資料K,D用50
-                    d_values.append(50)
-                else:
-                    rsv_values.append(0)  # RSV填0
-                    k_values.append(k_values[i - 1])  # K,D填上1筆資料
-                    d_values.append(d_values[i - 1])
-            else:
-                rsv = ((df['close'][i] - low_n[i]) / differ[i] * 100).round(1)
-                rsv_values.append(rsv)
-                k_values.append(pd.Series(rsv_values).rolling(window=k).mean().round(1)[i]) #因為rsv_values 是list, 無法直接使用rolling.
-                d_values.append(pd.Series(k_values).rolling(window=d).mean().round(1)[i])
-
-        df[key] = list(zip(k_values, d_values, rsv_values))
+        # 初始化 KD 和 RSV
+        df[key] = list(zip(k_values, d_values, rsv))
 
     else:  # 後續計算
-        if len(df) >= n:
-            low_n = df['low'].iloc[-n:].min()
-            high_n = df['high'].iloc[-n:].max()
+        if len(df) > 1:
+            # 如果資料筆數小於 n，使用實際的資料筆數進行計算
+            low_n = df['low'].iloc[-min(n, len(df)):].min()  # 取最近 n 或資料筆數的最小值
+            high_n = df['high'].iloc[-min(n, len(df)):].max()  # 取最近 n 或資料筆數的最小值
+            rsv = (df['close'].iloc[-1] - low_n) / (high_n - low_n) * 100
 
-            k_prev = df[key].iloc[-2][0]
-            d_prev = df[key].iloc[-2][1]
+            # 取前一筆資料的 K 和 D
+            k_prev = df[key].iloc[-2][0] if len(df[key]) > 1 else 50
+            d_prev = df[key].iloc[-2][1] if len(df[key]) > 1 else 50
 
-            if high_n == low_n:
-                k_value = k_prev
-                d_value = d_prev
-                rsv = 0
-            else:
-                rsv = (df['close'].iloc[-1] - low_n) / (high_n - low_n) * 100
-                k_value = (2 / 3) * k_prev + (1 / 3) * rsv
-                d_value = (2 / 3) * d_prev + (1 / 3) * k_value
+            # 計算 K 和 D
+            k_value = (1 - (1/k)) * k_prev + (1/k) * rsv
+            d_value = (1 - (1/d)) * d_prev + (1/d) * k_value
 
+            # 更新資料
             df.at[df.index[-1], key] = (k_value.round(1), d_value.round(1), rsv.round(1))
         else:
+            # 初始資料設為 (50, 50, 0)
             df.at[df.index[-1], key] = (50, 50, 0)
-            
+
     return
 
 def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
