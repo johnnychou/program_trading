@@ -1,0 +1,28 @@
+
+mock_query_single_position = {
+  'is_success': True,
+  'message': None,
+  'data': [{
+    'date': "2025/04/02",
+    'branch_no': "15000",
+    'account': "5019632",
+    'position_kind': 1,
+    'order_no': "s02c6-0000",
+    'symbol': "FITM",
+    'expiry_date': "202504",
+    'strike_price': None,
+    'call_put': None,
+    'buy_sell': 'Buy',
+    'price': 21300,
+    'orig_lots': 1,
+    'tradable_lot': 1,
+    'order_type': 'New',
+    'currency': "TWD",
+    'profit_or_loss': -70.0,
+    'market_price': "21293.0000",
+    'initial_margin': 15350.0,
+    'maintenance_margin': 11750.0,
+    'clearing_margin': 11350.0,
+    'premium': 0.0,
+}]
+}
