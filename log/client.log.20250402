@@ -158,3 +158,60 @@
 [2025-04-02 18:53:35.355966900 +08:00 INFO] [get equity]: 79.7263ms
 [2025-04-02 18:53:35.363146800 +08:00 INFO] [place_futopt_order] account=Account { branch_no: "15000", account: "5019632", account_type: "futopt", name: "周政緯" },order=FutOptOrder { oxtp: NewOrder, market_type: FutureNight, date: "20250402", buy_sell: Sell, symbol: "TMFD5", market: "TAIMEX", price_type: RangeMarket, price: None, lot: 1, time_in_force: IOC, order_type: Auto, symbol2: None, buy_sell2: None, user_def: "PythonAPI" }, is_async=false
 [2025-04-02 18:53:35.467685800 +08:00 INFO] [place_futopt_order]: 104.5396ms
+[2025-04-02 18:56:43.407545 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 18:56:43.438729500 +08:00 INFO] this account require 2fa
+[2025-04-02 18:56:43.487535900 +08:00 INFO] [future_option_mapping]: 17.6646ms
+[2025-04-02 18:56:43.515316700 +08:00 INFO] [future_option_mapping]: 25.6897ms
+[2025-04-02 18:56:43.573824 +08:00 INFO] [future_option_mapping]: 58.2682ms
+[2025-04-02 18:56:43.610656100 +08:00 INFO] [future_option_mapping]: 26.8468ms
+[2025-04-02 18:56:44.747882900 +08:00 INFO] [query_single_position]: 28.3385ms
+[2025-04-02 18:56:44.825014700 +08:00 INFO] [get equity]: 76.3015ms
+[2025-04-02 19:09:38.667660400 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 19:09:38.698807400 +08:00 INFO] this account require 2fa
+[2025-04-02 19:09:38.744693300 +08:00 INFO] [future_option_mapping]: 17.4515ms
+[2025-04-02 19:09:38.774404900 +08:00 INFO] [future_option_mapping]: 27.5812ms
+[2025-04-02 19:09:38.830414900 +08:00 INFO] [future_option_mapping]: 55.7731ms
+[2025-04-02 19:09:38.866169 +08:00 INFO] [future_option_mapping]: 25.895ms
+[2025-04-02 19:09:40.198456 +08:00 INFO] [query_single_position]: 43.2219ms
+[2025-04-02 19:09:40.277269800 +08:00 INFO] [get equity]: 77.98ms
+[2025-04-02 19:09:40.304263400 +08:00 INFO] [get_order_results] account=Account { branch_no: "20203", account: "732387", account_type: "stock", name: "周政緯" }
+[2025-04-02 19:10:38.182475800 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 19:10:38.218298700 +08:00 INFO] this account require 2fa
+[2025-04-02 19:10:38.267781100 +08:00 INFO] [future_option_mapping]: 18.409ms
+[2025-04-02 19:10:38.296785400 +08:00 INFO] [future_option_mapping]: 26.8589ms
+[2025-04-02 19:10:38.353819500 +08:00 INFO] [future_option_mapping]: 56.8131ms
+[2025-04-02 19:10:38.386582700 +08:00 INFO] [future_option_mapping]: 22.2232ms
+[2025-04-02 19:10:39.513637700 +08:00 INFO] [query_single_position]: 31.8915ms
+[2025-04-02 19:10:39.605506 +08:00 INFO] [get equity]: 91.0259ms
+[2025-04-02 19:10:39.612516300 +08:00 INFO] [get_order_results] account=Account { branch_no: "15000", account: "5019632", account_type: "futopt", name: "周政緯" }
+[2025-04-02 19:10:39.641518200 +08:00 INFO] [order_result]: 28.9539ms
+[2025-04-02 19:19:30.459984800 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 19:19:30.480070600 +08:00 INFO] this account require 2fa
+[2025-04-02 19:19:30.542606300 +08:00 INFO] [future_option_mapping]: 30.5598ms
+[2025-04-02 19:19:30.574106600 +08:00 INFO] [future_option_mapping]: 29.3743ms
+[2025-04-02 19:19:30.633224400 +08:00 INFO] [future_option_mapping]: 58.6667ms
+[2025-04-02 19:19:30.667027800 +08:00 INFO] [future_option_mapping]: 21.0601ms
+[2025-04-02 19:19:31.803633900 +08:00 INFO] [query_single_position]: 35.532ms
+[2025-04-02 19:19:31.911690100 +08:00 INFO] [get equity]: 107.4273ms
+[2025-04-02 19:19:31.918701400 +08:00 INFO] [get_order_results] account=Account { branch_no: "15000", account: "5019632", account_type: "futopt", name: "周政緯" }
+[2025-04-02 19:19:31.948501200 +08:00 INFO] [order_result]: 29.7406ms
+[2025-04-02 19:21:07.980968600 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 19:21:08.000078900 +08:00 INFO] this account require 2fa
+[2025-04-02 19:21:08.047748300 +08:00 INFO] [future_option_mapping]: 18.1956ms
+[2025-04-02 19:21:08.076848300 +08:00 INFO] [future_option_mapping]: 27.1072ms
+[2025-04-02 19:21:08.130096600 +08:00 INFO] [future_option_mapping]: 53.0183ms
+[2025-04-02 19:21:08.166314100 +08:00 INFO] [future_option_mapping]: 26.3893ms
+[2025-04-02 19:21:09.306919600 +08:00 INFO] [query_single_position]: 27.6578ms
+[2025-04-02 19:21:09.398959 +08:00 INFO] [get equity]: 91.3051ms
+[2025-04-02 19:21:09.405977700 +08:00 INFO] [get_order_results] account=Account { branch_no: "15000", account: "5019632", account_type: "futopt", name: "周政緯" }
+[2025-04-02 19:21:09.428945400 +08:00 INFO] [order_result]: 22.8992ms
+[2025-04-02 19:24:38.198229700 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 19:24:38.223180400 +08:00 INFO] this account require 2fa
+[2025-04-02 19:24:38.271878500 +08:00 INFO] [future_option_mapping]: 18.4096ms
+[2025-04-02 19:24:38.300850800 +08:00 INFO] [future_option_mapping]: 26.9438ms
+[2025-04-02 19:24:38.358339300 +08:00 INFO] [future_option_mapping]: 57.2757ms
+[2025-04-02 19:24:38.390206300 +08:00 INFO] [future_option_mapping]: 21.8102ms
+[2025-04-02 19:24:39.567674500 +08:00 INFO] [query_single_position]: 33.4474ms
+[2025-04-02 19:24:39.643648 +08:00 INFO] [get equity]: 75.1697ms
+[2025-04-02 19:24:39.650794200 +08:00 INFO] [get_order_results] account=Account { branch_no: "15000", account: "5019632", account_type: "futopt", name: "周政緯" }
+[2025-04-02 19:24:39.673561 +08:00 INFO] [order_result]: 22.7356ms

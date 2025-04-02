@@ -160,6 +160,11 @@ class Fubon_trade(object):
         winsound.Beep(3000,100)
         return 0
     
+    def get_order_results(self):
+        orderResults = self.SDK.futopt.get_order_results(self.Acc_futures)
+        price = orderResults.data[-1].filled_money
+        return price
+    
     def update_position_holded(self):
         Buy_at = []
         Sel_at = []

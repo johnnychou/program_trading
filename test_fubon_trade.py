@@ -22,4 +22,5 @@ if __name__ == '__main__':
         max_lots = equity // (margin[0]*1.2)
         print(f'max_lots: {max_lots}')
 
-    fubon_acc.send_order(-1)
+    trade_price = fubon_acc.get_order_results()
+    print(trade_price)
