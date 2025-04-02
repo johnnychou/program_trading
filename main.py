@@ -21,12 +21,13 @@ FUBON_PERIOD_15 = '15m'
 def indicators_calculation(df):
     indicators.indicator_ma(df, 10)
     indicators.indicator_ema(df, 5)
+    indicators.indicator_ema(df, 20)
     indicators.indicator_atr(df, 14)
     indicators.indicator_rsi(df, 10)
     indicators.indicator_kd(df, 9)
     indicators.indicator_macd(df)
     indicators.indicator_bollingsband(df, 20)
-    return
+    return df
 
 
 if __name__ == '__main__':
@@ -74,20 +75,22 @@ if __name__ == '__main__':
 
     try:
         while True:
+            print('==================================')
             print(realtime_candle)
-            print('===30s=============================================================================================================================')
+            print('===30s============================')
             print(f"{df_twse_30s}")
-            print('===1m=============================================================================================================================')
+            print('===1m=============================')
             print(f"{df_fubon_1m}")
-            print('===5m=============================================================================================================================')
+            print('===5m=============================')
             print(f"{df_fubon_5m}")
-            print('===15m=============================================================================================================================')
+            print('===15m============================')
             print(f"{df_fubon_15m}")
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
                 # print(f"received period[{period}] data")
                 # print(f"{tmp_df}")
+                tmp_df = indicators_calculation(tmp_df)
                 if period == TWSE_PERIOD:
                     df_twse_30s = tmp_df
                 elif period == FUBON_PERIOD_1:
@@ -97,7 +100,7 @@ if __name__ == '__main__':
                 elif period == FUBON_PERIOD_15:
                     df_fubon_15m = tmp_df
 
-            time.sleep(0.1)
+            time.sleep(5)
             os.system('cls')
 
     except KeyboardInterrupt:

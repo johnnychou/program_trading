@@ -51,7 +51,7 @@ def indicator_atr(df, period=14):
         tr3 = abs(df['low'] - df['close'].shift())
         tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-        df[key] = tr.rolling(window=period).mean().round(1).fillna(0)
+        df[key] = tr.rolling(window=period).mean().round(1).fillna(0).astype(float)
     else:
         tr1 = df['high'].iloc[-1] - df['low'].iloc[-1]
         tr2 = abs(df['high'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
@@ -71,8 +71,8 @@ def indicator_rsi(df, period=10):
         up = delta.where(delta > 0, 0)
         down = -delta.where(delta < 0, 0)
 
-        avg_gain = up.rolling(window=period).mean().fillna(0)
-        avg_loss = down.rolling(window=period).mean().fillna(0)
+        avg_gain = up.rolling(window=period).mean().fillna(0).astype(float)
+        avg_loss = down.rolling(window=period).mean().fillna(0).astype(float)
 
         rs = avg_gain / avg_loss.replace(0, 1e-10) # Pandas Series
         rsi = (100 - (100 / (1 + rs)))
@@ -112,11 +112,30 @@ def indicator_kd(df, n=9, k=3, d=3):
     if key not in df.columns:  # 首次計算
         low_n = df['low'].rolling(window=n).min()
         high_n = df['high'].rolling(window=n).max()
-        rsv = ((df['close'] - low_n) / (high_n - low_n) * 100).round(1).fillna(50)
-        k_values = rsv.rolling(window=k).mean().round(1).fillna(50)
-        d_values = k_values.rolling(window=d).mean().round(1).fillna(50)
+        differ = high_n - low_n
 
-        df[key] = list(zip(k_values, d_values, rsv))
+        rsv_values = []
+        k_values = []
+        d_values = []
+
+        for i in range(len(df)):
+            if pd.isna(differ[i]) or differ[i] == 0:
+                if i == 0:
+                    rsv_values.append(0)  # 第一筆資料RSV為0
+                    k_values.append(50)  # 第一筆資料K,D用50
+                    d_values.append(50)
+                else:
+                    rsv_values.append(0)  # RSV填0
+                    k_values.append(k_values[i - 1])  # K,D填上1筆資料
+                    d_values.append(d_values[i - 1])
+            else:
+                rsv = ((df['close'][i] - low_n[i]) / differ[i] * 100).round(1)
+                rsv_values.append(rsv)
+                k_values.append(pd.Series(rsv_values).rolling(window=k).mean().round(1)[i]) #因為rsv_values 是list, 無法直接使用rolling.
+                d_values.append(pd.Series(k_values).rolling(window=d).mean().round(1)[i])
+
+        df[key] = list(zip(k_values, d_values, rsv_values))
+
     else:  # 後續計算
         if len(df) >= n:
             low_n = df['low'].iloc[-n:].min()
@@ -137,6 +156,7 @@ def indicator_kd(df, n=9, k=3, d=3):
             df.at[df.index[-1], key] = (k_value.round(1), d_value.round(1), rsv.round(1))
         else:
             df.at[df.index[-1], key] = (50, 50, 0)
+            
     return
 
 def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
@@ -185,8 +205,8 @@ def indicator_bollingsband(df, period=20, std_dev=2):
     key = BB_PREFIX + str(period)
 
     if key not in df.columns:
-        mid_band = df['close'].rolling(window=period).mean().fillna(0)
-        std = df['close'].rolling(window=period).std().fillna(0)
+        mid_band = df['close'].rolling(window=period).mean().fillna(0).astype(int)
+        std = df['close'].rolling(window=period).std().fillna(0).astype(int)
         upper_band = mid_band + std_dev * std
         lower_band = mid_band - std_dev * std
 
