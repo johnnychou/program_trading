@@ -110,30 +110,33 @@ def indicator_kd(df, n=9, k=3, d=3):
     key = KD_PREFIX + str(n)
 
     if key not in df.columns:  # 首次計算
-        # 計算 RSV
-        low_n = df['low'].rolling(window=n).min()
-        high_n = df['high'].rolling(window=n).max()
-        rsv = ((df['close'] - low_n) / (high_n - low_n) * 100).round(1).fillna(0)
+        k_values = [50] * n  # 前 n 筆 K 值設為 50
+        d_values = [50] * n  # 前 n 筆 D 值設為 50
+        rsv_values = [0] * n  # 前 n 筆 RSV 值設為 0
         
-        # 設定第一筆 K 和 D 為 50，RSV 為 0
-        k_values = [50]  # 第一筆 K 設為 50
-        d_values = [50]  # 第一筆 D 設為 50
-        
-        # 從第二筆資料開始計算
-        for i in range(1, len(df)):  # 改為 len(df)
-            k_value = (1 - (1/k)) * k_values[-1] + (1/k) * rsv.iloc[i]
+        # 計算第 n 筆資料後開始的值
+        for i in range(n, len(df)):
+            # 計算 RSV
+            low_n = df['low'].iloc[i-n:i].min()  # 取最近 n 筆資料中的最低價
+            high_n = df['high'].iloc[i-n:i].max()  # 取最近 n 筆資料中的最高價
+            rsv = (df['close'].iloc[i] - low_n) / (high_n - low_n) * 100
+
+            # 計算 K 和 D
+            k_value = (1 - (1/k)) * k_values[-1] + (1/k) * rsv
             d_value = (1 - (1/d)) * d_values[-1] + (1/d) * k_value
+
+            # 儲存結果
             k_values.append(k_value.round(1))
             d_values.append(d_value.round(1))
+            rsv_values.append(rsv.round(1))
 
         # 初始化 KD 和 RSV
-        df[key] = list(zip(k_values, d_values, rsv))
-
+        df[key] = list(zip(k_values, d_values, rsv_values))
     else:  # 後續計算
-        if len(df) > 1:
-            # 如果資料筆數小於 n，使用實際的資料筆數進行計算
-            low_n = df['low'].iloc[-min(n, len(df)):].min()  # 取最近 n 或資料筆數的最小值
-            high_n = df['high'].iloc[-min(n, len(df)):].max()  # 取最近 n 或資料筆數的最小值
+        if len(df) >= n:
+            # 計算 RSV
+            low_n = df['low'].iloc[-n:].min()
+            high_n = df['high'].iloc[-n:].max()
             rsv = (df['close'].iloc[-1] - low_n) / (high_n - low_n) * 100
 
             # 取前一筆資料的 K 和 D
@@ -147,7 +150,7 @@ def indicator_kd(df, n=9, k=3, d=3):
             # 更新資料
             df.at[df.index[-1], key] = (k_value.round(1), d_value.round(1), rsv.round(1))
         else:
-            # 初始資料設為 (50, 50, 0)
+            # 第 n 筆之前維持 (50, 50, 0)
             df.at[df.index[-1], key] = (50, 50, 0)
 
     return
