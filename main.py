@@ -30,6 +30,10 @@ def indicators_calculation(df):
 
 
 if __name__ == '__main__':
+
+    #Fubon_data = fubon.Fubon_trade('TMF')
+
+
     Processes = []
     data_queue = multiprocessing.Queue()
     realtime_candle = multiprocessing.Manager().dict() #shared dict
@@ -40,19 +44,19 @@ if __name__ == '__main__':
     twse_p.start()
     Processes.append(twse_p)
 
-    fubon_1m = fubon.Fubon_api(FUBON_PERIOD_1, PRODUCT, data_queue)
+    fubon_1m = fubon.Fubon_data(FUBON_PERIOD_1, PRODUCT, data_queue)
     fubon_p1 = multiprocessing.Process(target=fubon_1m.get_candles)
     fubon_p1.daemon = True
     fubon_p1.start()
     Processes.append(fubon_p1)
 
-    fubon_5m = fubon.Fubon_api(FUBON_PERIOD_5, PRODUCT, data_queue)
+    fubon_5m = fubon.Fubon_data(FUBON_PERIOD_5, PRODUCT, data_queue)
     fubon_p5 = multiprocessing.Process(target=fubon_5m.get_candles)
     fubon_p5.daemon = True
     fubon_p5.start()
     Processes.append(fubon_p5)
 
-    fubon_15m = fubon.Fubon_api(FUBON_PERIOD_15, PRODUCT, data_queue)
+    fubon_15m = fubon.Fubon_data(FUBON_PERIOD_15, PRODUCT, data_queue)
     fubon_p15 = multiprocessing.Process(target=fubon_15m.get_candles)
     fubon_p15.daemon = True
     fubon_p15.start()

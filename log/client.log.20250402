@@ -1,0 +1,32 @@
+[2025-04-02 09:38:58.259455 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 09:38:58.287369700 +08:00 INFO] this account require 2fa
+[2025-04-02 09:38:58.295473400 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 09:38:58.299480800 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 09:38:58.314643300 +08:00 INFO] this account require 2fa
+[2025-04-02 09:38:58.317661900 +08:00 INFO] this account require 2fa
+[2025-04-02 09:38:58.349787300 +08:00 INFO] [future_option_mapping]: 30.0491ms
+[2025-04-02 09:38:58.364717200 +08:00 INFO] [future_option_mapping]: 17.417ms
+[2025-04-02 09:38:58.378481100 +08:00 INFO] [future_option_mapping]: 29.1449ms
+[2025-04-02 09:38:58.380798500 +08:00 INFO] [future_option_mapping]: 28.2907ms
+[2025-04-02 09:38:58.396250 +08:00 INFO] [future_option_mapping]: 28.5106ms
+[2025-04-02 09:38:58.410069200 +08:00 INFO] [future_option_mapping]: 28.1491ms
+[2025-04-02 09:38:58.436074 +08:00 INFO] [future_option_mapping]: 54.8182ms
+[2025-04-02 09:38:58.453162200 +08:00 INFO] [future_option_mapping]: 56.6663ms
+[2025-04-02 09:38:58.465401700 +08:00 INFO] [future_option_mapping]: 55.0862ms
+[2025-04-02 09:38:58.472845 +08:00 INFO] [future_option_mapping]: 23.337ms
+[2025-04-02 09:38:58.488939900 +08:00 INFO] [future_option_mapping]: 23.4636ms
+[2025-04-02 09:38:58.501368400 +08:00 INFO] [future_option_mapping]: 23.1444ms
+[2025-04-02 14:52:00.358281500 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 14:52:00.395547100 +08:00 INFO] this account require 2fa
+[2025-04-02 14:52:00.439704400 +08:00 INFO] [future_option_mapping]: 18.5275ms
+[2025-04-02 14:52:00.453319500 +08:00 INFO] [future_option_mapping]: 11.3815ms
+[2025-04-02 14:52:00.497617700 +08:00 INFO] [future_option_mapping]: 44.0424ms
+[2025-04-02 14:52:00.536872800 +08:00 INFO] [future_option_mapping]: 27.9678ms
+[2025-04-02 14:52:01.571450800 +08:00 INFO] [query_single_position]: 28.523ms
+[2025-04-02 14:52:26.617415300 +08:00 INFO] [login] personal_id="F128108470"
+[2025-04-02 14:52:26.644454100 +08:00 INFO] this account require 2fa
+[2025-04-02 14:52:26.681493300 +08:00 INFO] [future_option_mapping]: 18.7205ms
+[2025-04-02 14:52:26.710301200 +08:00 INFO] [future_option_mapping]: 26.505ms
+[2025-04-02 14:52:26.765124900 +08:00 INFO] [future_option_mapping]: 54.5783ms
+[2025-04-02 14:52:26.803800700 +08:00 INFO] [future_option_mapping]: 28.0308ms
+[2025-04-02 14:52:27.853628700 +08:00 INFO] [query_single_position]: 43.8324ms

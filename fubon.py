@@ -20,8 +20,6 @@ CANDLE_MAX_AMOUNT = 30
 
 class Fubon_trade(object):
     def __init__(self, product):
-
-
         self.Account = None
         self.Acc_futures = None
         self.Restfut = None
@@ -32,7 +30,6 @@ class Fubon_trade(object):
         self.login_account()
         self.Acc_futures = self.get_future_account()
         self._set_event()
-        self.update_position_holded()
         return
 
     def login_account(self, retrytimes=6):
