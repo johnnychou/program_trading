@@ -19,6 +19,11 @@ import accinfo as key
 CANDLE_MAX_AMOUNT = 30
 
 class Fubon_api(object):
+    def __init__(self):
+        return
+
+class Fubon_dapi(object):
+
     def __init__(self, period, product, data_queue): #period->minutes
         if product not in ('TXF', 'MXF', 'TMF'):
             raise ValueError("Invalid product. It should be TXF, MXF, or TMF.")
