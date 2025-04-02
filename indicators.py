@@ -41,7 +41,7 @@ def indicator_atr(df, period=14):
         tr3 = abs(df['low'] - df['close'].shift())
         tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-        df[key] = tr.rolling(window=period).mean().round(1).fillna(0).astype(float)
+        df[key] = tr.rolling(window=period, min_periods=1).mean().round(1).astype(float)
     else:
         tr1 = df['high'].iloc[-1] - df['low'].iloc[-1]
         tr2 = abs(df['high'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
