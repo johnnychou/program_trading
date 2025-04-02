@@ -98,6 +98,3 @@ if __name__ == '__main__':
     indicators.indicator_bollingsband(test_df, 20)
     print(test_df)
 
-    a = 123.45
-    print(a.int())
-
