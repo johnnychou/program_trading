@@ -14,18 +14,8 @@ def indicator_ma(df, period):
     計算 DataFrame 中指定欄位的簡單移動平均線 (SMA)，並優化效能。
     """
     key = MA_PREFIX + str(period)
-
-    if key not in df.columns:  # 首次計算
-        df[key] = df['close'].rolling(window=period).mean().round().fillna(0).astype(int)  # 首次計算時，將 NaN 填 0
-    else:  # 後續計算
-        if len(df) >= period:
-            # 只計算最後一個值
-            ma = df['close'].iloc[-period:].mean().round().astype(int)
-            df.loc[df.index[-1], key] = ma
-        else:
-            df.loc[df.index[-1], key] = 0  # 資料不足填 0
+    df[key] = df['close'].rolling(window=period, min_periods=1).mean().round().astype(int)
     return
-
 
 def indicator_ema(df, period):
     """
