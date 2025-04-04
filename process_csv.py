@@ -5,8 +5,8 @@ import zipfile
 
 import utils
 
-CSV_INPUT_PATH = os.getcwd()
-CSV_OUTPUT_PATH = CSV_INPUT_PATH + '\\twse_data'
+CSV_INPUT_PATH = os.getcwd() + '\\twse_data'
+CSV_OUTPUT_PATH = CSV_INPUT_PATH + '\\filtered'
 
 def get_filtered_twse_data(filename, expiremonth):
     with open(CSV_INPUT_PATH+'\\'+filename, newline='') as csvinput:
@@ -28,6 +28,7 @@ def extract_files(filename):
 
 if __name__ == '__main__':
     
+    print(f'Processing folder: {CSV_INPUT_PATH}')
     files = os.listdir(CSV_INPUT_PATH)
     for file in files:
         pullpath = os.path.join(CSV_INPUT_PATH ,file)
