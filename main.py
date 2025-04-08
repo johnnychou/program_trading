@@ -100,7 +100,7 @@ if __name__ == '__main__':
                 elif period == FUBON_PERIOD_15:
                     df_fubon_15m = tmp_df
 
-            time.sleep(5)
+            #time.sleep(5)
             os.system('cls')
 
     except KeyboardInterrupt:

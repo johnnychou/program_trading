@@ -17,6 +17,7 @@ sys.path.append("C:\\Users\\ChengWei\\Desktop\\my project")
 import accinfo as key
 
 CANDLE_MAX_AMOUNT = 30
+MONTH_CODE = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L')
 
 class Fubon_trade(object):
     def __init__(self, product):
@@ -195,30 +196,38 @@ class Fubon_trade(object):
         return Buy_at, Sel_at
 
     def get_trade_symbol(self):
-        settlementDate = utils.get_settlementDate_realtime()
-        market = utils.get_market_type()
-        if market == '0':
-            future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX', contractType='I', status='N')
-        else:
-            future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX',session='AFTERHOURS', contractType='I', status='N')
-        #print(future_data)
+        settlementdate = utils.get_settlementDate()
+        month_code = MONTH_CODE[settlementdate.month-1]
+        last_code = str((settlementdate.year)%10)
+        symbol = self.product + month_code + last_code
 
-        if self.product == 'TXF':
-            keyword = '臺股期貨'
-        elif self.product == 'MXF':
-            keyword = '小型臺指'
-        elif self.product == 'TMF':
-            keyword = '微型臺指'
-        else:
-            print("Product error")
-            return None
+        return symbol
 
-        for i in range(len(future_data['data'])):
-            if (keyword in future_data['data'][i]['name']) and\
-            (future_data['data'][i]['settlementDate'] == settlementDate.isoformat()):
-                product_symbol = future_data['data'][i]['symbol']
-                break
-        return product_symbol
+    # def get_trade_symbol(self):
+    #     settlementDate = utils.get_settlementDate_realtime()
+    #     market = utils.get_market_type()
+    #     if market == '0':
+    #         future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX', contractType='I', status='N')
+    #     else:
+    #         future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX',session='AFTERHOURS', contractType='I', status='N')
+    #     #print(future_data)
+
+    #     if self.product == 'TXF':
+    #         keyword = '臺股期貨'
+    #     elif self.product == 'MXF':
+    #         keyword = '小型臺指'
+    #     elif self.product == 'TMF':
+    #         keyword = '微型臺指'
+    #     else:
+    #         print("Product error")
+    #         return None
+
+    #     for i in range(len(future_data['data'])):
+    #         if (keyword in future_data['data'][i]['name']) and\
+    #         (future_data['data'][i]['settlementDate'] == settlementDate.isoformat()):
+    #             product_symbol = future_data['data'][i]['symbol']
+    #             break
+    #     return product_symbol
     
     def chk_inventories(self): #股票庫存
         inventories = self.SDK.accounting.inventories(self.Account[0])
@@ -333,6 +342,40 @@ class Fubon_data(object):
                 return acc
         return None
 
+    def get_trade_symbol(self):
+        settlementdate = utils.get_settlementDate()
+        month_code = MONTH_CODE[settlementdate.month-1]
+        last_code = str((settlementdate.year)%10)
+        symbol = self.product + month_code + last_code
+
+        return symbol
+
+    # def get_trade_symbol(self):
+    #     settlementDate = utils.get_settlementDate_realtime()
+    #     market = utils.get_market_type()
+    #     if market == '0':
+    #         future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX', contractType='I', status='N')
+    #     else:
+    #         future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX',session='AFTERHOURS', contractType='I', status='N')
+    #     #print(future_data)
+
+    #     if self.product == 'TXF':
+    #         keyword = '臺股期貨'
+    #     elif self.product == 'MXF':
+    #         keyword = '小型臺指'
+    #     elif self.product == 'TMF':
+    #         keyword = '微型臺指'
+    #     else:
+    #         print("Product error")
+    #         return None
+
+    #     for i in range(len(future_data['data'])):
+    #         if (keyword in future_data['data'][i]['name']) and\
+    #         (future_data['data'][i]['settlementDate'] == settlementDate.isoformat()):
+    #             product_symbol = future_data['data'][i]['symbol']
+    #             break
+    #     return product_symbol
+
     def _set_event(self):
         self.SDK.set_on_event(self.on_event)
         self.SDK.set_on_futopt_filled(self.on_filled)
@@ -384,31 +427,6 @@ class Fubon_data(object):
         # print(content.filled_no)  # 印出成交流水號
         print("===Filled===")
        
-    def get_trade_symbol(self):
-        settlementDate = utils.get_settlementDate_realtime()
-        market = utils.get_market_type()
-        if market == '0':
-            future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX', contractType='I', status='N')
-        else:
-            future_data = self.Restfut.intraday.tickers(type='FUTURE', exchange='TAIFEX',session='AFTERHOURS', contractType='I', status='N')
-        #print(future_data)
-
-        if self.product == 'TXF':
-            keyword = '臺股期貨'
-        elif self.product == 'MXF':
-            keyword = '小型臺指'
-        elif self.product == 'TMF':
-            keyword = '微型臺指'
-        else:
-            print("Product error")
-            return None
-
-        for i in range(len(future_data['data'])):
-            if (keyword in future_data['data'][i]['name']) and\
-            (future_data['data'][i]['settlementDate'] == settlementDate.isoformat()):
-                product_symbol = future_data['data'][i]['symbol']
-                break
-        return product_symbol
     
     def handle_message(self, message):
         print(f'market data message: {message}')
