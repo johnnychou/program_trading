@@ -21,8 +21,14 @@ FUBON_PERIOD_15M = '15m'
 TRADE_MARKET_SET = ('day', 'night', 'main', 'all')
 TRADE_DIRECTION_SET = ('buy', 'sell', 'auto')
 TRADE_PRODUCT_SET = ('TXF', 'MXF', 'TMF')
+Userinput_Market = None
+Userinput_Direction = None
+Userinput_Product = None
+Userinput_OrderAmount = 0
 
 Last_price = 0
+Profit = 0
+Trade_record = []
 
 def create_fubon_process(period, product, data_queue, processes):
     """
@@ -73,7 +79,8 @@ def indicators_calculation(df):
 
 def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     global Last_price
-    Last_price = realtime_candle['lastprice']
+    if realtime_candle:
+        Last_price = realtime_candle['lastprice']
     os.system('cls')
     print('==================================')
     print(realtime_candle)
@@ -87,11 +94,44 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     print(f"{df_fubon_15m[-10:]}")    
     return
 
+def user_input():
+    global Userinput_Market, Userinput_Direction, Userinput_Product, Userinput_OrderAmount
+
+    Userinput_Market = input('Trading time day/night/main/all: ').lower()
+    while Userinput_Market not in TRADE_MARKET_SET:
+        print('Error, please input legal value.')
+        Userinput_Market = input('Trading time day/night/main/all: ').lower()
+
+    Userinput_Direction = input('Position choose buy/sell/auto: ').lower()
+    while Userinput_Direction not in TRADE_DIRECTION_SET:
+        print('Error, please input legal value.')
+        Userinput_Direction = input('Position choose buy/sell/auto: ').lower()
+
+    Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
+    while Userinput_Product not in TRADE_PRODUCT_SET:
+        print('Error, please input legal value.')
+        Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
+
+    return
+
 
 if __name__ == '__main__':
 
-    
-    fubon_acc = fubon.Fubon_trade('TMF')
+    user_input()
+    fubon_acc = fubon.Fubon_trade(Userinput_Product)
+
+    #postition amount
+    while True:
+        try:
+            Userinput_OrderAmount = int(input('Order amount 1~3: '))
+            while Userinput_OrderAmount not in range(1, 4):
+                print('Error, please input integer 1~3.')
+                Userinput_OrderAmount = int(input('Order amount 1~3: '))
+            break
+        except:
+            print('Error, please input integer 1~3.')
+
+
     Buy_at, Sell_at = fubon_acc.update_position_holded()
 
     Processes = []
@@ -124,7 +164,7 @@ if __name__ == '__main__':
                 elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
             
-            #show_candles()
+            show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
     except KeyboardInterrupt:
         print("All processes stopped.")
