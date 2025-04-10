@@ -18,6 +18,12 @@ FUBON_PERIOD_1M = '1m'
 FUBON_PERIOD_5M = '5m'
 FUBON_PERIOD_15M = '15m'
 
+TRADE_MARKET_SET = ('day', 'night', 'main', 'all')
+TRADE_DIRECTION_SET = ('buy', 'sell', 'auto')
+TRADE_PRODUCT_SET = ('TXF', 'MXF', 'TMF')
+
+Last_price = 0
+
 def create_fubon_process(period, product, data_queue, processes):
     """
     創建並啟動 Fubon_data 進程。
@@ -66,6 +72,8 @@ def indicators_calculation(df):
     return df
 
 def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
+    global Last_price
+    Last_price = realtime_candle['lastprice']
     os.system('cls')
     print('==================================')
     print(realtime_candle)
@@ -79,11 +87,9 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     print(f"{df_fubon_15m[-10:]}")    
     return
 
+
 if __name__ == '__main__':
 
-    Buy_at = []
-    Sell_at = []
-    Trade_record = []
     
     fubon_acc = fubon.Fubon_trade('TMF')
     Buy_at, Sell_at = fubon_acc.update_position_holded()

@@ -49,14 +49,14 @@ class Fubon_trade(object):
             time.sleep(10)
             return self.login_account(retrytimes-1)
 
-        print(f"===Login sucess===\n{self.Account}")
-        time.sleep(1)
+        #print(f"===Login sucess===\n{self.Account}")
+        #time.sleep(1)
         return
 
     def get_future_account(self):
         for acc in self.Account:
             if acc.account_type == 'futopt':
-                print(f"Future account:\n{acc}")
+                #print(f"Future account:\n{acc}")
                 return acc
         return None
 
@@ -317,8 +317,8 @@ class Fubon_data(object):
             time.sleep(10)
             return self.login_account(retrytimes-1)
 
-        print(f"===Login sucess===\n{self.Account}")
-        time.sleep(1)
+        #print(f"===Login sucess===\n{self.Account}")
+        #time.sleep(1)
         return
     
     def _init_data(self):
@@ -338,7 +338,7 @@ class Fubon_data(object):
     def get_future_account(self):
         for acc in self.Account:
             if acc.account_type == 'futopt':
-                print(f"Future account:\n{acc}")
+                #print(f"Future account:\n{acc}")
                 return acc
         return None
 
