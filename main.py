@@ -65,6 +65,19 @@ def indicators_calculation(df):
     indicators.indicator_bollingsband(df, 20)
     return df
 
+def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
+    os.system('cls')
+    print('==================================')
+    print(realtime_candle)
+    print('===30s============================')
+    print(f"{df_twse_30s[-10:]}")
+    print('===1m=============================')
+    print(f"{df_fubon_1m[-10:]}")
+    print('===5m=============================')
+    print(f"{df_fubon_5m[-10:]}")
+    print('===15m============================')
+    print(f"{df_fubon_15m[-10:]}")    
+    return
 
 if __name__ == '__main__':
 
@@ -91,17 +104,6 @@ if __name__ == '__main__':
 
     try:
         while True:
-            print('==================================')
-            print(realtime_candle)
-            print('===30s============================')
-            print(f"{df_twse_30s}")
-            print('===1m=============================')
-            print(f"{df_fubon_1m}")
-            print('===5m=============================')
-            print(f"{df_fubon_5m}")
-            print('===15m============================')
-            print(f"{df_fubon_15m}")
-
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
                 # print(f"received period[{period}] data")
@@ -115,9 +117,8 @@ if __name__ == '__main__':
                     df_fubon_5m = tmp_df
                 elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
-
-            #time.sleep(5)
-            os.system('cls')
+            
+            #show_candles()
 
     except KeyboardInterrupt:
         print("All processes stopped.")

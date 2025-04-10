@@ -114,7 +114,7 @@ class Fubon_trade(object):
     def update_margin_equity(self):
         try:
             req = self.SDK.futopt_accounting.query_margin_equity(self.Acc_futures)
-            print(req)
+            # print(req)
             equity = req.data[0].today_equity
             initial_margin = req.data[0].initial_margin
             maintenance_margin = req.data[0].maintenance_margin
