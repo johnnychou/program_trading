@@ -375,7 +375,7 @@ class Fubon_data(object):
     #             product_symbol = future_data['data'][i]['symbol']
     #             break
     #     return product_symbol
-
+    
     def _set_event(self):
         self.SDK.set_on_event(self.on_event)
         self.SDK.set_on_futopt_filled(self.on_filled)

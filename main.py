@@ -13,10 +13,46 @@ import fubon
 import indicators
 
 PRODUCT = 'MXF'
-TWSE_PERIOD = '30s'
-FUBON_PERIOD_1 = '1m'
-FUBON_PERIOD_5 = '5m'
-FUBON_PERIOD_15 = '15m'
+TWSE_PERIOD_30S = '30s'
+FUBON_PERIOD_1M = '1m'
+FUBON_PERIOD_5M = '5m'
+FUBON_PERIOD_15M = '15m'
+
+def create_fubon_process(period, product, data_queue, processes):
+    """
+    創建並啟動 Fubon_data 進程。
+
+    Args:
+        period (str): K線週期。
+        product (str): 產品代碼。
+        data_queue (multiprocessing.Queue): 用於傳輸資料的佇列。
+        processes (list): 用於儲存已創建進程的列表。
+    """
+    fubon_instance = fubon.Fubon_data(period, product, data_queue)
+    process = multiprocessing.Process(target=fubon_instance.get_candles)
+    process.daemon = True
+    process.start()
+    processes.append(process)
+    return
+
+def create_twse_process(period, product, datasource, data_queue, realtime_candle, processes):
+    """
+    創建並啟動 TWSE 進程。
+
+    Args:
+        period (str): K線週期。
+        product (str): 產品代碼。
+        datasource (str): 來源為twse或csv。
+        data_queue (multiprocessing.Queue): 用於傳輸資料的佇列。
+        realtime_candle (multiprocessing.managers.DictProxy): 共享的即時 K 線字典。
+        processes (list): 用於儲存已創建進程的列表。
+    """
+    twse_instance = twse.TWSE(period, product, datasource, data_queue, realtime_candle)
+    process = multiprocessing.Process(target=twse_instance.get_candles)
+    process.daemon = True
+    process.start()
+    processes.append(process)
+    return
 
 def indicators_calculation(df):
     indicators.indicator_ma(df, 10)
@@ -39,34 +75,14 @@ if __name__ == '__main__':
     fubon_acc = fubon.Fubon_trade('TMF')
     Buy_at, Sell_at = fubon_acc.update_position_holded()
 
-
     Processes = []
-    data_queue = multiprocessing.Queue()
-    realtime_candle = multiprocessing.Manager().dict() #shared dict
+    data_queue = multiprocessing.Queue()                # shared data queue
+    realtime_candle = multiprocessing.Manager().dict()  # shared dict
 
-    twse_30s = twse.TWSE(TWSE_PERIOD, PRODUCT, 'twse', data_queue, realtime_candle)
-    twse_p = multiprocessing.Process(target=twse_30s.get_candles)
-    twse_p.daemon = True
-    twse_p.start()
-    Processes.append(twse_p)
-
-    fubon_1m = fubon.Fubon_data(FUBON_PERIOD_1, PRODUCT, data_queue)
-    fubon_p1 = multiprocessing.Process(target=fubon_1m.get_candles)
-    fubon_p1.daemon = True
-    fubon_p1.start()
-    Processes.append(fubon_p1)
-
-    fubon_5m = fubon.Fubon_data(FUBON_PERIOD_5, PRODUCT, data_queue)
-    fubon_p5 = multiprocessing.Process(target=fubon_5m.get_candles)
-    fubon_p5.daemon = True
-    fubon_p5.start()
-    Processes.append(fubon_p5)
-
-    fubon_15m = fubon.Fubon_data(FUBON_PERIOD_15, PRODUCT, data_queue)
-    fubon_p15 = multiprocessing.Process(target=fubon_15m.get_candles)
-    fubon_p15.daemon = True
-    fubon_p15.start()
-    Processes.append(fubon_p15)
+    create_twse_process(TWSE_PERIOD_30S, PRODUCT, 'twse', data_queue, realtime_candle, Processes)
+    create_fubon_process(FUBON_PERIOD_1M, PRODUCT, data_queue, Processes)
+    create_fubon_process(FUBON_PERIOD_5M, PRODUCT, data_queue, Processes)
+    create_fubon_process(FUBON_PERIOD_15M, PRODUCT, data_queue, Processes)
 
     df_twse_30s = pd.DataFrame()
     df_fubon_1m = pd.DataFrame()
@@ -91,13 +107,13 @@ if __name__ == '__main__':
                 # print(f"received period[{period}] data")
                 # print(f"{tmp_df}")
                 tmp_df = indicators_calculation(tmp_df)
-                if period == TWSE_PERIOD:
+                if period == TWSE_PERIOD_30S:
                     df_twse_30s = tmp_df
-                elif period == FUBON_PERIOD_1:
+                elif period == FUBON_PERIOD_1M:
                     df_fubon_1m = tmp_df
-                elif period == FUBON_PERIOD_5:
+                elif period == FUBON_PERIOD_5M:
                     df_fubon_5m = tmp_df
-                elif period == FUBON_PERIOD_15:
+                elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
 
             #time.sleep(5)
@@ -105,3 +121,4 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         print("All processes stopped.")
+    
