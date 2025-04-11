@@ -126,12 +126,14 @@ def user_input():
     return
 
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
-    kd_key = 'kd_' + str(KD_PERIOD)
-    if kd_key in df_fubon_1m.index:
-        print(df_fubon_1m[-1][kd_key])
-        print(df_fubon_1m[-2][kd_key])
-        print(df_fubon_1m[-3][kd_key])
-        time.sleep(10)
+    kd_key = 'kd_' + str(KD_PERIOD[0])
+    if kd_key in df_fubon_1m.columns:
+        column = df_fubon_1m[kd_key]
+        if len(column) >= 3:
+            print(column.iloc[-1])
+            print(column.iloc[-2])
+            print(column.iloc[-3])
+            time.sleep(10)
     return
 
 
