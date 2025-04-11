@@ -155,8 +155,10 @@ class Fubon_trade(object):
         res = self.SDK.futopt.place_order(self.Acc_futures, order)
 
         if res.is_success != True:
-            print("Failed to send order. Please check positions.")
-            return 1
+            print(f'res: {res}')
+            winsound.Beep(5000,1000)
+            time.sleep(30)
+            return 0
 
         winsound.Beep(3000,100)
         return 0

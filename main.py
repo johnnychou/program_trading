@@ -18,9 +18,19 @@ FUBON_PERIOD_1M = '1m'
 FUBON_PERIOD_5M = '5m'
 FUBON_PERIOD_15M = '15m'
 
+MA_PERIOD = 10
+EMA_PERIOD = 5
+EMA2_PERIOD = 20
+ATR_PERIOD = 14
+RSI_PERIOD = 10
+KD_PERIOD = (9, 3, 3)
+MACD_PERIOD = (12, 26, 9)
+BB_PERIOD = (20, 2)
+
 TRADE_MARKET_SET = ('day', 'night', 'main', 'all')
 TRADE_DIRECTION_SET = ('buy', 'sell', 'auto')
 TRADE_PRODUCT_SET = ('TXF', 'MXF', 'TMF')
+
 Userinput_Market = None
 Userinput_Direction = None
 Userinput_Product = None
@@ -67,21 +77,22 @@ def create_twse_process(period, product, datasource, data_queue, realtime_candle
     return
 
 def indicators_calculation(df):
-    indicators.indicator_ma(df, 10)
-    indicators.indicator_ema(df, 5)
-    indicators.indicator_ema(df, 20)
-    indicators.indicator_atr(df, 14)
-    indicators.indicator_rsi(df, 10)
-    indicators.indicator_kd(df, 9)
-    indicators.indicator_macd(df)
-    indicators.indicator_bollingsband(df, 20)
+    indicators.indicator_ma(df, MA_PERIOD)
+    indicators.indicator_ema(df, EMA_PERIOD)
+    indicators.indicator_ema(df, EMA2_PERIOD)
+    indicators.indicator_atr(df, ATR_PERIOD)
+    indicators.indicator_rsi(df, RSI_PERIOD)
+    indicators.indicator_kd(df, KD_PERIOD[0], KD_PERIOD[1], KD_PERIOD[2])
+    indicators.indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
+    indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
     return df
 
 def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     global Last_price
-    if realtime_candle:
+    if 'lastprice' in realtime_candle:
         Last_price = realtime_candle['lastprice']
     os.system('cls')
+    print(f'lastprice: {Last_price}')
     print('==================================')
     print(realtime_candle)
     print('===30s============================')
@@ -112,6 +123,15 @@ def user_input():
         print('Error, please input legal value.')
         Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
 
+    return
+
+def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
+    kd_key = 'kd_' + str(KD_PERIOD)
+    if kd_key in df_fubon_1m.index:
+        print(df_fubon_1m[-1][kd_key])
+        print(df_fubon_1m[-2][kd_key])
+        print(df_fubon_1m[-3][kd_key])
+        time.sleep(10)
     return
 
 
@@ -163,6 +183,9 @@ if __name__ == '__main__':
                     df_fubon_5m = tmp_df
                 elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
+
+                sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+
             
             show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
