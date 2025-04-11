@@ -150,7 +150,7 @@ def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
         slow_period (int): 計算慢線 EMA 的週期，預設為 26。
         signal_period (int): 計算 MACD 線 EMA 的週期，預設為 9。
     """
-    key = MACD_PREFIX + str(fast_period) + '_' + str(slow_period) + '_' + str(signal_period)
+    key = MACD_PREFIX + str(fast_period)
 
     if key not in df.columns:  # 首次計算
         fast_ema = df['close'].ewm(span=fast_period, adjust=False).mean()
