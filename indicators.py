@@ -1,13 +1,6 @@
 import numpy as np
 import pandas as pd
-
-MA_PREFIX = 'ma_'
-EMA_PREFIX = 'ema_'
-ATR_PREFIX = 'atr_'
-KD_PREFIX = 'kd_'
-RSI_PREFIX = 'rsi_'
-BB_PREFIX = 'bbands_'
-MACD_PREFIX = 'macd_'
+from constant import *
 
 def indicator_ma(df, period):
     """
