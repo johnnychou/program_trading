@@ -119,6 +119,16 @@ def indicators_calculation(df):
     indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
     return df
 
+def show_realtime(realtime_candle):
+    global Last_price
+    if 'lastprice' in realtime_candle:
+        Last_price = realtime_candle['lastprice']
+    print(f'lastprice: {Last_price}')
+    print('==================================')
+    print(realtime_candle)
+    os.system('cls')
+    return
+
 def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     global Last_price
     if 'lastprice' in realtime_candle:
@@ -182,11 +192,18 @@ def force_close_position(now):
 
 def show_account_info():
     position = ''
+    profit = 0
     if Buy_at:
         position = f'Buy: {Buy_at}'
+        if Last_price:
+            profit = (Last_price - Buy_at[0])*PT_price*OrderAmount
     elif Sell_at:
         position = f'Sell: {Sell_at}'
-    print(f'Position: {position}')
+        if Last_price:
+            profit = (Sell_at[0] - Last_price)*PT_price*OrderAmount
+
+    print(f'Position: {position},\
+            Profit: {profit}')
     print('==================================')
     return
 
@@ -240,11 +257,15 @@ def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_
             #time.sleep(10)
     return
 
+def multi_timeframe_strategy():
+    sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+    return
 
 if __name__ == '__main__':
-    user_input_settings()
 
+    user_input_settings()
     Fubon_account = fubon.Fubon_trade(Userinput_Product)
+    update_account_info(Fubon_account)
     
     Processes = []
     data_queue = multiprocessing.Queue()                # shared data queue
@@ -288,11 +309,12 @@ if __name__ == '__main__':
                 elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
 
-                #sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+                multi_timeframe_strategy()
 
             show_user_settings()
             show_account_info()
-            show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            show_realtime(realtime_candle)
+            #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
     except KeyboardInterrupt:
         print("All processes stopped.")
