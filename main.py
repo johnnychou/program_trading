@@ -181,6 +181,7 @@ def force_close_position(now):
         return False
 
 def show_account_info():
+    position = ''
     if Buy_at:
         position = f'Buy: {Buy_at}'
     elif Sell_at:
@@ -204,7 +205,6 @@ def update_account_info(account):
         OrderAmount = get_max_lots()
     else:
         OrderAmount = Userinput_OrderAmount
-
     return
 
 def open_position(account, sig):
@@ -264,10 +264,12 @@ if __name__ == '__main__':
         while True:
             now = datetime.datetime.now()
             if not is_trading_time(now):
+                print(f"[{now.strftime('%H:%M:%S')}] 不在交易時間...")
                 time.sleep(60)
                 continue
 
             if force_close_position(now):
+                print(f"[{now.strftime('%H:%M:%S')}] 時段即將結束，執行平倉操作...")
                 #close_all_position()
                 time.sleep(60)
                 continue
