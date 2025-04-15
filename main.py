@@ -144,27 +144,41 @@ def show_user_settings():
     print('==================================')
     return
 
-def is_market_time(market_hours):
-    now_time = datetime.datetime.now().time()
+def is_market_time(market_hours, now):
     start_str, end_str = market_hours
     start_time = datetime.datetime.strptime(start_str, "%H:%M:%S").time()
     end_time = datetime.datetime.strptime(end_str, "%H:%M:%S").time()
+    now_time = now.time()
 
     if end_time < start_time:  # 處理跨日
         return start_time <= now_time or now_time <= end_time
     else:
         return start_time <= now_time <= end_time
 
-def is_trading_time():
-    if Userinput_Market == 'day' and is_market_time(DAY_MARKET):
+def is_trading_time(now):
+    if Userinput_Market == 'day' and is_market_time(DAY_MARKET, now):
         return True
-    elif Userinput_Market == 'night' and is_market_time(NIGHT_MARKET):
+    elif Userinput_Market == 'night' and is_market_time(NIGHT_MARKET, now):
         return True
-    elif Userinput_Market == 'main' and (is_market_time(DAY_MARKET) or is_market_time(AMER_MARKET)):
+    elif Userinput_Market == 'main' and (is_market_time(DAY_MARKET, now) or is_market_time(AMER_MARKET, now)):
         return True
-    elif Userinput_Market == 'all' and (is_market_time(DAY_MARKET) or is_market_time(NIGHT_MARKET)):
+    elif Userinput_Market == 'all' and (is_market_time(DAY_MARKET, now) or is_market_time(NIGHT_MARKET, now)):
         return True
     return False
+
+def force_close_position(now):
+    """判斷是否應該在收盤前一分鐘平倉"""
+    now_str = now.strftime("%H:%M:%S")
+    if Userinput_Market == 'day' and now_str == CLOSE_POSITION_TIME[0]:
+        return True
+    elif Userinput_Market == 'night' and now_str == CLOSE_POSITION_TIME[1]:
+        return True
+    elif Userinput_Market == 'main' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[2]) and is_trading_time(now):
+        return True
+    elif Userinput_Market == 'all' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[1]) and is_trading_time(now):
+        return True
+    else:
+        return False
 
 def show_account_info():
     if Buy_at:
@@ -242,6 +256,7 @@ if __name__ == '__main__':
     try:
         while True:
             now = datetime.datetime.now()
+
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
                 # print(f"received period[{period}] data")
