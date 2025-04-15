@@ -20,6 +20,8 @@ Userinput_OrderAmount = 0
 
 Last_price = 0
 Profit = 0
+Buy_at = []
+Sell_at = []
 Trade_record = []
 
 def create_fubon_process(period, product, data_queue, processes):
@@ -58,6 +60,26 @@ def create_twse_process(period, product, datasource, data_queue, realtime_candle
     processes.append(process)
     return
 
+def user_input():
+    global Userinput_Market, Userinput_Direction, Userinput_Product, Userinput_OrderAmount
+
+    Userinput_Market = input('Trading time day/night/main/all: ').lower()
+    while Userinput_Market not in TRADE_MARKET_SET:
+        print('Error, please input legal value.')
+        Userinput_Market = input('Trading time day/night/main/all: ').lower()
+
+    Userinput_Direction = input('Position choose buy/sell/auto: ').lower()
+    while Userinput_Direction not in TRADE_DIRECTION_SET:
+        print('Error, please input legal value.')
+        Userinput_Direction = input('Position choose buy/sell/auto: ').lower()
+
+    Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
+    while Userinput_Product not in TRADE_PRODUCT_SET:
+        print('Error, please input legal value.')
+        Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
+
+    return
+
 def indicators_calculation(df):
     indicators.indicator_ma(df, MA_PERIOD)
     indicators.indicator_ema(df, EMA_PERIOD)
@@ -87,24 +109,20 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     print(f"{df_fubon_15m[-10:]}")    
     return
 
-def user_input():
-    global Userinput_Market, Userinput_Direction, Userinput_Product, Userinput_OrderAmount
+def show_user_settings():
+    print(f'Product: {Userinput_Product}/{Userinput_OrderAmount},\
+            Market: {Userinput_Market},\
+            Direction: {Userinput_Direction}')
+    print('==================================')
+    return
 
-    Userinput_Market = input('Trading time day/night/main/all: ').lower()
-    while Userinput_Market not in TRADE_MARKET_SET:
-        print('Error, please input legal value.')
-        Userinput_Market = input('Trading time day/night/main/all: ').lower()
-
-    Userinput_Direction = input('Position choose buy/sell/auto: ').lower()
-    while Userinput_Direction not in TRADE_DIRECTION_SET:
-        print('Error, please input legal value.')
-        Userinput_Direction = input('Position choose buy/sell/auto: ').lower()
-
-    Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
-    while Userinput_Product not in TRADE_PRODUCT_SET:
-        print('Error, please input legal value.')
-        Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
-
+def show_account_info():
+    if Buy_at:
+        position = f'Buy: {Buy_at}'
+    elif Sell_at:
+        position = f'Sell: {Sell_at}'
+    print(f'Position: {position}')
+    print('==================================')
     return
 
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
@@ -114,12 +132,11 @@ def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_
             print(column.iloc[-1])
             print(column.iloc[-2])
             print(column.iloc[-3])
-            time.sleep(10)
+            #time.sleep(10)
     return
 
 
 if __name__ == '__main__':
-
     user_input()
     fubon_acc = fubon.Fubon_trade(Userinput_Product)
 
@@ -169,7 +186,8 @@ if __name__ == '__main__':
 
                 sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
-            
+            show_user_settings()
+            show_account_info()
             show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
     except KeyboardInterrupt:
