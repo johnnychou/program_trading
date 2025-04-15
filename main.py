@@ -223,6 +223,13 @@ def close_position(account, sig):
     account.send_order(sig, OrderAmount)
     return
 
+def close_all_position(account):
+    if Buy_at:
+        close_position(account, -1)
+    if Sell_at:
+        close_position(account, 1)
+    return
+
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     if KD_KEY in df_fubon_1m.columns:
         column = df_fubon_1m[KD_KEY]
@@ -256,6 +263,14 @@ if __name__ == '__main__':
     try:
         while True:
             now = datetime.datetime.now()
+            if not is_trading_time(now):
+                time.sleep(60)
+                continue
+
+            if force_close_position(now):
+                #close_all_position()
+                time.sleep(60)
+                continue
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
@@ -271,7 +286,7 @@ if __name__ == '__main__':
                 elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
 
-                sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+                #sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
             show_user_settings()
             show_account_info()
