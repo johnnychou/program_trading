@@ -30,6 +30,7 @@ Last_price = 0
 Profit = 0
 Balance = 0
 OrderAmount = 0
+PT_price = 0
 
 
 def create_fubon_process(period, product, data_queue, processes):
@@ -69,7 +70,7 @@ def create_twse_process(period, product, datasource, data_queue, realtime_candle
     return
 
 def user_input_settings():
-    global Userinput_Market, Userinput_Direction, Userinput_Product, Userinput_OrderAmount
+    global Userinput_Market, Userinput_Direction, Userinput_Product, Userinput_OrderAmount, PT_price
 
     Userinput_Market = input('Trading time day/night/main/all: ').lower()
     while Userinput_Market not in TRADE_MARKET_SET:
@@ -85,6 +86,13 @@ def user_input_settings():
     while Userinput_Product not in TRADE_PRODUCT_SET:
         print('Error, please input legal value.')
         Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
+
+    if Userinput_Product == 'TXF':
+        PT_price = 200
+    elif Userinput_Product == 'MXF':
+        PT_price = 50
+    elif Userinput_Product == 'TMF':
+        PT_price = 10
 
     while True:
         try:
