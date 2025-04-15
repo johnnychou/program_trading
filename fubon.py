@@ -177,7 +177,11 @@ class Fubon_trade(object):
 
         if orderResults.data[-1].symbol == self.chk_symbol:
             price = orderResults.data[-1].filled_money
-        return price
+
+        if price:
+            return price
+
+        return 0
     
     def update_position_holded(self):
         Buy_at = []

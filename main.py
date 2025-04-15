@@ -14,16 +14,23 @@ import indicators
 from constant import *
 from conf import *
 
+Fubon_account = None
 Userinput_Market = None
 Userinput_Direction = None
 Userinput_Product = None
 Userinput_OrderAmount = 0
+OrderAmount = 0
 
-Last_price = 0
-Profit = 0
 Buy_at = []
 Sell_at = []
 Trade_record = []
+Margin = []
+
+Last_price = 0
+Profit = 0
+Balance = 0
+OrderAmount = 0
+
 
 def create_fubon_process(period, product, data_queue, processes):
     """
@@ -61,7 +68,7 @@ def create_twse_process(period, product, datasource, data_queue, realtime_candle
     processes.append(process)
     return
 
-def user_input():
+def user_input_settings():
     global Userinput_Market, Userinput_Direction, Userinput_Product, Userinput_OrderAmount
 
     Userinput_Market = input('Trading time day/night/main/all: ').lower()
@@ -79,6 +86,18 @@ def user_input():
         print('Error, please input legal value.')
         Userinput_Product = input('Product choose TXF/MXF/TMF: ').upper()
 
+    while True:
+        try:
+            Userinput_OrderAmount = int(input('Order amount 1~3: '))
+            if Userinput_OrderAmount == -1:
+                break
+            while Userinput_OrderAmount not in range(1, 4):
+                print('Error, please input integer 1~3.')
+                Userinput_OrderAmount = int(input('Order amount 1~3: '))
+            break
+        except:
+            print('Error, please input integer 1~3.')
+
     return
 
 def indicators_calculation(df):
@@ -91,14 +110,6 @@ def indicators_calculation(df):
     indicators.indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
     indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
     return df
-
-def get_max_lots(account):
-    max_lots = 0
-    balance, margin = account.update_margin_equity()
-    if margin[0]:
-        max_lots = balance // (margin[0]*MAX_LOT_RATE)
-        print(f'max_lots: {max_lots}')
-    return max_lots
 
 def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     global Last_price
@@ -119,7 +130,7 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     return
 
 def show_user_settings():
-    print(f'Product: {Userinput_Product}/{Userinput_OrderAmount},\
+    print(f'Product: {Userinput_Product}/{OrderAmount},\
             Market: {Userinput_Market},\
             Direction: {Userinput_Direction}')
     print('==================================')
@@ -134,20 +145,38 @@ def show_account_info():
     print('==================================')
     return
 
-def open_position(sig):
+def get_max_lots():
+    max_lots = 0
+    if Balance and Margin[0]:
+        max_lots = Balance // (Margin[0]*MAX_LOT_RATE)
+        #print(f'max_lots: {max_lots}')
+    return max_lots
+
+def update_account_info(account):
+    global Buy_at, Sell_at, Balance, Margin, OrderAmount
+    Buy_at, Sell_at = account.update_position_holded()
+    Balance, Margin = account.update_margin_equity()
+    if Userinput_OrderAmount == -1:
+        OrderAmount = get_max_lots()
+    else:
+        OrderAmount = Userinput_OrderAmount
+
+    return
+
+def open_position(account, sig):
     if (Userinput_Direction == 'buy' and sig == -1) or\
          (Userinput_Direction == 'sell' and sig == 1):
         return 0
-    fubon_acc.send_order(sig, Userinput_OrderAmount)
+    account.send_order(sig, OrderAmount)
     return
     
-def close_position(sig):
+def close_position(account, sig):
     if not Buy_at and not Sell_at:
         return 0
     if (Buy_at and sig == 1) or\
          (Sell_at and sig == -1):
         return 0
-    fubon_acc.send_order(sig, Userinput_OrderAmount)
+    account.send_order(sig, OrderAmount)
     return
 
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
@@ -162,23 +191,10 @@ def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_
 
 
 if __name__ == '__main__':
-    user_input()
-    fubon_acc = fubon.Fubon_trade(Userinput_Product)
+    user_input_settings()
 
-    #postition amount
-    while True:
-        try:
-            Userinput_OrderAmount = int(input('Order amount 1~3: '))
-            while Userinput_OrderAmount not in range(1, 4):
-                print('Error, please input integer 1~3.')
-                Userinput_OrderAmount = int(input('Order amount 1~3: '))
-            break
-        except:
-            print('Error, please input integer 1~3.')
-
-
-    Buy_at, Sell_at = fubon_acc.update_position_holded()
-
+    Fubon_account = fubon.Fubon_trade(Userinput_Product)
+    
     Processes = []
     data_queue = multiprocessing.Queue()                # shared data queue
     realtime_candle = multiprocessing.Manager().dict()  # shared dict
