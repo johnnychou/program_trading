@@ -144,6 +144,28 @@ def show_user_settings():
     print('==================================')
     return
 
+def is_market_time(market_hours):
+    now_time = datetime.datetime.now().time()
+    start_str, end_str = market_hours
+    start_time = datetime.datetime.strptime(start_str, "%H:%M:%S").time()
+    end_time = datetime.datetime.strptime(end_str, "%H:%M:%S").time()
+
+    if end_time < start_time:  # 處理跨日
+        return start_time <= now_time or now_time <= end_time
+    else:
+        return start_time <= now_time <= end_time
+
+def is_trading_time():
+    if Userinput_Market == 'day' and is_market_time(DAY_MARKET):
+        return True
+    elif Userinput_Market == 'night' and is_market_time(NIGHT_MARKET):
+        return True
+    elif Userinput_Market == 'main' and (is_market_time(DAY_MARKET) or is_market_time(AMER_MARKET)):
+        return True
+    elif Userinput_Market == 'all' and (is_market_time(DAY_MARKET) or is_market_time(NIGHT_MARKET)):
+        return True
+    return False
+
 def show_account_info():
     if Buy_at:
         position = f'Buy: {Buy_at}'
@@ -219,6 +241,7 @@ if __name__ == '__main__':
 
     try:
         while True:
+            now = datetime.datetime.now()
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
                 # print(f"received period[{period}] data")
