@@ -27,6 +27,13 @@ class Fubon_trade(object):
         self.Trade_symbol = None
         self.product = product
 
+        if product == 'TXF':
+            self.chk_symbol = 'FITX'
+        elif product == 'MXF':
+            self.chk_symbol = 'FIMTX'
+        elif product == 'TMF':
+            self.chk_symbol = 'FITM'
+
         self.SDK = FubonSDK()
         self.login_account()
         self.SDK.init_realtime(Mode.Normal)
@@ -160,12 +167,16 @@ class Fubon_trade(object):
             time.sleep(30)
             return 0
 
-        winsound.Beep(3000,100)
+        winsound.Beep(3000,100)     
         return 0
     
     def get_order_results(self):
         orderResults = self.SDK.futopt.get_order_results(self.Acc_futures)
-        price = orderResults.data[-1].filled_money
+        price = 0
+        #print(orderResults)
+
+        if orderResults.data[-1].symbol == self.chk_symbol:
+            price = orderResults.data[-1].filled_money
         return price
     
     def update_position_holded(self):
@@ -174,19 +185,10 @@ class Fubon_trade(object):
 
         positions = self.SDK.futopt_accounting.query_single_position(self.Acc_futures)
         # print(positions)
-        chk_symbol = ''
-        if self.product == 'TXF':
-            chk_symbol = 'FITX'
-        elif self.product == 'MXF':
-            chk_symbol = 'FIMTX'
-        elif self.product == 'TMF':
-            chk_symbol = 'FITM'
-        else:
-            print("Product error")
 
         if positions.data:
             for p in positions.data:
-                if p.symbol == chk_symbol:
+                if p.symbol == self.chk_symbol:
                     for i in range(p.tradable_lot):
                         if p.buy_sell == BSAction.Buy:
                             Buy_at.append(p.price)

@@ -11,8 +11,6 @@ Userinput_Direction = None
 Userinput_Product = None
 Userinput_OrderAmount = 0
 
-
-
 def get_max_lots(account):
     max_lots = 0
     balance, margin = account.update_margin_equity()
@@ -40,6 +38,7 @@ def get_order_result(account):
     trade_price = account.get_order_results()
     print(f'trade_price: {trade_price}')
     return trade_price
+
 
 
 if __name__ == '__main__':
@@ -80,6 +79,8 @@ if __name__ == '__main__':
             print('Error, please input integer 1~3.')
 
     show_account_info(fubon_acc)
+    price = fubon_acc.get_order_results()
+    print(price)
 
 
 

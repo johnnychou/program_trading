@@ -12,6 +12,7 @@ import twse
 import fubon
 import indicators
 from constant import *
+from conf import *
 
 Userinput_Market = None
 Userinput_Direction = None
@@ -91,6 +92,14 @@ def indicators_calculation(df):
     indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
     return df
 
+def get_max_lots(account):
+    max_lots = 0
+    balance, margin = account.update_margin_equity()
+    if margin[0]:
+        max_lots = balance // (margin[0]*MAX_LOT_RATE)
+        print(f'max_lots: {max_lots}')
+    return max_lots
+
 def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     global Last_price
     if 'lastprice' in realtime_candle:
@@ -123,6 +132,22 @@ def show_account_info():
         position = f'Sell: {Sell_at}'
     print(f'Position: {position}')
     print('==================================')
+    return
+
+def open_position(sig):
+    if (Userinput_Direction == 'buy' and sig == -1) or\
+         (Userinput_Direction == 'sell' and sig == 1):
+        return 0
+    fubon_acc.send_order(sig, Userinput_OrderAmount)
+    return
+    
+def close_position(sig):
+    if not Buy_at and not Sell_at:
+        return 0
+    if (Buy_at and sig == 1) or\
+         (Sell_at and sig == -1):
+        return 0
+    fubon_acc.send_order(sig, Userinput_OrderAmount)
     return
 
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
