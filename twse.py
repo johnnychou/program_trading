@@ -21,7 +21,7 @@ class TWSE(object):
         self.key = period
         self.period = self.period_to_seconds(period)
         self.product = product
-        self.df = pd.DataFrame(columns=['body', 'open', 'close', 'high', 'low', 'volume', 'time'])
+        self.df = pd.DataFrame()
         #process控制
         self.data_queue = data_queue #共享data
         self.realtime_candle = shared_data
@@ -171,26 +171,19 @@ class TWSE(object):
         if cvolume <= 0:
             return None
 
-        if (cclose - copen) > 0:
-            body = 1
-        elif (cclose - copen) < 0:
-            body = -1
-        else:
-            body = 0
-
         my_candle = {
-            'time': ctime,
-            'body': body,
             'open': copen,
             'high': chigh,
             'low': clow,
             'close': cclose,
             'volume': cvolume,
+            'time': ctime,
         }
         return my_candle
 
 class TWSE_CSV(object):
     def __init__(self, csvpath, period):
+        self.df = pd.DataFrame()
         self.period = self.period_to_seconds(period)
         self.csvdata = None
         self.csvpath = csvpath
@@ -198,7 +191,17 @@ class TWSE_CSV(object):
         self.csvdata = csv.reader(self.csvfile)
         next(self.csvdata) # 跳過第一行
 
-    def get_candles_from_csv(self):
+    def get_candles(self):
+        candle = self._get_candles_from_csv()
+        if candle:
+            new_row = pd.DataFrame([candle])
+            self.df = pd.concat([self.df, new_row], ignore_index=True)
+            self.df = self.df.iloc[-CANDLE_MAX_AMOUNT:]
+            return self.df
+        else:
+            return None
+
+    def _get_candles_from_csv(self):
         copen=cclose=chigh=clow=cvolume=ctime=last_price=0
         during_time = datetime.timedelta(seconds=0)
         c_period = datetime.timedelta(seconds=self.period)
@@ -227,13 +230,16 @@ class TWSE_CSV(object):
 
             during_time = data['time'] - start_time
 
+        if cvolume <= 0:
+            return None
+
         my_candle = {
             'open': copen,
             'close': cclose,
             'high': chigh,
             'low': clow,
             'volume': cvolume,
-            'period': during_time.total_seconds(),
+            #'period': during_time.total_seconds(),
             'time': ctime,
         }
         return my_candle

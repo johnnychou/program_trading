@@ -27,6 +27,7 @@ Buy_at = []
 Sell_at = []
 Trade_record = []
 Margin = []
+Candle_list = []
 
 Last_price = 0
 Profit = 0
@@ -35,7 +36,14 @@ OrderAmount = 0
 PT_price = 0
 
 if __name__ == '__main__':
-
     twse_data = twse.TWSE_CSV(CSV_INPUT_DATA, PERIOD_30S)
-    candle = twse_data.get_candles_from_csv()
-    print(candle)
+    twse_30s = pd.DataFrame()
+    while True:
+        candles_df = twse_data.get_candles()
+        if candles_df is None:
+            break
+        else:
+            twse_30s = candles_df
+
+    print(twse_30s)
+
