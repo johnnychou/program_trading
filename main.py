@@ -32,6 +32,9 @@ Balance = 0
 OrderAmount = 0
 PT_price = 0
 
+Flag_1m = 0
+Flag_5m = 0
+Flag_15m = 0
 
 def create_fubon_process(period, product, data_queue, processes):
     """
@@ -124,7 +127,7 @@ def show_realtime(realtime_candle):
     if 'lastprice' in realtime_candle:
         Last_price = realtime_candle['lastprice']
     print(f'lastprice: {Last_price}')
-    print('==================================')
+    print('====================================================================')
     print(realtime_candle)
     os.system('cls')
     return
@@ -151,7 +154,7 @@ def show_user_settings():
     print(f'Product: {Userinput_Product}/{OrderAmount},\
             Market: {Userinput_Market},\
             Direction: {Userinput_Direction}')
-    print('==================================')
+    print('====================================================================')
     return
 
 def is_market_time(market_hours, now):
@@ -202,9 +205,8 @@ def show_account_info():
         if Last_price:
             profit = (Sell_at[0] - Last_price)*PT_price*OrderAmount
 
-    print(f'Position: {position},\
-            Profit: {profit}')
-    print('==================================')
+    print(f'Position: {position}, Profit: {profit}')
+    print('====================================================================')
     return
 
 def get_max_lots():
@@ -261,6 +263,16 @@ def multi_timeframe_strategy():
     sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
     return
 
+def is_data_ready(now, dfs):
+    """檢查指定週期資料是否已更新"""
+    for df in dfs:
+        last_data_time = df[-1]
+        if last_data_time is None:
+            return False  # 尚未收到此週期資料
+        if now - last_data_time > datetime.timedelta(minutes=1):
+            return False  # 資料超過 1 分鐘未更新
+    return True
+
 if __name__ == '__main__':
 
     user_input_settings()
@@ -309,7 +321,13 @@ if __name__ == '__main__':
                 elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
 
-                multi_timeframe_strategy()
+                if now.minute % 15 == 0:
+                    if is_data_ready([df_fubon_1m, df_fubon_5m, df_fubon_15m]):
+
+                elif now.minute % 5 == 0:
+                
+
+                #multi_timeframe_strategy()
 
             show_user_settings()
             show_account_info()

@@ -39,7 +39,6 @@ class Fubon_trade(object):
         self.SDK.init_realtime(Mode.Normal)
         self.Restfut = self.SDK.marketdata.rest_client.futopt
         self.Acc_futures = self.get_future_account()
-        self.Trade_symbol = self.get_trade_symbol()
         self._set_event()
         return
 
@@ -132,6 +131,7 @@ class Fubon_trade(object):
         return equity, [initial_margin, maintenance_margin]
 
     def send_order(self, decision, amount=1):
+        self.Trade_symbol = self.get_trade_symbol()
         # 1=buy, -1=sell
         if decision == 1:
             buy_or_sell = BSAction.Buy
@@ -204,7 +204,7 @@ class Fubon_trade(object):
         return Buy_at, Sel_at
 
     def get_trade_symbol(self):
-        settlementdate = utils.get_settlementDate()
+        settlementdate = utils.get_settlementDate_realtime()
         month_code = MONTH_CODE[settlementdate.month-1]
         last_code = str((settlementdate.year)%10)
         symbol = self.product + month_code + last_code
@@ -259,6 +259,7 @@ class Fubon_data(object):
         self.key = period
         self.product = product
         self.data_queue = data_queue
+        self.candles_list = []
         return
 
     def period_minute(self, period_str):
@@ -270,13 +271,27 @@ class Fubon_data(object):
 
         return value  # 如果單位不正確，則傳回 None
 
+
+    def _init_data(self):
+        self.Account = None
+        self.Acc_futures = None
+        self.Restfut = None
+        self.Trade_symbol = None
+        self.SDK = FubonSDK()
+        self.login_account()
+        self.SDK.init_realtime(Mode.Normal)
+        self.Restfut = self.SDK.marketdata.rest_client.futopt
+        self.Acc_futures = self.get_future_account()
+        self._set_event()
+        return
+    
     def get_candles(self):
         candles_list = self.get_candles_list()
         df = pd.DataFrame(candles_list)
         self.data_queue.put((self.key, df))
-
+        utils.sync_time(self.period)
         while True:
-            utils.sync_time(self.period)
+            self.Trade_symbol = self.get_trade_symbol()
             market = utils.get_market_type()
             if market == '0':
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
@@ -297,14 +312,17 @@ class Fubon_data(object):
     def get_candles_list(self):
         self._init_data()
         candles_list = []
+        self.Trade_symbol = self.get_trade_symbol()
         market = utils.get_market_type()
         if market == '0':
             data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
         else:
             data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
+        #candles_list = data['data']
         candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
 
-        #檢查最後一筆資料是不是完整candle
+        # 檢查最後一筆資料是不是完整candle
+        # 富邦api的k線時間跟一般app看的不同，差距一個週期
         localtime = time.localtime()
         last_data_min = int(candles_list[-1]['date'].split('T')[1].split(':')[1])
         if last_data_min == localtime.tm_min:
@@ -328,20 +346,6 @@ class Fubon_data(object):
         #print(f"===Login sucess===\n{self.Account}")
         #time.sleep(1)
         return
-    
-    def _init_data(self):
-        self.Account = None
-        self.Acc_futures = None
-        self.Restfut = None
-        self.Trade_symbol = None
-        self.SDK = FubonSDK()
-        self.login_account()
-        self.SDK.init_realtime(Mode.Normal)
-        self.Restfut = self.SDK.marketdata.rest_client.futopt
-        self.Acc_futures = self.get_future_account()
-        self.Trade_symbol = self.get_trade_symbol()
-        self._set_event()
-        return
 
     def get_future_account(self):
         for acc in self.Account:
@@ -351,7 +355,7 @@ class Fubon_data(object):
         return None
 
     def get_trade_symbol(self):
-        settlementdate = utils.get_settlementDate()
+        settlementdate = utils.get_settlementDate_realtime()
         month_code = MONTH_CODE[settlementdate.month-1]
         last_code = str((settlementdate.year)%10)
         symbol = self.product + month_code + last_code

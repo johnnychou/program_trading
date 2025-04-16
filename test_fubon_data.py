@@ -5,18 +5,15 @@ import fubon
 
 if __name__ == '__main__':
     data_queue = []
-    fubon_1m = fubon.Fubon_data('1m', 'MXF', data_queue)
+    fubon_1m = fubon.Fubon_data('15m', 'MXF', data_queue)
     # print(fubon_1m.get_trade_symbol())
     # fubon_1m.update_position_holded()
     # fubon_1m.chk_inventories()
     # fubon_1m.chk_remainings()
 
-    # candles = fubon_1m.get_candles_list()
-    # for i in candles:
-    #     print(i)
-
-    price = fubon_1m.get_order_results()
-    print(price)
+    candles = fubon_1m.get_candles_list()
+    for i in candles:
+        print(i)
 
     
 
