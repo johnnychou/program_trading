@@ -7,6 +7,7 @@ import functools
 import traceback
 import winsound
 import pandas as pd
+import numpy as np
 
 import fubon_neo
 from fubon_neo.sdk import FubonSDK, Mode, FutOptOrder
@@ -289,25 +290,28 @@ class Fubon_data(object):
         candles_list = self.get_candles_list()
         df = pd.DataFrame(candles_list)
         self.data_queue.put((self.key, df))
-        utils.sync_time(self.period)
         while True:
+            utils.sync_time(self.period)
             self.Trade_symbol = self.get_trade_symbol()
             market = utils.get_market_type()
             if market == '0':
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
             else:
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
-            candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
             
-            #檢查最後一筆資料是不是完整candle
+            # 檢查最後一筆資料是不是完整candle
+            # 富邦api的k線時間跟一般app看的不同，差距一個週期
+            last_data_min = int(data['data'][-1]['date'].split('T')[1].split(':')[1])
             localtime = time.localtime()
-            last_data_min = int(candles_list[-1]['date'].split('T')[1].split(':')[1])
-            if last_data_min == localtime.tm_min:
-                del candles_list[-1]
+            a = 60 - localtime.tm_min
+            b = 60 - last_data_min
+            if np.abs(a-b) < self.period:
+                del data['data'][-1]
 
+            candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
             df = pd.DataFrame(candles_list)
             self.data_queue.put((self.key, df))
-            time.sleep(self.period*60)
+            time.sleep(self.period*59)
 
     def get_candles_list(self):
         self._init_data()
@@ -318,16 +322,18 @@ class Fubon_data(object):
             data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
         else:
             data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
-        #candles_list = data['data']
+        
+        # 富邦api的k線時間跟一般app看的不同，差距一個週期
+        # 最後一根都會是未完整k線
+        last_data_min = int(data['data'][-1]['date'].split('T')[1].split(':')[1])
+        localtime = time.localtime()
+        a = 60 - localtime.tm_min
+        b = 60 - last_data_min
+        if np.abs(a-b) < self.period:
+            del data['data'][-1]
+
         candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
 
-        # 檢查最後一筆資料是不是完整candle
-        # 富邦api的k線時間跟一般app看的不同，差距一個週期
-        localtime = time.localtime()
-        last_data_min = int(candles_list[-1]['date'].split('T')[1].split(':')[1])
-        if last_data_min == localtime.tm_min:
-            del candles_list[-1]
-    
         return candles_list
 
     def login_account(self, retrytimes=6):

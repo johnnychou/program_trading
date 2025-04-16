@@ -10,6 +10,7 @@ def sync_time(period): #period->minutes
             #print(f'time synchronizing... {period-(localtime.tm_min % period)-1}:{60-localtime.tm_sec}')
             time.sleep(0.1)
             localtime = time.localtime()
+            
         if (localtime.tm_min % period) == 0:
             break
         time.sleep(1)
