@@ -263,15 +263,25 @@ def multi_timeframe_strategy():
     sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
     return
 
-def is_data_ready(now, dfs):
+def is_data_ready(now, datas):
     """檢查指定週期資料是否已更新"""
-    for df in dfs:
-        last_data_time = df[-1]
-        if last_data_time is None:
-            return False  # 尚未收到此週期資料
-        if now - last_data_time > datetime.timedelta(minutes=1):
-            return False  # 資料超過 1 分鐘未更新
-    return True
+    flag = 0
+    total_flag = len(datas)
+    for data in datas:
+        df = data[0]
+        period = data[1]
+        if not df.empty:
+            last_data = df.iloc[-1]
+            last_data_min = int(last_data['date'].split('T')[1].split(':')[1])
+            a = 60 - now.minute
+            b = 60 - last_data_min
+            if np.abs(a-b) == period:
+                flag += 1
+    
+    if flag == total_flag:
+        return True
+    else:
+        return False
 
 if __name__ == '__main__':
 
@@ -321,18 +331,28 @@ if __name__ == '__main__':
                 elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
 
-                if now.minute % 15 == 0:
-                    if is_data_ready([df_fubon_1m, df_fubon_5m, df_fubon_15m]):
 
-                elif now.minute % 5 == 0:
-                
+            if now.minute % 15 == 0:
+                if is_data_ready(now, [[df_fubon_1m, FUBON_PERIOD_1M],\
+                                      [df_fubon_5m, FUBON_PERIOD_5M],\
+                                      [df_fubon_15m, FUBON_PERIOD_15M]]):
+                    print('1,5,15m data is updated')
+                    show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+                    time.sleep(10)
+            
+            elif now.minute % 5 == 0:
+                if is_data_ready(now, [[df_fubon_1m, FUBON_PERIOD_1M],\
+                                      [df_fubon_5m, FUBON_PERIOD_5M]]):
+                    print('1,5m data is updated')
+                    show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+                    time.sleep(10)
 
-                #multi_timeframe_strategy()
+            #multi_timeframe_strategy()
 
             show_user_settings()
             show_account_info()
-            show_realtime(realtime_candle)
-            #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            #show_realtime(realtime_candle)
+            show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
     except KeyboardInterrupt:
         print("All processes stopped.")
