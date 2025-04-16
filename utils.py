@@ -1,6 +1,15 @@
 import time
 import datetime
 
+def period_to_minute(period_str):
+    value = int(period_str[:-1])  # 提取數值
+    unit = period_str[-1]       # 提取單位
+
+    if unit != 'm':
+        raise ValueError("Invalid period. It should have [m] at last.")
+
+    return value  # 如果單位不正確，則傳回 None
+
 def sync_time(period): #period->minutes
     if period < 1: #秒級K線均同步開始於0秒
         period = 1

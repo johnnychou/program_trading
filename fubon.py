@@ -253,7 +253,7 @@ class Fubon_data(object):
         if product not in ('TXF', 'MXF', 'TMF'):
             raise ValueError("Invalid product. It should be TXF, MXF, or TMF.")
 
-        self.period = self.period_minute(period)
+        self.period = utils.period_to_minute(period)
         if self.period not in (1, 5, 10, 15, 30, 60):
             raise ValueError("Invalid period. It should be 1, 5, 10, 15, 30, or 60.")
 
@@ -262,16 +262,6 @@ class Fubon_data(object):
         self.data_queue = data_queue
         self.candles_list = []
         return
-
-    def period_minute(self, period_str):
-        value = int(period_str[:-1])  # 提取數值
-        unit = period_str[-1]       # 提取單位
-
-        if unit != 'm':
-            raise ValueError("Invalid period. It should have [m] at last.")
-
-        return value  # 如果單位不正確，則傳回 None
-
 
     def _init_data(self):
         self.Account = None

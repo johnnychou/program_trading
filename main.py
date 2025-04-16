@@ -11,6 +11,7 @@ import pandas as pd
 import twse
 import fubon
 import indicators
+import utils
 from constant import *
 from conf import *
 
@@ -35,6 +36,7 @@ PT_price = 0
 Flag_1m = 0
 Flag_5m = 0
 Flag_15m = 0
+Last_executed_minute = -1
 
 def create_fubon_process(period, product, data_queue, processes):
     """
@@ -136,7 +138,6 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     global Last_price
     if 'lastprice' in realtime_candle:
         Last_price = realtime_candle['lastprice']
-    os.system('cls')
     print(f'lastprice: {Last_price}')
     print('==================================')
     print(realtime_candle)
@@ -269,7 +270,16 @@ def is_data_ready(now, datas):
     total_flag = len(datas)
     for data in datas:
         df = data[0]
-        period = data[1]
+        period = utils.period_to_minute(data[1])
+
+        # print('=====')
+        # print(df.iloc[-1])
+        # print(period)
+        # print(flag)
+        # print(total_flag)
+        # print('=====')
+        # time.sleep(5)
+
         if not df.empty:
             last_data = df.iloc[-1]
             last_data_min = int(last_data['date'].split('T')[1].split(':')[1])
@@ -332,20 +342,22 @@ if __name__ == '__main__':
                     df_fubon_15m = tmp_df
 
 
-            if now.minute % 15 == 0:
+            if now.minute % 15 == 0 and now.minute != Last_executed_minute:
                 if is_data_ready(now, [[df_fubon_1m, FUBON_PERIOD_1M],\
                                       [df_fubon_5m, FUBON_PERIOD_5M],\
                                       [df_fubon_15m, FUBON_PERIOD_15M]]):
-                    print('1,5,15m data is updated')
-                    show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
-                    time.sleep(10)
+                    Last_executed_minute = now.minute
+                    # print('1,5,15m data is all updated')
+                    # show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+                    # time.sleep(10)
             
-            elif now.minute % 5 == 0:
+            elif now.minute % 5 == 0 and now.minute != Last_executed_minute:
                 if is_data_ready(now, [[df_fubon_1m, FUBON_PERIOD_1M],\
                                       [df_fubon_5m, FUBON_PERIOD_5M]]):
-                    print('1,5m data is updated')
-                    show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
-                    time.sleep(10)
+                    Last_executed_minute = now.minute
+                    # print('1,5m data is all updated')
+                    # show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+                    # time.sleep(10)
 
             #multi_timeframe_strategy()
 
@@ -353,6 +365,8 @@ if __name__ == '__main__':
             show_account_info()
             #show_realtime(realtime_candle)
             show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            time.sleep(0.01)
+            os.system('cls')
 
     except KeyboardInterrupt:
         print("All processes stopped.")
