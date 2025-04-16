@@ -17,26 +17,18 @@ RETRY_TIMES = 10
 CANDLE_MAX_AMOUNT = 50
 
 class TWSE(object):
-    def __init__(self, period, product, source, data_queue, shared_data=None): # (TXF/MXF/TMF, period->seconds, twse/csv)
+    def __init__(self, period, product, data_queue, shared_data=None): # (TXF/MXF/TMF, period->seconds, twse/csv)
         self.key = period
         self.period = self.period_to_seconds(period)
         self.product = product
-        self.data_src = source
         self.df = pd.DataFrame(columns=['body', 'open', 'close', 'high', 'low', 'volume', 'time'])
         #process控制
         self.data_queue = data_queue #共享data
         self.realtime_candle = shared_data
+        self.total_vol = 0
+        self.pre_vol = 0
+        self._init_twse_requirement()
 
-        if source == 'twse':
-            self.total_vol = 0
-            self.pre_vol = 0
-            self._init_twse_requirement()
-        else:
-            self.csvdata = None
-            self.csvpath = source
-            with open(self.csvpath, newline='') as csvfile:
-                self.csvdata = csv.reader(csvfile)
-                next(self.csvdata) # 跳過第一行
         return
 
     def period_to_seconds(self, period_str):
@@ -54,14 +46,7 @@ class TWSE(object):
     def get_candles(self):
         utils.sync_time(self.period/60)
         while True:
-            candle = None
-            if self.data_src == 'twse':
-                candle = self._get_candles_from_twse()
-            elif self.data_src == 'csv':
-                candle = self._get_candles_from_csv()
-            else:
-                raise Exception("Data source error.")
-
+            candle = self._get_candles_from_twse()
             if candle:
                 new_row = pd.DataFrame([candle])
                 self.df = pd.concat([self.df, new_row], ignore_index=True)
@@ -203,7 +188,15 @@ class TWSE(object):
             'volume': cvolume,
         }
         return my_candle
-    
+
+class TWSE_CSV(object):
+    def __init__(self, csvpath):
+        self.csvdata = None
+        self.csvpath = csvpath
+        with open(self.csvpath, newline='') as csvfile:
+            self.csvdata = csv.reader(csvfile)
+            next(self.csvdata) # 跳過第一行
+
     def _get_candles_from_csv(self):
         copen=cclose=chigh=clow=cvolume=ctime=last_price=0
         during_time = datetime.timedelta(seconds=0)

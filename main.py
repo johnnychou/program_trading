@@ -207,6 +207,7 @@ def open_position(account, sig):
          (Userinput_Direction == 'sell' and sig == 1):
         return 0
     account.send_order(sig, OrderAmount)
+    update_account_info(account)
     return
     
 def close_position(account, sig):
@@ -216,6 +217,7 @@ def close_position(account, sig):
          (Sell_at and sig == -1):
         return 0
     account.send_order(sig, OrderAmount)
+    update_account_info(account)
     return
 
 def close_all_position(account):
@@ -223,6 +225,7 @@ def close_all_position(account):
         close_position(account, -1)
     if Sell_at:
         close_position(account, 1)
+    update_account_info(account)
     return
 
 def before_end_of_market(now):
@@ -294,10 +297,10 @@ if __name__ == '__main__':
     data_queue = multiprocessing.Queue()                # shared data queue
     realtime_candle = multiprocessing.Manager().dict()  # shared dict
 
-    create_twse_process(TWSE_PERIOD_30S, Userinput_Product, 'twse', data_queue, realtime_candle, Processes)
-    create_fubon_process(FUBON_PERIOD_1M, Userinput_Product, data_queue, Processes)
-    create_fubon_process(FUBON_PERIOD_5M, Userinput_Product, data_queue, Processes)
-    create_fubon_process(FUBON_PERIOD_15M, Userinput_Product, data_queue, Processes)
+    create_twse_process(PERIOD_30S, Userinput_Product, data_queue, realtime_candle, Processes)
+    create_fubon_process(PERIOD_1M, Userinput_Product, data_queue, Processes)
+    create_fubon_process(PERIOD_5M, Userinput_Product, data_queue, Processes)
+    create_fubon_process(PERIOD_15M, Userinput_Product, data_queue, Processes)
 
     df_twse_30s = pd.DataFrame()
     df_fubon_1m = pd.DataFrame()
@@ -323,27 +326,27 @@ if __name__ == '__main__':
                 # print(f"received period[{period}] data")
                 # print(f"{tmp_df}")
                 tmp_df = indicators_calculation(tmp_df)
-                if period == TWSE_PERIOD_30S:
+                if period == PERIOD_30S:
                     df_twse_30s = tmp_df
-                elif period == FUBON_PERIOD_1M:
+                elif period == PERIOD_1M:
                     df_fubon_1m = tmp_df
-                elif period == FUBON_PERIOD_5M:
+                elif period == PERIOD_5M:
                     df_fubon_5m = tmp_df
-                elif period == FUBON_PERIOD_15M:
+                elif period == PERIOD_15M:
                     df_fubon_15m = tmp_df
 
             if now.minute % 15 == 0 and now.minute != Last_executed_minute:
-                if is_data_ready(now, [[df_fubon_1m, FUBON_PERIOD_1M],\
-                                      [df_fubon_5m, FUBON_PERIOD_5M],\
-                                      [df_fubon_15m, FUBON_PERIOD_15M]]):
+                if is_data_ready(now, [[df_fubon_1m, PERIOD_1M],\
+                                      [df_fubon_5m, PERIOD_5M],\
+                                      [df_fubon_15m, PERIOD_15M]]):
                     Last_executed_minute = now.minute
                     # print('1,5,15m data is all updated')
                     # show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
                     # time.sleep(10)
             
             elif now.minute % 5 == 0 and now.minute != Last_executed_minute:
-                if is_data_ready(now, [[df_fubon_1m, FUBON_PERIOD_1M],\
-                                      [df_fubon_5m, FUBON_PERIOD_5M]]):
+                if is_data_ready(now, [[df_fubon_1m, PERIOD_1M],\
+                                      [df_fubon_5m, PERIOD_5M]]):
                     Last_executed_minute = now.minute
                     # print('1,5m data is all updated')
                     # show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
