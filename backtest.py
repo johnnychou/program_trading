@@ -5,6 +5,8 @@ import fubon
 import time
 import datetime
 import pandas as pd
+
+import twse
 import main as m
 from conf import *
 
@@ -34,26 +36,6 @@ PT_price = 0
 
 if __name__ == '__main__':
 
-    m.user_input_settings()
-
-    Processes = []
-    data_queue = multiprocessing.Queue()                # shared data queue
-    realtime_candle = multiprocessing.Manager().dict()  # shared dict
-
-    m.create_twse_process(PERIOD_30S, Userinput_Product, CSV_INPUT_DATA, data_queue, realtime_candle, Processes)
-
-    df_twse_30s = pd.DataFrame()
-
-    try:
-        while True:
-            while not data_queue.empty():
-                period, tmp_df = data_queue.get()
-                tmp_df = m.indicators_calculation(tmp_df)
-                if period == PERIOD_30S:
-                    df_twse_30s = tmp_df
-                    print(df_twse_30s)
-                    time.sleep(10)
-            #os.system('cls')
-
-    except KeyboardInterrupt:
-        print("All processes stopped.")
+    twse_data = twse.TWSE_CSV(CSV_INPUT_DATA, PERIOD_30S)
+    candle = twse_data.get_candles_from_csv()
+    print(candle)

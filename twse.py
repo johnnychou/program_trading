@@ -190,14 +190,15 @@ class TWSE(object):
         return my_candle
 
 class TWSE_CSV(object):
-    def __init__(self, csvpath):
+    def __init__(self, csvpath, period):
+        self.period = self.period_to_seconds(period)
         self.csvdata = None
         self.csvpath = csvpath
-        with open(self.csvpath, newline='') as csvfile:
-            self.csvdata = csv.reader(csvfile)
-            next(self.csvdata) # 跳過第一行
+        self.csvfile = open(self.csvpath, newline='')
+        self.csvdata = csv.reader(self.csvfile)
+        next(self.csvdata) # 跳過第一行
 
-    def _get_candles_from_csv(self):
+    def get_candles_from_csv(self):
         copen=cclose=chigh=clow=cvolume=ctime=last_price=0
         during_time = datetime.timedelta(seconds=0)
         c_period = datetime.timedelta(seconds=self.period)
@@ -249,6 +250,18 @@ class TWSE_CSV(object):
             'time': datatime,
         }
         return data
+
+    def period_to_seconds(self, period_str):
+        value = int(period_str[:-1])  # 提取數值
+        unit = period_str[-1]       # 提取單位
+
+        if unit == 's':
+            return value
+        elif unit == 'm':
+            return value * 60
+        elif unit == 'h':
+            return value * 60 * 60
+        return None  # 如果單位不正確，則傳回 None
 
     def trans_datetime(self, mdate, mtime):
         myear = mdate//10000
