@@ -4,7 +4,7 @@ from constant import *
 
 def indicator_ma(df, period):
     """
-    計算 DataFrame 中指定欄位的簡單移動平均線 (SMA)，並優化效能。
+    計算 DataFrame 中指定欄位的簡單移動平均線 (SMA)。
     """
     key = MA_PREFIX + str(period)
     df[key] = df['close'].rolling(window=period, min_periods=1).mean().round().astype(int)
@@ -212,22 +212,22 @@ def indicator_bollingsband(df, period=20, std_dev=2):
     """
     key = BB_PREFIX + str(period)
 
-    if key not in df.columns:
-        df[key] = None
+    if key not in df.columns: # 初次計算
+        mid_band = df['close'].rolling(window=period, min_periods=1).mean().astype(int)
+        std = df['close'].rolling(window=period, min_periods=1).std().astype(float)
+        upper_band = mid_band + std_dev * std
+        lower_band = mid_band - std_dev * std
+        df[key] = list(zip(mid_band.round(1), upper_band.round(1), lower_band.round(1)))
+    else: # 後續計算
+        recent_close = df['close'].iloc[-period:]
+        mid = recent_close.mean()
+        std = recent_close.std()
+        upper = mid + std_dev * std
+        lower = mid - std_dev * std
 
-    if len(df) < period:
-        df.at[df.index[-1], key] = (0, 0, 0)
-        return
-
-    recent_close = df['close'].iloc[-period:]
-    mid = recent_close.mean()
-    std = recent_close.std()
-    upper = mid + std_dev * std
-    lower = mid - std_dev * std
-
-    df.at[df.index[-1], key] = (
-        round(mid, 1),
-        round(upper, 1),
-        round(lower, 1)
-    )
+        df.at[df.index[-1], key] = (
+            round(mid, 1),
+            round(upper, 1),
+            round(lower, 1)
+        )
     return
