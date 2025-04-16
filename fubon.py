@@ -17,7 +17,6 @@ import utils
 sys.path.append("C:\\Users\\ChengWei\\Desktop\\my project")
 import accinfo as key
 
-CANDLE_MAX_AMOUNT = 30
 MONTH_CODE = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L')
 
 class Fubon_trade(object):
@@ -298,7 +297,7 @@ class Fubon_data(object):
             if np.abs(a-b) < self.period:
                 del data['data'][-1]
 
-            candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
+            candles_list = data['data']
             df = pd.DataFrame(candles_list)
             self.data_queue.put((self.key, df))
             time.sleep(self.period*59)
@@ -322,7 +321,7 @@ class Fubon_data(object):
         if np.abs(a-b) < self.period:
             del data['data'][-1]
 
-        candles_list = data['data'][-CANDLE_MAX_AMOUNT:]
+        candles_list = data['data']
 
         return candles_list
 

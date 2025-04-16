@@ -14,7 +14,6 @@ import fubon
 TWSE_TXF_API = 'https://mis.taifex.com.tw/futures/api/getQuoteList'
 TWSE_DATA_RATE = 0.02
 RETRY_TIMES = 10
-CANDLE_MAX_AMOUNT = 50
 
 class TWSE(object):
     def __init__(self, period, product, data_queue, shared_data=None): # (TXF/MXF/TMF, period->seconds, twse/csv)
@@ -50,7 +49,6 @@ class TWSE(object):
             if candle:
                 new_row = pd.DataFrame([candle])
                 self.df = pd.concat([self.df, new_row], ignore_index=True)
-                self.df = self.df.iloc[-CANDLE_MAX_AMOUNT:]
                 self.data_queue.put((self.key, self.df))
 
     def _init_twse_requirement(self):
@@ -196,7 +194,6 @@ class TWSE_CSV(object):
         if candle:
             new_row = pd.DataFrame([candle])
             self.df = pd.concat([self.df, new_row], ignore_index=True)
-            self.df = self.df.iloc[-CANDLE_MAX_AMOUNT:]
             return self.df
         else:
             return None

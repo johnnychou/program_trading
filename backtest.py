@@ -39,11 +39,12 @@ if __name__ == '__main__':
     twse_data = twse.TWSE_CSV(CSV_INPUT_DATA, PERIOD_30S)
     twse_30s = pd.DataFrame()
     while True:
-        candles_df = twse_data.get_candles()
-        if candles_df is None:
+        tmp_df = twse_data.get_candles()
+        if tmp_df is None:
             break
         else:
-            twse_30s = candles_df
+            tmp_df = m.indicators_calculation(tmp_df)
+            twse_30s = tmp_df
 
     print(twse_30s)
 

@@ -16,14 +16,17 @@ def indicator_ema(df, period):
     """
     key = EMA_PREFIX + str(period)
 
-    if key not in df.columns:  # 首次計算
-        df[key] = df['close'].ewm(span=period, adjust=False).mean().round().fillna(0).astype(int)
-    else:  # 後續計算
-        if len(df) >= period:
-            ema = (df['close'].iloc[-1] * 2 + df[key].iloc[-2] * (period - 1)) / (period + 1)
-            df.loc[df.index[-1], key] = int(round(ema))
-        else:
-            df.loc[df.index[-1], key] = 0
+    if key not in df.columns:
+        df[key] = None
+
+    if len(df) > period:
+        prev_ema = df[key].iloc[-2]
+        close_price = df['close'].iloc[-1]
+        multiplier = 2 / (period + 1)
+        ema = multiplier * (close_price - prev_ema) + prev_ema
+        df.loc[df.index[-1], key] = int(round(ema))
+    else:
+        df[key] = df['close'].ewm(span=period, adjust=False).mean().round().astype(int)
     return
 
 def indicator_atr(df, period=14):
@@ -49,36 +52,35 @@ def indicator_atr(df, period=14):
 def indicator_rsi(df, period=10):
     key = RSI_PREFIX + str(period)
 
-    if key not in df.columns:
+    if key not in df.columns or len(df) < period:
+        # 初始化 RSI 全量計算
         delta = df['close'].diff()
         up = delta.where(delta > 0, 0)
         down = -delta.where(delta < 0, 0)
 
-        avg_gain = up.rolling(window=period).mean().astype(float)
-        avg_loss = down.rolling(window=period).mean().astype(float)
+        avg_gain = up.rolling(window=period).mean()
+        avg_loss = down.rolling(window=period).mean()
 
         rs = avg_gain / avg_loss
-        rsi = (100 - (100 / (1 + rs))).fillna(0).astype(float)
-
-        df[key] = rsi.round(1)
+        rsi = 100 - (100 / (1 + rs))
+        df[key] = rsi.fillna(0).round(1)
     else:
-        if len(df) >= period:
-            delta = df['close'].diff()
-            up = delta.iloc[-1:].where(delta.iloc[-1:] > 0, 0).sum()
-            down = -delta.iloc[-1:].where(delta.iloc[-1:] < 0, 0).sum()
+        # 增量計算（更新最後一筆 RSI）
+        delta = df['close'].diff()
+        up = delta.iloc[-1] if delta.iloc[-1] > 0 else 0
+        down = -delta.iloc[-1] if delta.iloc[-1] < 0 else 0
 
-            avg_gain_prev = df[key].iloc[-14:].diff().where(df[key].iloc[-14:].diff() > 0, 0).mean() if len(df) > period else 0
-            avg_loss_prev = -df[key].iloc[-14:].diff().where(df[key].iloc[-14:].diff() < 0, 0).mean() if len(df) > period else 0
+        # 使用上一筆 gain/loss 的平均
+        prev_avg_gain = df['close'].diff().where(lambda x: x > 0, 0).iloc[-(period+1):-1].mean()
+        prev_avg_loss = -df['close'].diff().where(lambda x: x < 0, 0).iloc[-(period+1):-1].mean()
 
-            avg_gain = (avg_gain_prev * (period - 1) + up) / period if period > 1 else up
-            avg_loss = (avg_loss_prev * (period - 1) + down) / period if period > 1 else down
+        avg_gain = (prev_avg_gain * (period - 1) + up) / period
+        avg_loss = (prev_avg_loss * (period - 1) + down) / period
 
-            rs = avg_gain / avg_loss
-            rsi = 100 - (100 / (1 + rs))
+        rs = avg_gain / avg_loss if avg_loss != 0 else float('inf')
+        rsi = 100 - (100 / (1 + rs)) if avg_loss != 0 else 100.0
 
-            df.loc[df.index[-1], key] = rsi.round(1)
-        else:
-            df.loc[df.index[-1], key] = 0
+        df.loc[df.index[-1], key] = round(rsi, 1)
     return
 
 def indicator_kd(df, n=9, k=3, d=3):
@@ -133,6 +135,7 @@ def indicator_kd(df, n=9, k=3, d=3):
 
     return
 
+Macd_state = {}
 def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
     """
     計算 DataFrame 的移動平均收斂發散指標 (MACD)。
@@ -143,28 +146,59 @@ def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
         slow_period (int): 計算慢線 EMA 的週期，預設為 26。
         signal_period (int): 計算 MACD 線 EMA 的週期，預設為 9。
     """
+    global Macd_state
     key = MACD_PREFIX + str(fast_period)
 
-    if key not in df.columns:  # 首次計算
-        fast_ema = df['close'].ewm(span=fast_period, adjust=False).mean()
-        slow_ema = df['close'].ewm(span=slow_period, adjust=False).mean()
-        macd_line = fast_ema - slow_ema
+    alpha_fast = 2 / (fast_period + 1)
+    alpha_slow = 2 / (slow_period + 1)
+    alpha_signal = 2 / (signal_period + 1)
+
+    if key not in df.columns:
+        df[key] = None
+
+    if len(df) < slow_period:
+        df.at[df.index[-1], key] = (0, 0, 0)
+        return
+
+    close_now = df['close'].iloc[-1]
+
+    # 初始化：沒狀態就用全量計算一次最後一筆的 EMA，並儲存在 state 中
+    if 'fast_ema' not in Macd_state or 'slow_ema' not in Macd_state or 'signal' not in Macd_state:
+        fast_ema_series = df['close'].ewm(span=fast_period, adjust=False).mean()
+        slow_ema_series = df['close'].ewm(span=slow_period, adjust=False).mean()
+        macd_line = fast_ema_series - slow_ema_series
         signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
         hist = macd_line - signal_line
 
-        df[key] = list(zip(macd_line.round(1), signal_line.round(1), hist.round(1)))
+        Macd_state['fast_ema'] = fast_ema_series.iloc[-1]
+        Macd_state['slow_ema'] = slow_ema_series.iloc[-1]
+        Macd_state['signal'] = signal_line.iloc[-1]
 
-    else:  # 後續計算
-        if len(df) >= slow_period:  # 確保有足夠的資料計算慢線 EMA
-            fast_ema = (df['close'].iloc[-1] * (2 / (fast_period + 1)) + df['close'].iloc[-2] * (1 - (2 / (fast_period + 1)))) if len(df) > 1 else df['close'].iloc[-1]
-            slow_ema = (df['close'].iloc[-1] * (2 / (slow_period + 1)) + df['close'].iloc[-2] * (1 - (2 / (slow_period + 1)))) if len(df) > 1 else df['close'].iloc[-1]
-            macd_line = fast_ema - slow_ema
-            signal_line = (macd_line * (2 / (signal_period + 1)) + df[key].iloc[-2][1] * (1 - (2 / (signal_period + 1)))) if len(df) >= signal_period else macd_line
-            hist = macd_line - signal_line
+        df.at[df.index[-1], key] = (
+            round(macd_line.iloc[-1], 1),
+            round(signal_line.iloc[-1], 1),
+            round(hist.iloc[-1], 1)
+        )
+        return
 
-            df.at[df.index[-1], key] = (macd_line.round(1), signal_line.round(1), hist.round(1))
-        else:
-            df.at[df.index[-1], key] = (0, 0, 0)
+    # 增量更新
+    fast_ema = alpha_fast * close_now + (1 - alpha_fast) * Macd_state['fast_ema']
+    slow_ema = alpha_slow * close_now + (1 - alpha_slow) * Macd_state['slow_ema']
+    macd_line = fast_ema - slow_ema
+    signal_line = alpha_signal * macd_line + (1 - alpha_signal) * Macd_state['signal']
+    hist = macd_line - signal_line
+
+    # 更新狀態
+    Macd_state['fast_ema'] = fast_ema
+    Macd_state['slow_ema'] = slow_ema
+    Macd_state['signal'] = signal_line
+
+    # 寫入結果欄位
+    df.at[df.index[-1], key] = (
+        round(macd_line, 1),
+        round(signal_line, 1),
+        round(hist, 1)
+    )
     return
 
 def indicator_bollingsband(df, period=20, std_dev=2):
@@ -178,11 +212,22 @@ def indicator_bollingsband(df, period=20, std_dev=2):
     """
     key = BB_PREFIX + str(period)
 
-    mid_band = df['close'].rolling(window=period, min_periods=1).mean().astype(int)
-    std = df['close'].rolling(window=period, min_periods=1).std().astype(float)
-    upper_band = mid_band + std_dev * std
-    lower_band = mid_band - std_dev * std
+    if key not in df.columns:
+        df[key] = None
 
-    df[key] = list(zip(mid_band.round(1), upper_band.round(1), lower_band.round(1)))
+    if len(df) < period:
+        df.at[df.index[-1], key] = (0, 0, 0)
+        return
 
+    recent_close = df['close'].iloc[-period:]
+    mid = recent_close.mean()
+    std = recent_close.std()
+    upper = mid + std_dev * std
+    lower = mid - std_dev * std
+
+    df.at[df.index[-1], key] = (
+        round(mid, 1),
+        round(upper, 1),
+        round(lower, 1)
+    )
     return
