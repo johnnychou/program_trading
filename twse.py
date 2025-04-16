@@ -31,7 +31,12 @@ class TWSE(object):
             self.total_vol = 0
             self.pre_vol = 0
             self._init_twse_requirement()
-
+        else:
+            self.csvdata = None
+            self.csvpath = source
+            with open(self.csvpath, newline='') as csvfile:
+                self.csvdata = csv.reader(csvfile)
+                next(self.csvdata) # 跳過第一行
         return
 
     def period_to_seconds(self, period_str):
@@ -200,5 +205,64 @@ class TWSE(object):
         return my_candle
     
     def _get_candles_from_csv(self):
-        return
-    
+        copen=cclose=chigh=clow=cvolume=ctime=last_price=0
+        during_time = datetime.timedelta(seconds=0)
+        c_period = datetime.timedelta(seconds=self.period)
+        start_time = 0
+
+        while(during_time < c_period):
+            data = self.get_row_from_csv()
+            if not data:
+                break
+
+            last_price = data['price']
+            if not start_time:
+                start_time = data['time']
+
+            if copen == 0:
+                copen = last_price
+                clow = last_price
+            if chigh < last_price:
+                chigh = last_price
+            if clow > last_price:
+                clow = last_price
+
+            cclose = last_price
+            cvolume += data['volume']
+            ctime = data['time']
+
+            during_time = data['time'] - start_time
+
+        my_candle = {
+            'open': copen,
+            'close': cclose,
+            'high': chigh,
+            'low': clow,
+            'volume': cvolume,
+            'period': during_time.total_seconds(),
+            'time': ctime,
+        }
+        return my_candle
+
+    def get_row_from_csv(self):
+        row = next(self.csvdata, 'end')
+        if row == 'end':
+            return None
+
+        datatime = self.trans_datetime(int(row[0]), int(row[3]))
+        data = {
+            'price': int(row[4]),
+            'volume': int(row[5]),
+            'time': datatime,
+        }
+        return data
+
+    def trans_datetime(self, mdate, mtime):
+        myear = mdate//10000
+        mmonth = (mdate//100)%100
+        mday = mdate%100
+        sec = mtime%100
+        min = (mtime//100)%100
+        hor = mtime//10000
+        #print(myear, mmonth, mday, hor, min, sec)
+        return datetime.datetime(myear, mmonth, mday, hor, min, sec)

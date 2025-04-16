@@ -113,17 +113,6 @@ def user_input_settings():
 
     return
 
-def indicators_calculation(df):
-    indicators.indicator_ma(df, MA_PERIOD)
-    indicators.indicator_ema(df, EMA_PERIOD)
-    indicators.indicator_ema(df, EMA2_PERIOD)
-    indicators.indicator_atr(df, ATR_PERIOD)
-    indicators.indicator_rsi(df, RSI_PERIOD)
-    indicators.indicator_kd(df, KD_PERIOD[0], KD_PERIOD[1], KD_PERIOD[2])
-    indicators.indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
-    indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
-    return df
-
 def show_realtime(realtime_candle):
     global Last_price
     if 'lastprice' in realtime_candle:
@@ -158,6 +147,22 @@ def show_user_settings():
     print('====================================================================')
     return
 
+def show_account_info():
+    position = ''
+    profit = 0
+    if Buy_at:
+        position = f'Buy: {Buy_at}'
+        if Last_price:
+            profit = (Last_price - Buy_at[0])*PT_price*OrderAmount
+    elif Sell_at:
+        position = f'Sell: {Sell_at}'
+        if Last_price:
+            profit = (Sell_at[0] - Last_price)*PT_price*OrderAmount
+
+    print(f'Position: {position}, Profit: {profit}')
+    print('====================================================================')
+    return
+
 def is_market_time(market_hours, now):
     start_str, end_str = market_hours
     start_time = datetime.datetime.strptime(start_str, "%H:%M:%S").time()
@@ -179,36 +184,6 @@ def is_trading_time(now):
     elif Userinput_Market == 'all' and (is_market_time(DAY_MARKET, now) or is_market_time(NIGHT_MARKET, now)):
         return True
     return False
-
-def force_close_position(now):
-    """判斷是否應該在收盤前一分鐘平倉"""
-    now_str = now.strftime("%H:%M:%S")
-    if Userinput_Market == 'day' and now_str == CLOSE_POSITION_TIME[0]:
-        return True
-    elif Userinput_Market == 'night' and now_str == CLOSE_POSITION_TIME[1]:
-        return True
-    elif Userinput_Market == 'main' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[2]) and is_trading_time(now):
-        return True
-    elif Userinput_Market == 'all' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[1]) and is_trading_time(now):
-        return True
-    else:
-        return False
-
-def show_account_info():
-    position = ''
-    profit = 0
-    if Buy_at:
-        position = f'Buy: {Buy_at}'
-        if Last_price:
-            profit = (Last_price - Buy_at[0])*PT_price*OrderAmount
-    elif Sell_at:
-        position = f'Sell: {Sell_at}'
-        if Last_price:
-            profit = (Sell_at[0] - Last_price)*PT_price*OrderAmount
-
-    print(f'Position: {position}, Profit: {profit}')
-    print('====================================================================')
-    return
 
 def get_max_lots():
     max_lots = 0
@@ -250,6 +225,51 @@ def close_all_position(account):
         close_position(account, 1)
     return
 
+def before_end_of_market(now):
+    """判斷是否應該在收盤前一分鐘平倉"""
+    now_str = now.strftime("%H:%M:%S")
+    if Userinput_Market == 'day' and now_str == CLOSE_POSITION_TIME[0]:
+        return True
+    elif Userinput_Market == 'night' and now_str == CLOSE_POSITION_TIME[1]:
+        return True
+    elif Userinput_Market == 'main' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[2]) and is_trading_time(now):
+        return True
+    elif Userinput_Market == 'all' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[1]) and is_trading_time(now):
+        return True
+    else:
+        return False
+
+def is_data_ready(now, datas):
+    """檢查指定週期資料是否已更新"""
+    flag = 0
+    total_flag = len(datas)
+    for data in datas:
+        df = data[0]
+        period = utils.period_to_minute(data[1])
+        if not df.empty:
+            last_data = df.iloc[-1]
+            last_data_min = int(last_data['date'].split('T')[1].split(':')[1])
+            a = 60 - now.minute
+            b = 60 - last_data_min
+            if np.abs(a-b) == period:
+                flag += 1
+    
+    if flag == total_flag:
+        return True
+    else:
+        return False
+
+def indicators_calculation(df):
+    indicators.indicator_ma(df, MA_PERIOD)
+    indicators.indicator_ema(df, EMA_PERIOD)
+    indicators.indicator_ema(df, EMA2_PERIOD)
+    indicators.indicator_atr(df, ATR_PERIOD)
+    indicators.indicator_rsi(df, RSI_PERIOD)
+    indicators.indicator_kd(df, KD_PERIOD[0], KD_PERIOD[1], KD_PERIOD[2])
+    indicators.indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
+    indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
+    return df
+    
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     if KD_KEY in df_fubon_1m.columns:
         column = df_fubon_1m[KD_KEY]
@@ -263,35 +283,6 @@ def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_
 def multi_timeframe_strategy():
     sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
     return
-
-def is_data_ready(now, datas):
-    """檢查指定週期資料是否已更新"""
-    flag = 0
-    total_flag = len(datas)
-    for data in datas:
-        df = data[0]
-        period = utils.period_to_minute(data[1])
-
-        # print('=====')
-        # print(df.iloc[-1])
-        # print(period)
-        # print(flag)
-        # print(total_flag)
-        # print('=====')
-        # time.sleep(5)
-
-        if not df.empty:
-            last_data = df.iloc[-1]
-            last_data_min = int(last_data['date'].split('T')[1].split(':')[1])
-            a = 60 - now.minute
-            b = 60 - last_data_min
-            if np.abs(a-b) == period:
-                flag += 1
-    
-    if flag == total_flag:
-        return True
-    else:
-        return False
 
 if __name__ == '__main__':
 
@@ -321,7 +312,7 @@ if __name__ == '__main__':
                 time.sleep(60)
                 continue
 
-            if force_close_position(now):
+            if before_end_of_market(now):
                 print(f"[{now.strftime('%H:%M:%S')}] 時段即將結束，執行平倉操作...")
                 #close_all_position()
                 time.sleep(60)
@@ -340,7 +331,6 @@ if __name__ == '__main__':
                     df_fubon_5m = tmp_df
                 elif period == FUBON_PERIOD_15M:
                     df_fubon_15m = tmp_df
-
 
             if now.minute % 15 == 0 and now.minute != Last_executed_minute:
                 if is_data_ready(now, [[df_fubon_1m, FUBON_PERIOD_1M],\
