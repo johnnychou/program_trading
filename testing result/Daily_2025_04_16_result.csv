@@ -1,7 +1,8 @@
-Total_profit,0
-Real_profit,-150
-Trade_times,1,150
-Buy_profit,0,[]
+Total_profit,-8200
+Real_profit,-8500
+Trade_times,2,300
+Buy_profit,-8200,[-8200]
 Sell_profit,0,[]
 
-
+type,entry,exit,profit,entry_time,exit_time
+Buy,19843,19802,-8200,2025-04-15 15:51:32,2025-04-16 03:59:00

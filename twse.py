@@ -307,12 +307,12 @@ class CandleCollector:
 
         current_time = data['time']
 
-        if not self.buffer:
+        if not self.start_time:
             self.start_time = current_time
 
-        self.buffer.append(data)
+        end_time = self.start_time + self.period
 
-        if current_time - self.start_time >= self.period:
+        if current_time >= end_time:
             prices = [item['price'] for item in self.buffer]
             volumes = [item['volume'] for item in self.buffer]
             candle = {
@@ -325,7 +325,10 @@ class CandleCollector:
                 'end_time': self.buffer[-1]['time']
             }
             self.buffer = []
-            self.start_time = None
+            self.buffer.append(data)
+            self.start_time = data['time']
             return candle
+        else:
+            self.buffer.append(data)
 
         return None

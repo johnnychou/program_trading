@@ -1,8 +1,7 @@
-Total_profit,-4200
-Real_profit,-4500
-Trade_times,2,300
+Total_profit,0
+Real_profit,0
+Trade_times,0,0
 Buy_profit,0,[]
-Sell_profit,-4200,[np.int64(-4200)]
+Sell_profit,0,[]
 
-type,entry,exit,profit,entry_time,exit_time
-Sell,23273,23294,-4200,2025-02-25 08:45:00,2025-02-25 13:44:00
+

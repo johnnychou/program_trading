@@ -272,7 +272,6 @@ def run_test(fullpath, market='main'):
             new_row = pd.DataFrame([candle_1])
             df_1m = pd.concat([df_1m, new_row], ignore_index=True)
             m.indicators_calculation(df_1m)
-            multi_timeframe_strategy(now)
 
         candle_5 = candles_5m.get_candles(data)
         if candle_5:
