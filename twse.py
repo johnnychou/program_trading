@@ -270,6 +270,7 @@ class TWSE_CSV(object):
         myear = mdate//10000
         mmonth = (mdate//100)%100
         mday = mdate%100
+
         sec = mtime%100
         min = (mtime//100)%100
         hor = mtime//10000

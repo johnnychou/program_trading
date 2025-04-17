@@ -18,7 +18,7 @@ class TestProcess(multiprocessing.Process):
 
     def run(self):
         print(f'File:{self.filename}, starting test!')
-        backtest.run_test(self.fullpath)
+        backtest.run_test(self.fullpath, TRADING_MARKET)
 
 All_Process = []
 
@@ -48,4 +48,3 @@ if __name__ == '__main__':
         time.sleep(0.5)  # 減少 CPU 資源浪費
 
     print('=== All tests completed ===')
-    

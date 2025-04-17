@@ -6,7 +6,6 @@ import time
 import datetime
 import pandas as pd
 from datetime import timedelta
-from datetime import time
 
 import twse
 import main as m
@@ -86,6 +85,13 @@ def fake_close_position(sig, lastprice, now): # 1=close_sell_position, -1=close_
             Trade_times += 1
     return
 
+def fake_close_all_position(lastprice, now):
+    if Buy_at:
+        fake_close_position(-1, lastprice, now)
+    if Sell_at:
+        fake_close_position(1, lastprice, now)
+    return
+
 def export_trade_log(fullpath):
     base_filename = os.path.splitext(os.path.basename(fullpath))[0]
     output_file = os.path.join(CSV_OUTPUT_PATH, f"{base_filename}_result.csv")
@@ -126,13 +132,11 @@ def export_trade_log(fullpath):
 
     df_record = pd.DataFrame(records)
     df_record = df_record.sort_values(by='entry_time')
-    df_record['entry_time'] = df_record['entry_time'].dt.strftime('%Y/%#m/%#d  %I:%M:%S %p')
-    df_record['exit_time'] = df_record['exit_time'].dt.strftime('%Y/%#m/%#d  %I:%M:%S %p')
     df_record.to_csv(output_file, index=False, encoding='utf-8-sig', mode='a') # mode -> append
     print(f"\n交易紀錄已儲存到: {output_file}")
 
 def is_day_session(now):
-    return time(8, 45) <= now.time() <= time(13, 45)
+    return datetime.time(8, 45) <= now.time() <= datetime.time(13, 45)
 
 def detect_kbar_momentum(row):
     body = abs(row['close'] - row['open'])
@@ -187,7 +191,7 @@ def multi_timeframe_strategy(now):
             fake_close_position(1, Last_price, now)
 
 
-def run_test(fullpath):
+def run_test(fullpath, market='main'):
     global df_1m, df_5m, df_15m, Last_price
     global candles_1m, candles_5m, candles_15m
     twse_data = twse.TWSE_CSV(fullpath)
@@ -198,6 +202,13 @@ def run_test(fullpath):
         if data:
             now = data['time']
             Last_price = data['price']
+
+        if not m.is_trading_time(market, now):
+            continue
+
+        if m.before_end_of_market(market, now):
+            fake_close_all_position(Last_price, now)
+            continue
 
         candle_1 = candles_1m.get_candles(data)
         if candle_1:
