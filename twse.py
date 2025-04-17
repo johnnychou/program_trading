@@ -297,7 +297,7 @@ class CandleCollector:
                     'close': prices[-1],
                     'volume': sum(volumes),
                     'start_time': self.start_time,
-                    'end_time': self.buffer[-1]['time']
+                    'end_time': self.start_time + self.period
                 }
                 self.buffer = []
                 self.start_time = None
@@ -322,11 +322,11 @@ class CandleCollector:
                 'close': prices[-1],
                 'volume': sum(volumes),
                 'start_time': self.start_time,
-                'end_time': self.buffer[-1]['time']
+                'end_time': end_time,
             }
             self.buffer = []
             self.buffer.append(data)
-            self.start_time = data['time']
+            self.start_time = end_time
             return candle
         else:
             self.buffer.append(data)
