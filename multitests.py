@@ -8,7 +8,7 @@ import time
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
 TRADING_MARKET = 'day'
-MAX_CONCURRENT = 5  # 最多同時跑幾個 process
+MAX_CONCURRENT = 10  # 最多同時跑幾個 process
 
 class TestProcess(multiprocessing.Process):
     def __init__(self, filename, pullpath):
