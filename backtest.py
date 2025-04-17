@@ -15,7 +15,6 @@ from conf import *
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
 CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_01.csv'
-TRADING_MARKET = 'day'
 PT_PRICE = 200
 
 Fubon_account = None
@@ -40,7 +39,6 @@ Total_profit = 0
 candles_1m = twse.CandleCollector(period=timedelta(minutes=1))
 candles_5m = twse.CandleCollector(period=timedelta(minutes=5))
 candles_15m = twse.CandleCollector(period=timedelta(minutes=15))
-
 df_1m = pd.DataFrame()
 df_5m = pd.DataFrame()
 df_15m = pd.DataFrame()
@@ -116,7 +114,7 @@ def export_trade_log():
 
     df_record = pd.DataFrame(records)
     df_record.to_csv(output_file, index=False, encoding='utf-8-sig')
-    print(f"\n交易紀錄已儲存到：{output_file}")
+    print(f"\n交易紀錄已儲存到: {output_file}")
 
 def is_day_session(now):
     return time(8, 45) <= now.time() <= time(13, 45)
@@ -141,6 +139,7 @@ def get_ema_trend(df, period=20):
     return 'up' if slope > 0 else 'down'
 
 def multi_timeframe_strategy(now):
+    global df_1m, df_5m, df_15m
     if not df_1m.empty and not df_5m.empty and not df_15m.empty:
         current_time = df_1m.iloc[-1]['end_time']
         if is_day_session(current_time):
@@ -173,8 +172,10 @@ def multi_timeframe_strategy(now):
             fake_close_position(1, Last_price, now)
 
 
-if __name__ == '__main__':
-    twse_data = twse.TWSE_CSV(CSV_INPUT_DATA)
+def run_test(filename):
+    global df_1m, df_5m, df_15m, Last_price
+    global candles_1m, candles_5m, candles_15m
+    twse_data = twse.TWSE_CSV(filename)
 
     while True:
         data = twse_data.get_row_from_csv()
@@ -214,3 +215,7 @@ if __name__ == '__main__':
     print(f'Buy_record: {Buy_record}')
     print(f'Sell_record: {Sell_record}')
     export_trade_log()
+
+
+if __name__ == '__main__':
+    run_test(CSV_INPUT_DATA)
