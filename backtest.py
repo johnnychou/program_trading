@@ -203,13 +203,6 @@ def run_test(fullpath, market='main'):
             now = data['time']
             Last_price = data['price']
 
-        if not m.is_trading_time(market, now):
-            continue
-
-        if m.before_end_of_market(market, now):
-            fake_close_all_position(Last_price, now)
-            continue
-
         candle_1 = candles_1m.get_candles(data)
         if candle_1:
             new_row = pd.DataFrame([candle_1])
@@ -229,6 +222,20 @@ def run_test(fullpath, market='main'):
             df_15m = pd.concat([df_15m, new_row], ignore_index=True)
             m.indicators_calculation(df_15m)
 
+        if not m.is_trading_time(market, now):
+            continue
+
+        if m.before_end_of_market(market, now):
+            fake_close_all_position(Last_price, now)
+            continue
+
+        # === 根據盤別主K線判斷時機呼叫策略 ===
+        if market != 'night' and candle_1:
+            multi_timeframe_strategy(now)
+        elif market != 'day' and candle_5:
+            multi_timeframe_strategy(now)
+
+        # 放最後以讓上面k線收完
         if data is None:
             break
 
