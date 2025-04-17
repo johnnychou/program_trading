@@ -1,4 +1,5 @@
 import datetime
+from datetime import timedelta
 import math
 import os
 import numpy as np
@@ -180,9 +181,8 @@ class TWSE(object):
         return my_candle
 
 class TWSE_CSV(object):
-    def __init__(self, csvpath, period):
+    def __init__(self, csvpath):
         self.df = pd.DataFrame()
-        self.period = self.period_to_seconds(period)
         self.csvdata = None
         self.csvpath = csvpath
         self.csvfile = open(self.csvpath, newline='')
@@ -190,7 +190,7 @@ class TWSE_CSV(object):
         next(self.csvdata) # 跳過第一行
 
     def get_candles(self):
-        candle = self._get_candles_from_csv()
+        candle = self.get_candles_from_csv()
         if candle:
             new_row = pd.DataFrame([candle])
             self.df = pd.concat([self.df, new_row], ignore_index=True)
@@ -198,7 +198,7 @@ class TWSE_CSV(object):
         else:
             return None
 
-    def _get_candles_from_csv(self):
+    def get_candles_from_csv(self, data):
         copen=cclose=chigh=clow=cvolume=ctime=last_price=0
         during_time = datetime.timedelta(seconds=0)
         c_period = datetime.timedelta(seconds=self.period)
@@ -275,3 +275,35 @@ class TWSE_CSV(object):
         hor = mtime//10000
         #print(myear, mmonth, mday, hor, min, sec)
         return datetime.datetime(myear, mmonth, mday, hor, min, sec)
+    
+
+class CandleCollector:
+    def __init__(self, period: timedelta):
+        self.period = period
+        self.buffer = []
+        self.start_time = None
+
+    def get_candles(self, data):
+        current_time = data['time']
+        
+        if not self.buffer:
+            self.start_time = current_time
+        
+        self.buffer.append(data)
+
+        if current_time - self.start_time >= self.period:
+            prices = [item['price'] for item in self.buffer]
+            volumes = [item['volume'] for item in self.buffer]
+            candle = {
+                'open': prices[0],
+                'high': max(prices),
+                'low': min(prices),
+                'close': prices[-1],
+                'volume': sum(volumes),
+                'time': self.start_time,
+            }
+            self.buffer = []  # 清空 buffer，準備下次收集
+            self.start_time = None
+            return candle
+        
+        return None

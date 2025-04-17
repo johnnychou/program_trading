@@ -174,14 +174,14 @@ def is_market_time(market_hours, now):
     else:
         return start_time <= now_time <= end_time
 
-def is_trading_time(now):
-    if Userinput_Market == 'day' and is_market_time(DAY_MARKET, now):
+def is_trading_time(market, now):
+    if market == 'day' and is_market_time(DAY_MARKET, now):
         return True
-    elif Userinput_Market == 'night' and is_market_time(NIGHT_MARKET, now):
+    elif market == 'night' and is_market_time(NIGHT_MARKET, now):
         return True
-    elif Userinput_Market == 'main' and (is_market_time(DAY_MARKET, now) or is_market_time(AMER_MARKET, now)):
+    elif market == 'main' and (is_market_time(DAY_MARKET, now) or is_market_time(AMER_MARKET, now)):
         return True
-    elif Userinput_Market == 'all' and (is_market_time(DAY_MARKET, now) or is_market_time(NIGHT_MARKET, now)):
+    elif market == 'all' and (is_market_time(DAY_MARKET, now) or is_market_time(NIGHT_MARKET, now)):
         return True
     return False
 
@@ -228,16 +228,16 @@ def close_all_position(account):
     update_account_info(account)
     return
 
-def before_end_of_market(now):
+def before_end_of_market(market, now):
     """判斷是否應該在收盤前一分鐘平倉"""
     now_str = now.strftime("%H:%M:%S")
-    if Userinput_Market == 'day' and now_str == CLOSE_POSITION_TIME[0]:
+    if market == 'day' and now_str == CLOSE_POSITION_TIME[0]:
         return True
-    elif Userinput_Market == 'night' and now_str == CLOSE_POSITION_TIME[1]:
+    elif market == 'night' and now_str == CLOSE_POSITION_TIME[1]:
         return True
-    elif Userinput_Market == 'main' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[2]) and is_trading_time(now):
+    elif market == 'main' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[2]) and is_trading_time(market, now):
         return True
-    elif Userinput_Market == 'all' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[1]) and is_trading_time(now):
+    elif market == 'all' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[1]) and is_trading_time(market, now):
         return True
     else:
         return False
@@ -310,12 +310,12 @@ if __name__ == '__main__':
     try:
         while True:
             now = datetime.datetime.now()
-            if not is_trading_time(now):
+            if not is_trading_time(Userinput_Market, now):
                 print(f"[{now.strftime('%H:%M:%S')}] 不在交易時間...")
                 time.sleep(60)
                 continue
 
-            if before_end_of_market(now):
+            if before_end_of_market(Userinput_Market, now):
                 print(f"[{now.strftime('%H:%M:%S')}] 時段即將結束，執行平倉操作...")
                 #close_all_position()
                 time.sleep(60)
