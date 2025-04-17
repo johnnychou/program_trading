@@ -14,9 +14,8 @@ from conf import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
-TRADING_MARKET = 'day'
-
 CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_01.csv'
+TRADING_MARKET = 'day'
 PT_PRICE = 200
 
 Fubon_account = None
@@ -46,18 +45,20 @@ df_1m = pd.DataFrame()
 df_5m = pd.DataFrame()
 df_15m = pd.DataFrame()
 
-def fake_open_position(sig, lastprice): # 1=buy, -1=sell
-    global Buy_at, Sell_at
+def fake_open_position(sig, lastprice, now): # 1=buy, -1=sell
+    global Buy_at, Sell_at, Trade_times
     positions = len(Buy_at) + len(Sell_at)
     if positions:
         return
     if sig == 1:
-        Buy_at.append(lastprice)
+        Buy_at.append((lastprice, now))
+        Trade_times += 1
     elif sig == -1:
-        Sell_at.append(lastprice)
+        Sell_at.append((lastprice, now))
+        Trade_times += 1
     return
 
-def fake_close_position(sig, lastprice): # 1=close_sell_position, -1=close_buy_position
+def fake_close_position(sig, lastprice, now): # 1=close_sell_position, -1=close_buy_position
     global Buy_at, Sell_at, Total_profit, Trade_times
     global Sell_profit, Sell_record, Buy_profit, Buy_record
     positions = len(Buy_at) + len(Sell_at)
@@ -66,23 +67,56 @@ def fake_close_position(sig, lastprice): # 1=close_sell_position, -1=close_buy_p
         return
     if (Buy_at and sig == 1) or (Sell_at and sig == -1):
         return
+
+    close_time = now
+
     if sig == 1:
         while Sell_at:
-            price = Sell_at.pop(0)
+            price, open_time = Sell_at.pop(0)
             profit += (price - lastprice)*PT_PRICE
             Sell_profit.append(profit)
-            Sell_record.append((price, lastprice))
+            Sell_record.append((price, lastprice, open_time, close_time))
             Total_profit += profit
             Trade_times += 1
     elif sig == -1:
         while Buy_at:
-            price = Buy_at.pop(0)
+            price, open_time = Buy_at.pop(0)
             profit += (lastprice - price)*PT_PRICE
             Buy_profit.append(profit)
-            Buy_record.append((price, lastprice))
+            Buy_record.append((price, lastprice, open_time, close_time))
             Total_profit += profit
             Trade_times += 1
     return
+
+def export_trade_log():
+    base_filename = os.path.splitext(os.path.basename(CSV_INPUT_DATA))[0]
+    output_file = os.path.join(CSV_OUTPUT_PATH, f"{base_filename}_result.csv")
+
+    records = []
+
+    for buy, sell, entry_time, exit_time in Buy_record:
+        records.append({
+            'type': 'Buy',
+            'entry': buy,
+            'exit': sell,
+            'profit': (sell - buy) * PT_PRICE,
+            'entry_time': entry_time,
+            'exit_time': exit_time
+        })
+
+    for sell, buy, entry_time, exit_time in Sell_record:
+        records.append({
+            'type': 'Sell',
+            'entry': sell,
+            'exit': buy,
+            'profit': (sell - buy) * PT_PRICE,
+            'entry_time': entry_time,
+            'exit_time': exit_time
+        })
+
+    df_record = pd.DataFrame(records)
+    df_record.to_csv(output_file, index=False, encoding='utf-8-sig')
+    print(f"\n交易紀錄已儲存到：{output_file}")
 
 def is_day_session(now):
     return time(8, 45) <= now.time() <= time(13, 45)
@@ -106,7 +140,7 @@ def get_ema_trend(df, period=20):
     slope = ema.iloc[-1] - ema.iloc[-2]
     return 'up' if slope > 0 else 'down'
 
-def multi_timeframe_strategy():
+def multi_timeframe_strategy(now):
     if not df_1m.empty and not df_5m.empty and not df_15m.empty:
         current_time = df_1m.iloc[-1]['end_time']
         if is_day_session(current_time):
@@ -128,15 +162,15 @@ def multi_timeframe_strategy():
 
         # 兩種信號皆出現，或是主信號方向與確認K線的趨勢一致，才進場
         if signal == 'long' and (confirm_signal == 'long' or confirm_trend == 'up'):
-            fake_open_position(1, Last_price)
+            fake_open_position(1, Last_price, now)
         elif signal == 'short' and (confirm_signal == 'short' or confirm_trend == 'down'):
-            fake_open_position(-1, Last_price)
+            fake_open_position(-1, Last_price, now)
 
         # 趨勢反轉時平倉（可自行更換為其他風控條件）
         if signal == 'long' and confirm_trend == 'down':
-            fake_close_position(-1, Last_price)
+            fake_close_position(-1, Last_price, now)
         elif signal == 'short' and confirm_trend == 'up':
-            fake_close_position(1, Last_price)
+            fake_close_position(1, Last_price, now)
 
 
 if __name__ == '__main__':
@@ -154,7 +188,7 @@ if __name__ == '__main__':
             new_row = pd.DataFrame([candle_1])
             df_1m = pd.concat([df_1m, new_row], ignore_index=True)
             m.indicators_calculation(df_1m)
-            multi_timeframe_strategy()
+            multi_timeframe_strategy(now.strftime('%Y/%m/%d %H:%M:%S'))
 
         candle_5 = candles_5m.get_candles(data)
         if candle_5:
@@ -172,11 +206,11 @@ if __name__ == '__main__':
             break
 
     print('===========================')
-    print(f'Total_profit: {Total_profit}')
+    print(f'Total_profit: {Total_profit}, Real_profit: {Total_profit-Trade_times*150}')
+    print(f'Trade_times: {Trade_times}, Costs: {Trade_times*150}')
     print(f'Buy_profit: {Buy_profit}')
     print(f'Sell_profit: {Sell_profit}')
     print('===========================')
     print(f'Buy_record: {Buy_record}')
     print(f'Sell_record: {Sell_record}')
-    print(f'Trade_times: {Trade_times}')
-
+    export_trade_log()
