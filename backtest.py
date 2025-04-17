@@ -183,9 +183,9 @@ def check_atr_trailing_stop(last_price, now):
     stop_distance = atr_val * 1.5  # 可調整倍數
 
     if position > 0 and last_price < entry_price - stop_distance:
-        fake_close_position(1, last_price, now)
-    elif position < 0 and last_price > entry_price + stop_distance:
         fake_close_position(-1, last_price, now)
+    elif position < 0 and last_price > entry_price + stop_distance:
+        fake_close_position(1, last_price, now)
 
 def multi_timeframe_strategy(now):
     global df_1m, df_5m, df_15m, Last_price
