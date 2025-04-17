@@ -14,7 +14,7 @@ from conf import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
-CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_01.csv'
+CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_02.csv'
 PT_PRICE = 200
 
 Fubon_account = None
@@ -86,11 +86,23 @@ def fake_close_position(sig, lastprice, now): # 1=close_sell_position, -1=close_
             Trade_times += 1
     return
 
-def export_trade_log():
-    base_filename = os.path.splitext(os.path.basename(CSV_INPUT_DATA))[0]
+def export_trade_log(fullpath):
+    base_filename = os.path.splitext(os.path.basename(fullpath))[0]
     output_file = os.path.join(CSV_OUTPUT_PATH, f"{base_filename}_result.csv")
 
     records = []
+
+    with open(output_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+
+        # 寫入統計資訊
+        writer.writerow(['Total_profit', Total_profit])
+        writer.writerow(['Real_profit', Total_profit - Trade_times*150])
+        writer.writerow(['Trade_times', Trade_times, Trade_times*150])
+        writer.writerow(['Buy_profit', sum(Buy_profit) ,Buy_profit])
+        writer.writerow(['Sell_profit', sum(Sell_profit), Sell_profit])
+        writer.writerow([])  # 空行分隔
+
 
     for buy, sell, entry_time, exit_time in Buy_record:
         records.append({
@@ -113,7 +125,10 @@ def export_trade_log():
         })
 
     df_record = pd.DataFrame(records)
-    df_record.to_csv(output_file, index=False, encoding='utf-8-sig')
+    df_record = df_record.sort_values(by='entry_time')
+    df_record['entry_time'] = df_record['entry_time'].dt.strftime('%Y/%#m/%#d  %I:%M:%S %p')
+    df_record['exit_time'] = df_record['exit_time'].dt.strftime('%Y/%#m/%#d  %I:%M:%S %p')
+    df_record.to_csv(output_file, index=False, encoding='utf-8-sig', mode='a') # mode -> append
     print(f"\n交易紀錄已儲存到: {output_file}")
 
 def is_day_session(now):
@@ -172,10 +187,10 @@ def multi_timeframe_strategy(now):
             fake_close_position(1, Last_price, now)
 
 
-def run_test(filename):
+def run_test(fullpath):
     global df_1m, df_5m, df_15m, Last_price
     global candles_1m, candles_5m, candles_15m
-    twse_data = twse.TWSE_CSV(filename)
+    twse_data = twse.TWSE_CSV(fullpath)
 
     while True:
         data = twse_data.get_row_from_csv()
@@ -189,7 +204,7 @@ def run_test(filename):
             new_row = pd.DataFrame([candle_1])
             df_1m = pd.concat([df_1m, new_row], ignore_index=True)
             m.indicators_calculation(df_1m)
-            multi_timeframe_strategy(now.strftime('%Y/%m/%d %H:%M:%S'))
+            multi_timeframe_strategy(now)
 
         candle_5 = candles_5m.get_candles(data)
         if candle_5:
@@ -212,9 +227,9 @@ def run_test(filename):
     print(f'Buy_profit: {Buy_profit}')
     print(f'Sell_profit: {Sell_profit}')
     print('===========================')
-    print(f'Buy_record: {Buy_record}')
-    print(f'Sell_record: {Sell_record}')
-    export_trade_log()
+    # print(f'Buy_record: {Buy_record}')
+    # print(f'Sell_record: {Sell_record}')
+    export_trade_log(fullpath)
 
 
 if __name__ == '__main__':
