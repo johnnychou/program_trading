@@ -134,7 +134,8 @@ def export_trade_log(fullpath):
         })
 
     df_record = pd.DataFrame(records)
-    df_record = df_record.sort_values(by='entry_time')
+    if 'entry_time' in df_record.columns:
+        df_record = df_record.sort_values(by='entry_time')
     df_record.to_csv(output_file, index=False, encoding='utf-8-sig', mode='a') # mode -> append
     print(f"\n交易紀錄已儲存到: {output_file}")
 
@@ -187,7 +188,8 @@ def check_atr_trailing_stop(last_price, now):
         fake_close_position(-1, last_price, now)
 
 def multi_timeframe_strategy(now):
-    global df_1m, df_5m, df_15m
+    global df_1m, df_5m, df_15m, Last_price
+
     if not df_1m.empty and not df_5m.empty and not df_15m.empty:
         current_time = df_1m.iloc[-1]['end_time']
         if is_day_session(current_time):
@@ -197,26 +199,60 @@ def multi_timeframe_strategy(now):
             main_df = df_5m
             confirm_df = df_15m
 
-        if len(main_df) < 50 or len(confirm_df) < 50:
+        if len(main_df) < 1 or len(confirm_df) < 2:
             return
 
-        price = confirm_df.iloc[-1]['close']
-        ema_trend = get_ema_trend(confirm_df, period=20)
-        rsi_val = confirm_df.iloc[-1][RSI_KEY]
-        kd_val = confirm_df.iloc[-1][KD_KEY][1]   # D值
-        macd_val = confirm_df.iloc[-1][MACD_KEY][2]  # hist
-        bb_mid, bb_top, bb_bot = confirm_df.iloc[-1][BB_KEY]
+        main_row = main_df.iloc[-1]
+        pre_row = main_df.iloc[-2]
+        confirm_row = confirm_df.iloc[-1]
 
+        # === 主訊號：RSI 低於30為多訊，高於70為空訊 ===
+        rsi_val = main_row[RSI_KEY]
+        pre_rsi = pre_row[RSI_KEY]
         signal = None
-        if ema_trend == 'up' and rsi_val > 50 and kd_val > 50 and macd_val > 0 and price > bb_top:
+        if pre_rsi < 30 and rsi_val >= 30:
             signal = 'long'
-        elif ema_trend == 'down' and rsi_val < 50 and kd_val < 50 and macd_val < 0 and price < bb_bot:
+        elif pre_rsi > 70 and rsi_val <= 70:
             signal = 'short'
 
-        if signal == 'long':
-            fake_open_position(1, price, now)
-        elif signal == 'short':
-            fake_open_position(-1, price, now)
+        if signal is None:
+            return
+
+        # === 確認訊號：雙週期 EMA 趨勢 + 布林通道位置 ===
+        ema_short = confirm_row[EMA_KEY]
+        ema_long = confirm_row[EMA2_KEY]
+        trend = 'up' if ema_short > ema_long else 'down'
+
+        bb_mid, bb_high, bb_low = confirm_row[BB_KEY]
+
+        confirm = False
+        if signal == 'long' and trend == 'up' and Last_price < bb_low:
+            confirm = True
+        elif signal == 'short' and trend == 'down' and Last_price > bb_high:
+            confirm = True
+
+        # === 若訊號與確認成立，進場 ===
+        if confirm:
+            if signal == 'long':
+                fake_open_position(1, Last_price, now)
+            elif signal == 'short':
+                fake_open_position(-1, Last_price, now)
+
+        # === 跟隨止盈：若反轉則出場 ===
+        # 取得持倉
+        if Buy_at:
+            entry_price, entry_time = Buy_at[-1]
+            atr = confirm_row[ATR_KEY]
+            stop_price = max(entry_price + atr * 2, Last_price - atr * 1.5)
+            if Last_price < stop_price:
+                fake_close_position(1, Last_price, now)
+
+        if Sell_at:
+            entry_price, entry_time = Sell_at[-1]
+            atr = confirm_row[ATR_KEY]
+            stop_price = min(entry_price - atr * 2, Last_price + atr * 1.5)
+            if Last_price > stop_price:
+                fake_close_position(-1, Last_price, now)
 
 
 def run_test(fullpath, market='main'):

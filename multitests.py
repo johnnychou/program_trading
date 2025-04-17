@@ -7,8 +7,8 @@ import time
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
-TRADING_MARKET = 'day'
-MAX_CONCURRENT = 10  # 最多同時跑幾個 process
+TRADING_MARKET = 'main'
+MAX_CONCURRENT = 8  # 最多同時跑幾個 process
 
 class TestProcess(multiprocessing.Process):
     def __init__(self, filename, pullpath):
@@ -21,6 +21,12 @@ class TestProcess(multiprocessing.Process):
         backtest.run_test(self.fullpath, TRADING_MARKET)
 
 All_Process = []
+Month_statistics = {}
+Total_profit = 0
+Total_income = 0
+Total_trade_times = 0
+Total_buy_profit = 0
+Total_sell_profit = 0
 
 if __name__ == '__main__':
     files = [f for f in os.listdir(CSV_INPUT_PATH) if f.endswith('.csv')]
@@ -48,3 +54,37 @@ if __name__ == '__main__':
         time.sleep(0.5)  # 減少 CPU 資源浪費
 
     print('=== All tests completed ===')
+
+    results = os.listdir(CSV_OUTPUT_PATH)
+    for file in results:
+        data_date = file.split('_')
+        year_month = data_date[1]+data_date[2]
+        if year_month not in Month_statistics.keys():
+            Month_statistics[year_month] = [0, 0, 0] #income, profit, costs
+
+        with open(CSV_OUTPUT_PATH+'\\'+file, newline='') as profitdata:
+            data = csv.reader(profitdata)
+            profit = int(next(data)[1])
+            income = int(next(data)[1])
+            trade_times = int(next(data)[1])
+            buy_profit = int(next(data)[1])
+            sell_profit = int(next(data)[1])
+
+            Total_profit += profit
+            Total_income += income
+            Total_trade_times += trade_times
+            Total_buy_profit += buy_profit
+            Total_sell_profit += sell_profit
+
+            Month_statistics[year_month][1] += profit
+            Month_statistics[year_month][2] += trade_times*150
+            Month_statistics[year_month][0] += income
+    
+    print('================================================')
+    print(f'Total_profit: {Total_profit}')
+    print(f'Total_income: {Total_income}')
+    print(f'Total_trade_times: {Total_trade_times}')
+    print(f'Total_buy_profit: {Total_buy_profit}')
+    print(f'Total_sell_profit: {Total_sell_profit}')
+    for key, value in Month_statistics.items():
+        print(f'Month: {key}, Income: {value[0]}, Profit: {value[1]}, Costs: {value[2]}')
