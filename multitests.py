@@ -8,7 +8,7 @@ import time
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
 TRADING_MARKET = 'main'
-MAX_CONCURRENT = 8  # 最多同時跑幾個 process
+MAX_CONCURRENT = multiprocessing.cpu_count()  # 最多同時跑幾個 process
 
 class TestProcess(multiprocessing.Process):
     def __init__(self, filename, pullpath):
@@ -34,7 +34,8 @@ if __name__ == '__main__':
     remaining = list(files)  # 還沒跑的
     running = []             # 正在跑的
 
-    print(f'=== Total Files to Test: {total_files} ===')
+    print(f'=== Total Files to Test : {total_files} ===')
+    print(f'=== Concurrent Processes: {MAX_CONCURRENT} ===')
 
     while remaining or running:
         # 啟動新的 process（不超過 MAX_CONCURRENT）

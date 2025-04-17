@@ -318,9 +318,9 @@ def run_test(fullpath, market='main'):
 
 if __name__ == '__main__':
     run_test(CSV_INPUT_DATA)
-    print('===========================')
-    print(df_1m)
-    print('===========================')
-    print(df_5m)
-    print('===========================')
-    print(df_15m)
+    # print('===========================')
+    # print(df_1m)
+    # print('===========================')
+    # print(df_5m)
+    # print('===========================')
+    # print(df_15m)
