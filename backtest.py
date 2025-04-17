@@ -10,6 +10,7 @@ from datetime import timedelta
 import twse
 import main as m
 from conf import *
+from constant import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
@@ -38,9 +39,11 @@ Total_profit = 0
 candles_1m = twse.CandleCollector(period=timedelta(minutes=1))
 candles_5m = twse.CandleCollector(period=timedelta(minutes=5))
 candles_15m = twse.CandleCollector(period=timedelta(minutes=15))
+candles_30m = twse.CandleCollector(period=timedelta(minutes=30))
 df_1m = pd.DataFrame()
 df_5m = pd.DataFrame()
 df_15m = pd.DataFrame()
+df_30m = pd.DataFrame()
 
 def fake_open_position(sig, lastprice, now): # 1=buy, -1=sell
     global Buy_at, Sell_at, Trade_times
@@ -157,6 +160,32 @@ def get_ema_trend(df, period=20):
     slope = ema.iloc[-1] - ema.iloc[-2]
     return 'up' if slope > 0 else 'down'
 
+def check_atr_trailing_stop(last_price, now):
+    position = 0
+    if Buy_at:
+        position = 1
+        entry_price = Buy_at[0][0]
+    elif Sell_at:
+        position = -1
+        entry_price = Sell_at[0][0]
+    else:
+        return
+
+    df = df_1m if is_day_session(now) else df_5m
+    if len(df) < 20:
+        return
+
+    atr_val = df.iloc[-1][ATR_KEY]
+    if atr_val is None:
+        return
+
+    stop_distance = atr_val * 1.5  # 可調整倍數
+
+    if position > 0 and last_price < entry_price - stop_distance:
+        fake_close_position(1, last_price, now)
+    elif position < 0 and last_price > entry_price + stop_distance:
+        fake_close_position(-1, last_price, now)
+
 def multi_timeframe_strategy(now):
     global df_1m, df_5m, df_15m
     if not df_1m.empty and not df_5m.empty and not df_15m.empty:
@@ -168,27 +197,26 @@ def multi_timeframe_strategy(now):
             main_df = df_5m
             confirm_df = df_15m
 
-        if len(main_df) < 1 or len(confirm_df) < 2:
+        if len(main_df) < 50 or len(confirm_df) < 50:
             return
 
-        signal = detect_kbar_momentum(main_df.iloc[-1])
-        if signal is None:
-            return
+        price = confirm_df.iloc[-1]['close']
+        ema_trend = get_ema_trend(confirm_df, period=20)
+        rsi_val = confirm_df.iloc[-1][RSI_KEY]
+        kd_val = confirm_df.iloc[-1][KD_KEY][1]   # D值
+        macd_val = confirm_df.iloc[-1][MACD_KEY][2]  # hist
+        bb_mid, bb_top, bb_bot = confirm_df.iloc[-1][BB_KEY]
 
-        confirm_signal = detect_kbar_momentum(confirm_df.iloc[-1])
-        confirm_trend = get_ema_trend(confirm_df, period=20)
+        signal = None
+        if ema_trend == 'up' and rsi_val > 50 and kd_val > 50 and macd_val > 0 and price > bb_top:
+            signal = 'long'
+        elif ema_trend == 'down' and rsi_val < 50 and kd_val < 50 and macd_val < 0 and price < bb_bot:
+            signal = 'short'
 
-        # 兩種信號皆出現，或是主信號方向與確認K線的趨勢一致，才進場
-        if signal == 'long' and (confirm_signal == 'long' or confirm_trend == 'up'):
-            fake_open_position(1, Last_price, now)
-        elif signal == 'short' and (confirm_signal == 'short' or confirm_trend == 'down'):
-            fake_open_position(-1, Last_price, now)
-
-        # 趨勢反轉時平倉（可自行更換為其他風控條件）
-        if signal == 'long' and confirm_trend == 'down':
-            fake_close_position(-1, Last_price, now)
-        elif signal == 'short' and confirm_trend == 'up':
-            fake_close_position(1, Last_price, now)
+        if signal == 'long':
+            fake_open_position(1, price, now)
+        elif signal == 'short':
+            fake_open_position(-1, price, now)
 
 
 def run_test(fullpath, market='main'):
@@ -221,6 +249,9 @@ def run_test(fullpath, market='main'):
             new_row = pd.DataFrame([candle_15])
             df_15m = pd.concat([df_15m, new_row], ignore_index=True)
             m.indicators_calculation(df_15m)
+
+        # 即時 ATR 跟隨止盈
+        check_atr_trailing_stop(Last_price, now)
 
         if not m.is_trading_time(market, now):
             continue
