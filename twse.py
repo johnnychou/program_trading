@@ -284,11 +284,31 @@ class CandleCollector:
         self.start_time = None
 
     def get_candles(self, data):
+        # 如果資料結束，強制產生最後一根K線（即使不滿 period）
+        if data is None:
+            if self.buffer:
+                prices = [item['price'] for item in self.buffer]
+                volumes = [item['volume'] for item in self.buffer]
+                candle = {
+                    'open': prices[0],
+                    'high': max(prices),
+                    'low': min(prices),
+                    'close': prices[-1],
+                    'volume': sum(volumes),
+                    'start_time': self.start_time,
+                    'end_time': self.buffer[-1]['time']
+                }
+                self.buffer = []
+                self.start_time = None
+                return candle
+            else:
+                return None
+
         current_time = data['time']
-        
+
         if not self.buffer:
             self.start_time = current_time
-        
+
         self.buffer.append(data)
 
         if current_time - self.start_time >= self.period:
@@ -300,10 +320,11 @@ class CandleCollector:
                 'low': min(prices),
                 'close': prices[-1],
                 'volume': sum(volumes),
-                'time': self.start_time,
+                'start_time': self.start_time,
+                'end_time': self.buffer[-1]['time']
             }
-            self.buffer = []  # 清空 buffer，準備下次收集
+            self.buffer = []
             self.start_time = None
             return candle
-        
+
         return None
