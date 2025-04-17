@@ -1,8 +1,8 @@
-Total_profit,-50000
-Real_profit,-50300
+Total_profit,-58200
+Real_profit,-58500
 Trade_times,2,300
 Buy_profit,0,[]
-Sell_profit,-50000,[-50000]
+Sell_profit,-58200,[-58200]
 
 type,entry,exit,profit,entry_time,exit_time
-Sell,22570,22820,-50000,2024-12-02 08:50:00,2024-12-02 13:44:00
+Sell,22529,22820,-58200,2024-12-02 08:45:03,2024-12-02 13:44:00

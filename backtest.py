@@ -75,7 +75,7 @@ def fake_close_position(sig, lastprice, now): # 1=close_sell_position, -1=close_
             price, open_time = Sell_at.pop(0)
             profit += (price - lastprice)*PT_PRICE
             Sell_profit.append(profit)
-            Sell_record.append((price, lastprice, open_time, close_time))
+            Sell_record.append([price, lastprice, open_time, close_time])
             Total_profit += profit
             Trade_times += 1
     elif sig == -1:
@@ -83,7 +83,7 @@ def fake_close_position(sig, lastprice, now): # 1=close_sell_position, -1=close_
             price, open_time = Buy_at.pop(0)
             profit += (lastprice - price)*PT_PRICE
             Buy_profit.append(profit)
-            Buy_record.append((price, lastprice, open_time, close_time))
+            Buy_record.append([price, lastprice, open_time, close_time])
             Total_profit += profit
             Trade_times += 1
     return
@@ -137,7 +137,7 @@ def export_trade_log(fullpath):
     if 'entry_time' in df_record.columns:
         df_record = df_record.sort_values(by='entry_time')
     df_record.to_csv(output_file, index=False, encoding='utf-8-sig', mode='a') # mode -> append
-    print(f"\n交易紀錄已儲存到: {output_file}")
+    print(f"交易紀錄已儲存到: {output_file}")
 
 def is_day_session(now):
     return datetime.time(8, 45) <= now.time() <= datetime.time(13, 45)
@@ -171,7 +171,7 @@ def check_atr_trailing_stop(last_price, now):
         entry_price = Sell_at[0][0]
     else:
         return
-
+    
     df = df_1m if is_day_session(now) else df_5m
     if len(df) < 20:
         return
@@ -305,15 +305,25 @@ def run_test(fullpath, market='main'):
         if data is None:
             break
 
-    print('===========================')
+    print('======================================================')
     print(f'Total_profit: {Total_profit}, Real_profit: {Total_profit-Trade_times*150}')
     print(f'Trade_times: {Trade_times}, Costs: {Trade_times*150}')
     print(f'Buy_profit: {sum(Buy_profit)}')
     print(f'Sell_profit: {sum(Sell_profit)}')
-    print('===========================')
-    # print(f'Buy_record: {Buy_record}')
-    # print(f'Sell_record: {Sell_record}')
+
     export_trade_log(fullpath)
+
+    print(f'Buy_record:')
+    for record in Buy_record:
+        record[2] = record[2].strftime('%H:%M:%S')
+        record[3] = record[3].strftime('%H:%M:%S')
+        print(record)
+    print(f'Sell_record:')
+    for record in Sell_record:
+        record[2] = record[2].strftime('%H:%M:%S')
+        record[3] = record[3].strftime('%H:%M:%S')
+        print(record)
+    print('======================================================')
 
 
 if __name__ == '__main__':
