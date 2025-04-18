@@ -1,12 +1,14 @@
 import datetime
 import math
-import os
+import os, sys
 import numpy as np
 import requests as r
 import csv
 import time
 import multiprocessing
 import pandas as pd
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import twse
 import fubon

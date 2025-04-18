@@ -1,6 +1,7 @@
-import sys
+import sys, os
 import datetime
 import multiprocessing
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import fubon
 
 TRADE_MARKET_SET = ('day', 'night', 'main', 'all')

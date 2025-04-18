@@ -1,6 +1,9 @@
+import os
 import sys
 import datetime
 import multiprocessing
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import fubon
 
 if __name__ == '__main__':

@@ -8,6 +8,8 @@ import time
 import multiprocessing
 import pandas as pd
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import twse
 import fubon
 import indicators
