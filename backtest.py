@@ -14,7 +14,7 @@ from constant import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
-CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_02.csv'
+CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_14.csv'
 PT_PRICE = 200
 
 Fubon_account = None
@@ -187,7 +187,7 @@ def check_atr_trailing_stop(last_price, now):
     elif position < 0 and last_price > entry_price + stop_distance:
         fake_close_position(1, last_price, now)
 
-def multi_timeframe_strategy(now):
+def multi_timeframe_strategy(now, df):
     global df_1m, df_5m, df_15m, Last_price
 
     if not df_1m.empty and not df_5m.empty and not df_15m.empty:
@@ -235,8 +235,10 @@ def multi_timeframe_strategy(now):
         if confirm:
             if signal == 'long':
                 fake_open_position(1, Last_price, now)
+                print(df.iloc[-2:])
             elif signal == 'short':
                 fake_open_position(-1, Last_price, now)
+                print(df.iloc[-2:])
 
         # === 跟隨止盈：若反轉則出場 ===
         # 取得持倉
@@ -246,6 +248,7 @@ def multi_timeframe_strategy(now):
             stop_price = max(entry_price + atr * 2, Last_price - atr * 1.5)
             if Last_price < stop_price:
                 fake_close_position(1, Last_price, now)
+                print(df.iloc[-2:])
 
         if Sell_at:
             entry_price, entry_time = Sell_at[-1]
@@ -253,6 +256,7 @@ def multi_timeframe_strategy(now):
             stop_price = min(entry_price - atr * 2, Last_price + atr * 1.5)
             if Last_price > stop_price:
                 fake_close_position(-1, Last_price, now)
+                print(df.iloc[-2:])
 
 
 def run_test(fullpath, market='main'):
@@ -285,9 +289,6 @@ def run_test(fullpath, market='main'):
             df_15m = pd.concat([df_15m, new_row], ignore_index=True)
             m.indicators_calculation(df_15m)
 
-        # 即時 ATR 跟隨止盈
-        check_atr_trailing_stop(Last_price, now)
-
         if not m.is_trading_time(market, now):
             continue
 
@@ -295,11 +296,14 @@ def run_test(fullpath, market='main'):
             fake_close_all_position(Last_price, now)
             continue
 
+        # 即時 ATR 跟隨止盈
+        check_atr_trailing_stop(Last_price, now)
+
         # === 根據盤別主K線判斷時機呼叫策略 ===
         if market != 'night' and candle_1:
-            multi_timeframe_strategy(now)
+            multi_timeframe_strategy(now, df_1m)
         elif market != 'day' and candle_5:
-            multi_timeframe_strategy(now)
+            multi_timeframe_strategy(now, df_5m)
 
         # 放最後以讓上面k線收完
         if data is None:
@@ -328,9 +332,9 @@ def run_test(fullpath, market='main'):
 
 if __name__ == '__main__':
     run_test(CSV_INPUT_DATA)
-    # print('===========================')
-    # print(df_1m)
-    # print('===========================')
-    # print(df_5m)
-    # print('===========================')
-    # print(df_15m)
+    print('===========================')
+    print(df_1m)
+    print('===========================')
+    print(df_5m)
+    print('===========================')
+    print(df_15m)
