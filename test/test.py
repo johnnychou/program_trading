@@ -13,6 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import twse
 import fubon
 import indicators
+import main as m
 
 def create_sample_dataframe(total_minutes=30, initial_price=20000, price_range=50):
     """
@@ -71,14 +72,8 @@ def create_sample_dataframe(total_minutes=30, initial_price=20000, price_range=5
 
 if __name__ == '__main__':
 
-    test_df = create_sample_dataframe(total_minutes=30)
-    indicators.indicator_ma(test_df, 10)
-    indicators.indicator_ema(test_df, 5)
-    indicators.indicator_atr(test_df, 14)
-    indicators.indicator_rsi(test_df, 10)
-    indicators.indicator_kd(test_df, 9)
-    indicators.indicator_macd(test_df)
-    indicators.indicator_bollingsband(test_df)
+    test_df = create_sample_dataframe(total_minutes=60)
+    m.indicators_calculation(test_df)
     print(test_df)
 
     new_data = create_sample_dataframe(total_minutes=1)
@@ -86,17 +81,9 @@ if __name__ == '__main__':
     test_df = pd.concat([test_df, new_df], ignore_index=True)
 
     print('================================================')
-    print('================================================')
     print(test_df)
     print('================================================')
-    print('================================================')
 
-    indicators.indicator_ma(test_df, 10)
-    indicators.indicator_ema(test_df, 5)
-    indicators.indicator_atr(test_df, 14)
-    indicators.indicator_rsi(test_df, 10)
-    indicators.indicator_kd(test_df, 9)
-    indicators.indicator_macd(test_df)
-    indicators.indicator_bollingsband(test_df, 20)
+    m.indicators_calculation(test_df)
     print(test_df)
 

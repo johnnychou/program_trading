@@ -12,22 +12,86 @@ def indicator_ma(df, period):
 
 def indicator_ema(df, period):
     """
-    計算 DataFrame 中指定欄位的指數移動平均線 (EMA)，並優化效能。
+    計算 DataFrame 中 'close' 欄位的指數移動平均線 (EMA)，
+    處理首次計算與增量更新，風格簡潔。優先嘗試增量更新最後一行。
+
+    Args:
+        df (pd.DataFrame): 要計算的 DataFrame (會被原地修改)。
+        period (int): EMA 的週期。
+
+    Returns:
+        None: DataFrame 直接被修改。
     """
     key = EMA_PREFIX + str(period)
+    source_column = 'close' # 在範例中固定為 'close'
 
-    if key not in df.columns:
-        df[key] = None
+    # --- 基本檢查 ---
+    if source_column not in df.columns:
+        print(f"錯誤：來源欄位 '{source_column}' 不存在。")
+        return
+    if not isinstance(period, int) or period <= 0:
+        print(f"錯誤：週期 '{period}' 必須是正整數。")
+        return
+    if df.empty:
+        if key not in df.columns: df[key] = np.nan # 確保空 DataFrame 也有欄位
+        return # 不計算空的 DataFrame
 
-    if len(df) > period:
+    # --- 判斷是否能進行增量更新 (只更新最後一筆) ---
+    can_incrementally_update = False
+    if key in df.columns and len(df) > 1:
+        try:
+            # 檢查倒數第二個 EMA 值是否有效 (非 NaN 或 None)
+            prev_ema_value = df[key].iloc[-2]
+            if pd.notna(prev_ema_value):
+                # 檢查最後一個收盤價是否有效
+                if pd.notna(df[source_column].iloc[-1]):
+                    # 檢查最後一個 EMA 值是否需要計算 (是 NaN)
+                    # 如果最後一個 EMA 值已經存在，我們這裡選擇不重新計算它
+                    # 如果你希望即使存在也強制用前值重算最後一筆，移除下面這行檢查
+                    if pd.isna(df[key].iloc[-1]):
+                        can_incrementally_update = True
+        except IndexError:
+            # 如果 df 長度剛好是 1 或 0，iloc[-2] 會出錯，len(df) > 1 應避免此情況
+            pass
+        except Exception as e:
+            # 捕捉其他可能的錯誤
+            print(f"檢查增量更新條件時發生錯誤: {e}")
+
+
+    # --- 執行計算 ---
+    if can_incrementally_update:
+        # --- 增量更新 (僅計算最後一行) ---
         prev_ema = df[key].iloc[-2]
-        close_price = df['close'].iloc[-1]
+        close_price = df[source_column].iloc[-1]
         multiplier = 2 / (period + 1)
         ema = multiplier * (close_price - prev_ema) + prev_ema
+        # 使用 .loc 更新，更安全
         df.loc[df.index[-1], key] = int(round(ema))
+        # print(f"對 '{key}' 執行了增量更新。") # 除錯訊息
+
     else:
-        df[key] = df['close'].ewm(span=period, adjust=False).mean().round().astype(int)
-    return
+        # --- 完整計算 (首次計算、數據太短、前值無效、或最後值已存在) ---
+        # 只有在 EMA 欄位不存在，或者存在但最後值為 NaN 且無法增量更新時，才執行完整重算
+        recalculate_all = False
+        if key not in df.columns:
+            recalculate_all = True
+            # print(f"欄位 '{key}' 不存在，執行完整計算。") # 除錯訊息
+        elif pd.isna(df[key].iloc[-1]): # 如果最後一行是 NaN 且無法增量更新
+             recalculate_all = True
+             # print(f"'{key}' 最後值為 NaN 且無法增量更新，執行完整計算。") # 除錯訊息
+        # else:
+             # print(f"'{key}' 已是最新或無法增量更新，不執行完整計算。") # 除錯訊息
+
+
+        if recalculate_all:
+            # print(f"執行 '{key}' 的首次或完整計算。") # 除錯訊息
+            df[key] = df[source_column].ewm(span=period, adjust=False, ignore_na=True).mean().round().astype(int)
+
+    # 最後確保欄位存在，即使 DataFrame 為空或沒有進行任何計算
+    if key not in df.columns:
+        df[key] = np.nan
+
+    return # DataFrame 已被原地修改
 
 def indicator_atr(df, period=14):
     key = ATR_PREFIX + str(period)
@@ -230,4 +294,125 @@ def indicator_bollingsband(df, period=20, std_dev=2):
             round(upper, 1),
             round(lower, 1)
         )
+    return
+
+def calculate_or_update_vwap_cumulative(df):
+    """
+    計算或更新累積 VWAP，儲存必要的中間值。
+
+    """
+    required_cols = ['high', 'low', 'close', 'volume']
+    if not all(col in df.columns for col in required_cols):
+        print(f"錯誤：DataFrame 缺少必要欄位: {required_cols}")
+        return
+
+    # 確保 Volume 是數值型態 (這個賦值模式是安全的)
+    df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
+
+    # 計算典型價格 (TP) 和 TP * Volume
+    tp = (df['high'] + df['low'] + df['close']) / 3
+    pv = tp * df['volume']
+
+    # --- 判斷計算模式 ---
+    start_loc = 0
+    last_cumulative_pv = 0.0
+    last_cumulative_volume = 0.0
+
+    can_update = ('VWAP' in df.columns and
+                  'Cumulative_PV' in df.columns and
+                  'Cumulative_Volume' in df.columns and
+                  df['VWAP'].notna().any())
+
+    if can_update:
+        last_valid_idx = df['VWAP'].last_valid_index()
+        if last_valid_idx is not None:
+            last_valid_iloc = df.index.get_loc(last_valid_idx)
+            if last_valid_iloc < len(df) - 1:
+                start_loc = last_valid_iloc + 1
+                last_cumulative_pv = df.loc[last_valid_idx, 'Cumulative_PV']
+                last_cumulative_volume = df.loc[last_valid_idx, 'Cumulative_Volume']
+            else:
+                return # 已是最新
+        else: # VWAP 欄位存在但全為 NaN
+            if 'Cumulative_PV' in df.columns: del df['Cumulative_PV']
+            if 'Cumulative_Volume' in df.columns: del df['Cumulative_Volume']
+            start_loc = 0
+            last_cumulative_pv = 0.0
+            last_cumulative_volume = 0.0
+    else: # 無法更新，準備完整計算
+        if 'VWAP' in df.columns: del df['VWAP']
+        if 'Cumulative_PV' in df.columns: del df['Cumulative_PV']
+        if 'Cumulative_Volume' in df.columns: del df['Cumulative_Volume']
+        start_loc = 0
+        last_cumulative_pv = 0.0
+        last_cumulative_volume = 0.0
+
+    # --- 執行計算 ---
+    if start_loc >= len(df):
+        # 如果 start_loc 指向 DataFrame 範圍之外 (例如，首次計算時 df 為空)
+        # 確保欄位存在
+        if 'VWAP' not in df.columns: df['VWAP'] = np.nan
+        if 'Cumulative_PV' not in df.columns: df['Cumulative_PV'] = np.nan
+        if 'Cumulative_Volume' not in df.columns: df['Cumulative_Volume'] = np.nan
+        return
+
+
+    rows_to_calculate_iloc = slice(start_loc, None)
+    target_indices = df.iloc[rows_to_calculate_iloc].index
+
+    pv_to_calculate = pv.iloc[rows_to_calculate_iloc]
+    volume_to_calculate = df['volume'].iloc[rows_to_calculate_iloc]
+
+    if pv_to_calculate.empty:
+         # 沒有需要計算的行，確保欄位存在
+        if 'VWAP' not in df.columns: df['VWAP'] = np.nan
+        if 'Cumulative_PV' not in df.columns: df['Cumulative_PV'] = np.nan
+        if 'Cumulative_Volume' not in df.columns: df['Cumulative_Volume'] = np.nan
+        return
+
+
+    current_pv_cumsum = pv_to_calculate.cumsum() + last_cumulative_pv
+    current_volume_cumsum = volume_to_calculate.cumsum() + last_cumulative_volume
+
+    # 賦值計算結果 (使用 .loc 是安全的)
+    df.loc[target_indices, 'Cumulative_PV'] = current_pv_cumsum
+    df.loc[target_indices, 'Cumulative_Volume'] = current_volume_cumsum
+
+    vwap_calculated = current_pv_cumsum / current_volume_cumsum
+    df.loc[target_indices, 'VWAP'] = round(vwap_calculated)
+
+    # --- 處理 NaNs (使用建議的方法) ---
+
+    # 修正 FutureWarning 1 & 2: 使用 ffill() 並重新賦值，取代 fillna(method='ffill', inplace=True)
+    df['VWAP'] = df['VWAP'].ffill()
+
+    # 如果開頭仍然是 NaN (初始 Volume 為 0)
+    first_row_index = df.index[0] # 獲取第一行的索引標籤
+    if pd.isna(df.loc[first_row_index, 'VWAP']): # 使用 loc 檢查第一行
+        first_valid_volume_index = df['volume'][df['volume'] > 0].first_valid_index()
+        if first_valid_volume_index is not None:
+            first_valid_tp_value = tp[first_valid_volume_index]
+
+            # 找到第一個非 NaN 的 VWAP 的索引標籤
+            first_non_nan_vwap_index = df['VWAP'].first_valid_index()
+
+            if first_non_nan_vwap_index is not None:
+                 # 選取第一個有效 VWAP 之前的所有行
+                 indices_to_fill = df.index < first_non_nan_vwap_index
+                 # 修正 FutureWarning 2: 使用 fillna() 重新賦值給 .loc 選定的 slice
+                 # 這裡 df.loc[indices_to_fill, 'VWAP'] 是一個 Series 的視圖或副本
+                 # 在這個 Series 上調用 fillna 並賦值回去是安全的
+                 df.loc[indices_to_fill, 'VWAP'] = df.loc[indices_to_fill, 'VWAP'].fillna(first_valid_tp_value)
+            else: # 如果所有 VWAP 值都是 NaN (例如所有 Volume 都是 0)
+                 df['VWAP'] = df['VWAP'].fillna(first_valid_tp_value)
+
+        else: # 如果整個 DataFrame 都沒有成交量
+            # 修正 FutureWarning 2: 使用 fillna(0) 並重新賦值
+            df['VWAP'] = df['VWAP'].fillna(0) # 用 0 填充所有 NaN
+
+    # 確保欄位最終存在
+    if 'VWAP' not in df.columns: df['VWAP'] = np.nan
+    if 'Cumulative_PV' not in df.columns: df['Cumulative_PV'] = np.nan
+    if 'Cumulative_Volume' not in df.columns: df['Cumulative_Volume'] = np.nan
+
     return

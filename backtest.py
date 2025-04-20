@@ -188,76 +188,7 @@ def check_atr_trailing_stop(last_price, now):
         fake_close_position(1, last_price, now)
 
 def multi_timeframe_strategy(now, df):
-    global df_1m, df_5m, df_15m, Last_price
-
-    if not df_1m.empty and not df_5m.empty and not df_15m.empty:
-        current_time = df_1m.iloc[-1]['end_time']
-        if is_day_session(current_time):
-            main_df = df_1m
-            confirm_df = df_5m
-        else:
-            main_df = df_5m
-            confirm_df = df_15m
-
-        if len(main_df) < 1 or len(confirm_df) < 2:
-            return
-
-        main_row = main_df.iloc[-1]
-        pre_row = main_df.iloc[-2]
-        confirm_row = confirm_df.iloc[-1]
-
-        # === 主訊號：RSI 低於30為多訊，高於70為空訊 ===
-        rsi_val = main_row[RSI_KEY]
-        pre_rsi = pre_row[RSI_KEY]
-        signal = None
-        if pre_rsi < 30 and rsi_val >= 30:
-            signal = 'long'
-        elif pre_rsi > 70 and rsi_val <= 70:
-            signal = 'short'
-
-        if signal is None:
-            return
-
-        # === 確認訊號：雙週期 EMA 趨勢 + 布林通道位置 ===
-        ema_short = confirm_row[EMA_KEY]
-        ema_long = confirm_row[EMA2_KEY]
-        trend = 'up' if ema_short > ema_long else 'down'
-
-        bb_mid, bb_high, bb_low = confirm_row[BB_KEY]
-
-        confirm = False
-        if signal == 'long' and trend == 'up' and Last_price < bb_low:
-            confirm = True
-        elif signal == 'short' and trend == 'down' and Last_price > bb_high:
-            confirm = True
-
-        # === 若訊號與確認成立，進場 ===
-        if confirm:
-            if signal == 'long':
-                fake_open_position(1, Last_price, now)
-                print(df.iloc[-2:])
-            elif signal == 'short':
-                fake_open_position(-1, Last_price, now)
-                print(df.iloc[-2:])
-
-        # === 跟隨止盈：若反轉則出場 ===
-        # 取得持倉
-        if Buy_at:
-            entry_price, entry_time = Buy_at[-1]
-            atr = confirm_row[ATR_KEY]
-            stop_price = max(entry_price + atr * 2, Last_price - atr * 1.5)
-            if Last_price < stop_price:
-                fake_close_position(1, Last_price, now)
-                print(df.iloc[-2:])
-
-        if Sell_at:
-            entry_price, entry_time = Sell_at[-1]
-            atr = confirm_row[ATR_KEY]
-            stop_price = min(entry_price - atr * 2, Last_price + atr * 1.5)
-            if Last_price > stop_price:
-                fake_close_position(-1, Last_price, now)
-                print(df.iloc[-2:])
-
+    return
 
 def run_test(fullpath, market='main'):
     global df_1m, df_5m, df_15m, Last_price
@@ -296,14 +227,6 @@ def run_test(fullpath, market='main'):
             fake_close_all_position(Last_price, now)
             continue
 
-        # 即時 ATR 跟隨止盈
-        check_atr_trailing_stop(Last_price, now)
-
-        # === 根據盤別主K線判斷時機呼叫策略 ===
-        if market != 'night' and candle_1:
-            multi_timeframe_strategy(now, df_1m)
-        elif market != 'day' and candle_5:
-            multi_timeframe_strategy(now, df_5m)
 
         # 放最後以讓上面k線收完
         if data is None:

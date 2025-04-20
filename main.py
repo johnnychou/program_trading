@@ -262,7 +262,7 @@ def is_data_ready(now, datas):
     else:
         return False
 
-def indicators_calculation(df):
+def indicators_calculation(df): # 直接在df新增欄位
     indicators.indicator_ma(df, MA_PERIOD)
     indicators.indicator_ema(df, EMA_PERIOD)
     indicators.indicator_ema(df, EMA2_PERIOD)
@@ -271,7 +271,8 @@ def indicators_calculation(df):
     indicators.indicator_kd(df, KD_PERIOD[0], KD_PERIOD[1], KD_PERIOD[2])
     indicators.indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
     indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
-    return df
+    indicators.calculate_or_update_vwap_cumulative(df)
+    return
     
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     if KD_KEY in df_fubon_1m.columns:
