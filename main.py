@@ -273,7 +273,26 @@ def indicators_calculation(df): # 直接在df新增欄位
     indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
     indicators.calculate_or_update_vwap_cumulative(df)
     return
-    
+
+def chk_stop_loss(realtime_candle, df):
+    if 'lastprice' in realtime_candle:
+        lastprice = realtime_candle['lastprice']
+    if ATR_KEY in df.columns:
+        last_valid_idx = df[ATR_KEY].last_valid_index()
+        atr = df.loc[last_valid_idx, ATR_KEY]
+
+    if Buy_at:
+        entry_price = Buy_at[0]
+        close_price = entry_price - atr * 1.5
+        if lastprice <= close_price:
+            return 1
+    elif Sell_at:
+        entry_price = Sell_at[0]
+        close_price = entry_price + atr * 1.5
+        if lastprice >= close_price:
+            return 1
+    return 0
+
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     if KD_KEY in df_fubon_1m.columns:
         column = df_fubon_1m[KD_KEY]
@@ -284,8 +303,7 @@ def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_
             #time.sleep(10)
     return
 
-def multi_timeframe_strategy():
-    sig = chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+def trading_strategy():
     return
 
 if __name__ == '__main__':
@@ -359,6 +377,7 @@ if __name__ == '__main__':
             show_account_info()
             #show_realtime(realtime_candle)
             show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            chk_stop_loss(realtime_candle, df_fubon_5m)
             time.sleep(0.01)
             os.system('cls')
 
