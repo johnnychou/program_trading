@@ -293,6 +293,25 @@ def chk_stop_loss(realtime_candle, df):
             return 1
     return 0
 
+def chk_take_profit(realtime_candle, df):
+    if 'lastprice' in realtime_candle:
+        lastprice = realtime_candle['lastprice']
+    if ATR_KEY in df.columns:
+        last_valid_idx = df[ATR_KEY].last_valid_index()
+        atr = df.loc[last_valid_idx, ATR_KEY]
+
+    if Buy_at:
+        entry_price = Buy_at[0]
+        close_price = entry_price + atr * 2
+        if lastprice >= close_price:
+            return 1
+    elif Sell_at:
+        entry_price = Sell_at[0]
+        close_price = entry_price - atr * 2
+        if lastprice <= close_price:
+            return 1
+    return 0
+
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     if KD_KEY in df_fubon_1m.columns:
         column = df_fubon_1m[KD_KEY]
