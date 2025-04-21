@@ -275,11 +275,14 @@ def indicators_calculation(df): # 直接在df新增欄位
     return
 
 def chk_stop_loss(realtime_candle, df):
-    if 'lastprice' in realtime_candle:
-        lastprice = realtime_candle['lastprice']
-    if ATR_KEY in df.columns:
-        last_valid_idx = df[ATR_KEY].last_valid_index()
-        atr = df.loc[last_valid_idx, ATR_KEY]
+    if 'lastprice' not in realtime_candle:
+        return
+    if ATR_KEY not in df.columns:
+        return
+
+    lastprice = realtime_candle['lastprice']
+    last_valid_idx = df[ATR_KEY].last_valid_index()
+    atr = df.loc[last_valid_idx, ATR_KEY]
 
     if Buy_at:
         entry_price = Buy_at[0]
@@ -294,11 +297,14 @@ def chk_stop_loss(realtime_candle, df):
     return 0
 
 def chk_take_profit(realtime_candle, df):
-    if 'lastprice' in realtime_candle:
-        lastprice = realtime_candle['lastprice']
-    if ATR_KEY in df.columns:
-        last_valid_idx = df[ATR_KEY].last_valid_index()
-        atr = df.loc[last_valid_idx, ATR_KEY]
+    if 'lastprice' not in realtime_candle:
+        return
+    if ATR_KEY not in df.columns:
+        return
+
+    lastprice = realtime_candle['lastprice']
+    last_valid_idx = df[ATR_KEY].last_valid_index()
+    atr = df.loc[last_valid_idx, ATR_KEY]
 
     if Buy_at:
         entry_price = Buy_at[0]
@@ -311,6 +317,37 @@ def chk_take_profit(realtime_candle, df):
         if lastprice <= close_price:
             return 1
     return 0
+
+def atr_trailing_stop(realtime_candle, df):
+    if 'lastprice' not in realtime_candle:
+        return
+    if ATR_KEY not in df.columns:
+        return
+
+    lastprice = realtime_candle['lastprice']
+    last_valid_idx = df[ATR_KEY].last_valid_index()
+    atr = df.loc[last_valid_idx, ATR_KEY]
+
+    if Buy_at:
+        Max_profit_pt = max(Last_price, Buy_at[0], Max_profit_pt)
+        stop_price = Max_profit_pt - atr * 1.5
+        if Last_price <= stop_price:
+            close_position(-1)
+            Stop_loss_times += 1
+            return
+
+    elif Sell_at:
+        if not Max_profit_pt:
+            Max_profit_pt = min(Last_price, Sell_at[0])
+        else:
+            Max_profit_pt = min(Last_price, Sell_at[0], Max_profit_pt)
+        stop_price = Max_profit_pt + atr * 1.5
+        if Last_price >= stop_price:
+            close_position(1)
+            Stop_loss_times += 1
+            return
+
+    return
 
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     if KD_KEY in df_fubon_1m.columns:
