@@ -30,6 +30,7 @@ Margin = []
 
 Last_price = 0
 Total_profit = 0
+Trade_times = 0
 Balance = 0
 OrderAmount = 0
 PT_price = 0
@@ -169,7 +170,7 @@ def show_user_settings():
     return
 
 def show_account_info():
-    position = ''
+    position = 'None'
     unrealized = 0
     if Buy_at:
         position = f'Buy: {Buy_at}'
@@ -180,7 +181,7 @@ def show_account_info():
         if Last_price:
             unrealized = (Sell_at[0] - Last_price)*PT_price*OrderAmount
 
-    print(f'Position: {position}, Unrealized: {unrealized}, Profit: {Total_profit}'), 
+    print(f'Position: {position}, Unrealized: {unrealized}, Profit: {Total_profit}, TradeTimes: {Trade_times}')
     print('====================================================================')
     return
 
@@ -224,15 +225,20 @@ def update_account_info(account):
     return
 
 def open_position(sig):
+    global Trade_times
     if (Userinput_Direction == 'buy' and sig == -1) or\
          (Userinput_Direction == 'sell' and sig == 1):
         return 0
+    if (Buy_at and sig == 1) or\
+         (Sell_at and sig == -1):
+        return 0
     Fubon_account.send_order(sig, OrderAmount)
+    Trade_times += 1
     update_account_info(Fubon_account)
     return
     
 def close_position(sig):
-    global Total_profit
+    global Total_profit, Trade_times
     if not Buy_at and not Sell_at:
         return 0
     if (Buy_at and sig == 1) or\
@@ -250,6 +256,7 @@ def close_position(sig):
         profit = filled - entry_price
 
     Total_profit += profit*PT_price
+    Trade_times += 1
     update_account_info(Fubon_account)
     return
 
@@ -406,12 +413,26 @@ def chk_ema_signal(df):
 
 def trading_strategy(df):
     position = len(Buy_at) + len(Sell_at)
-    if sig := chk_ema_signal(df):
+    signal = 0
+
+    if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
+         (df.iloc[-1]['close'] > df.iloc[-1][EMA2_KEY]) and\
+         (df.iloc[-1]['close'] > df.iloc[-1]['VWAP']) and\
+         (df.iloc[-1][RSI_KEY] < 70):
+        signal = 1
+    elif (df.iloc[-1]['close'] < df.iloc[-2]['low']) and\
+         (df.iloc[-1]['close'] < df.iloc[-1][EMA2_KEY]) and\
+         (df.iloc[-1]['close'] < df.iloc[-1]['VWAP']) and\
+         (df.iloc[-1][RSI_KEY] > 30):
+        signal = -1
+
+    if signal:
         if not position:
-            open_position(sig)
+            open_position(signal)
         else:
-            close_position(sig)
-            open_position(sig)
+            close_position(signal)
+            open_position(signal)
+
     return
 
 if __name__ == '__main__':
@@ -501,6 +522,7 @@ if __name__ == '__main__':
             #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
             #chk_stop_loss(realtime_candle, df_fubon_5m)
+            #chk_take_profit(realtime_candle, df_fubon_5m)
             if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
                 print(f'ATR trailing stop at: {stop_pt}')
 
