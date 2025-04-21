@@ -289,7 +289,32 @@ class Fubon_data(object):
         self.Acc_futures = self.get_future_account()
         self._set_event()
         return
-    
+
+    def reset_vwap_if_needed(self, VWAP_state, current_market):
+        """
+        根據市場類型 (日盤、夜盤或非交易時段)，檢查是否需要重置 VWAP_state。
+        """
+
+        if 'last_market' not in VWAP_state:
+            VWAP_state['last_market'] = current_market
+            return VWAP_state
+
+        # 檢查是否處於非交易時段並且需要重置 VWAP_state
+        if current_market == '-1':
+            return VWAP_state  # 不重置，處於非交易時段
+
+        # 根據市場類型判斷是否需要重置
+        if current_market == '0':  # 日盤
+            if VWAP_state.get('last_market', '') != '0':  # 如果之前是夜盤或非交易時段
+                VWAP_state = indicators.reset_vwap_state()
+                VWAP_state['last_market'] = '0'
+        elif current_market == '1':  # 夜盤
+            if VWAP_state.get('last_market', '') != '1':  # 如果之前是日盤或非交易時段
+                VWAP_state = indicators.reset_vwap_state()
+                VWAP_state['last_market'] = '1'
+
+        return VWAP_state
+
     def get_candles(self):
         candles_list = self.get_candles_list()
         self.df = pd.DataFrame(candles_list)
@@ -303,7 +328,9 @@ class Fubon_data(object):
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
             else:
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
-            
+
+            self.reset_vwap_if_needed(self.VWAP_state, market)
+
             # 檢查最後一筆資料是不是完整candle
             # 富邦api的k線時間跟一般app看的不同，差距一個週期
             last_data_min = int(data['data'][-1]['date'].split('T')[1].split(':')[1])

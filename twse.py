@@ -53,6 +53,31 @@ class TWSE(object):
             return value * 60 * 60
         return None  # 如果單位不正確，則傳回 None
 
+    def reset_vwap_if_needed(self, VWAP_state, current_market):
+        """
+        根據市場類型 (日盤、夜盤或非交易時段)，檢查是否需要重置 VWAP_state。
+        """
+
+        if 'last_market' not in VWAP_state:
+            VWAP_state['last_market'] = current_market
+            return VWAP_state
+
+        # 檢查是否處於非交易時段並且需要重置 VWAP_state
+        if current_market == '-1':
+            return VWAP_state  # 不重置，處於非交易時段
+
+        # 根據市場類型判斷是否需要重置
+        if current_market == '0':  # 日盤
+            if VWAP_state.get('last_market', '') != '0':  # 如果之前是夜盤或非交易時段
+                VWAP_state = indicators.reset_vwap_state()
+                VWAP_state['last_market'] = '0'
+        elif current_market == '1':  # 夜盤
+            if VWAP_state.get('last_market', '') != '1':  # 如果之前是日盤或非交易時段
+                VWAP_state = indicators.reset_vwap_state()
+                VWAP_state['last_market'] = '1'
+
+        return VWAP_state
+
     def get_candles(self):
         #utils.sync_time(self.period/60)
         while True:
@@ -74,6 +99,8 @@ class TWSE(object):
         market_type = utils.get_market_type()
         if market_type == '-1':
             return None
+
+        self.reset_vwap_if_needed(self.VWAP_state, market_type)
 
         txf_payload = {
             "MarketType":market_type, #0=日盤, 1=夜盤

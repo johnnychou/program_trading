@@ -361,5 +361,5 @@ def reset_vwap_state():
     """
     return {
         'cumulative_pv': 0.0,
-        'cumulative_volume': 0.0
+        'cumulative_volume': 0.0,
     }

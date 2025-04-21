@@ -513,17 +513,17 @@ if __name__ == '__main__':
 
             show_user_settings()
             show_account_info()
-            #show_realtime(realtime_candle)
-            show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            show_realtime(realtime_candle)
+            #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
-            #print(df_fubon_5m.tail(5))
+            print(df_fubon_5m.tail(5))
 
             # check specific data
-            # if len(df_fubon_5m) > 2:
-            #     dfs = df_fubon_5m.tail(5)
-            #     for index, row_series in dfs.iterrows():
-            #         print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series["VWAP"]}')
-            #     print(f'ATR: {dfs.iloc[-1][ATR_KEY]}')
+            if len(df_fubon_5m) > 2:
+                dfs = df_fubon_5m.tail(5)
+                for index, row_series in dfs.iterrows():
+                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series["VWAP"]}')
+                print(f'ATR: {dfs.iloc[-1][ATR_KEY]}')
 
             #chk_stop_loss(realtime_candle, df_fubon_5m)
             #chk_take_profit(realtime_candle, df_fubon_5m)
