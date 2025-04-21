@@ -56,19 +56,18 @@ def create_fubon_process(period, product, data_queue, processes):
     processes.append(process)
     return
 
-def create_twse_process(period, product, datasource, data_queue, realtime_candle, processes):
+def create_twse_process(period, product, data_queue, realtime_candle, processes):
     """
     創建並啟動 TWSE 進程。
 
     Args:
         period (str): K線週期。
         product (str): 產品代碼。
-        datasource (str): 來源為twse或csv。
         data_queue (multiprocessing.Queue): 用於傳輸資料的佇列。
         realtime_candle (multiprocessing.managers.DictProxy): 共享的即時 K 線字典。
         processes (list): 用於儲存已創建進程的列表。
     """
-    twse_instance = twse.TWSE(period, product, datasource, data_queue, realtime_candle)
+    twse_instance = twse.TWSE(period, product, data_queue, realtime_candle)
     process = multiprocessing.Process(target=twse_instance.get_candles)
     process.daemon = True
     process.start()
@@ -121,7 +120,6 @@ def show_realtime(realtime_candle):
     print(f'lastprice: {Last_price}')
     print('====================================================================')
     print(realtime_candle)
-    os.system('cls')
     return
 
 def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
@@ -132,13 +130,13 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     print('==================================')
     print(realtime_candle)
     print('===30s============================')
-    print(f"{df_twse_30s[-10:]}")
+    print(f"{df_twse_30s.tail(10)}")
     print('===1m=============================')
-    print(f"{df_fubon_1m[-10:]}")
+    print(f"{df_fubon_1m.tail(10)}")
     print('===5m=============================')
-    print(f"{df_fubon_5m[-10:]}")
+    print(f"{df_fubon_5m.tail(10)}")
     print('===15m============================')
-    print(f"{df_fubon_15m[-10:]}")    
+    print(f"{df_fubon_15m.tail(10)}")
     return
 
 def show_user_settings():
@@ -203,41 +201,41 @@ def update_account_info(account):
         OrderAmount = Userinput_OrderAmount
     return
 
-def open_position(account, sig):
+def open_position(sig):
     if (Userinput_Direction == 'buy' and sig == -1) or\
          (Userinput_Direction == 'sell' and sig == 1):
         return 0
-    account.send_order(sig, OrderAmount)
-    update_account_info(account)
+    Fubon_account.send_order(sig, OrderAmount)
+    update_account_info(Fubon_account)
     return
     
-def close_position(account, sig):
+def close_position(sig):
     global Total_profit
     if not Buy_at and not Sell_at:
         return 0
     if (Buy_at and sig == 1) or\
          (Sell_at and sig == -1):
         return 0
-    account.send_order(sig, OrderAmount)
+    Fubon_account.send_order(sig, OrderAmount)
 
     if sig == 1:
         entry_price = Sell_at[0]
-        filled = account.get_order_results()
+        filled = Fubon_account.get_order_results()
         profit = entry_price - filled
     elif sig == -1:
         entry_price = Buy_at[0]
-        filled = account.get_order_results()
+        filled = Fubon_account.get_order_results()
         profit = filled - entry_price
 
     Total_profit += profit*PT_price
-    update_account_info(account)
+    update_account_info(Fubon_account)
     return
 
-def close_all_position(account):
+def close_all_position():
     if Buy_at:
-        close_position(account, -1)
+        close_position(-1)
     if Sell_at:
-        close_position(account, 1)
+        close_position(1)
     return
 
 def before_end_of_market(market, now):
@@ -291,6 +289,8 @@ def chk_stop_loss(realtime_candle, df):
         return
     if ATR_KEY not in df.columns:
         return
+    if not (len(Buy_at) + len(Sell_at)):
+        return
 
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
@@ -312,6 +312,8 @@ def chk_take_profit(realtime_candle, df):
     if 'lastprice' not in realtime_candle:
         return
     if ATR_KEY not in df.columns:
+        return
+    if not (len(Buy_at) + len(Sell_at)):
         return
 
     lastprice = realtime_candle['lastprice']
@@ -336,7 +338,9 @@ def atr_trailing_stop(realtime_candle, df):
         return 0
     if ATR_KEY not in df.columns:
         return 0
-
+    if not (len(Buy_at) + len(Sell_at)):
+        return
+    
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
     atr = df.loc[last_valid_idx, ATR_KEY]
@@ -362,17 +366,30 @@ def atr_trailing_stop(realtime_candle, df):
 
     return 0
 
-def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
-    if KD_KEY in df_fubon_1m.columns:
-        column = df_fubon_1m[KD_KEY]
-        if len(column) >= 3:
-            print(column.iloc[-1])
-            print(column.iloc[-2])
-            print(column.iloc[-3])
-            #time.sleep(10)
-    return
+def chk_ema_signal(df):
+    if len(df) < 2:
+        return
+    ema_short = df[EMA_KEY].iloc[-1]
+    ema_long = df[EMA2_KEY].iloc[-1]
+    pre_ema_short = df[EMA_KEY].iloc[-2]
+    pre_ema_long = df[EMA2_KEY].iloc[-2]
 
-def trading_strategy():
+    if pre_ema_short < pre_ema_long and ema_short >= ema_long:
+        return 1 # 做多
+
+    if pre_ema_short > pre_ema_long and ema_short <= ema_long:
+        return -1 # 做空
+
+    return 0
+
+def trading_strategy(df):
+    position = len(Buy_at) + len(Sell_at)
+    if position:
+        return
+    
+    if sig := chk_ema_signal(df):
+        open_position(sig)
+
     return
 
 if __name__ == '__main__':
@@ -395,6 +412,8 @@ if __name__ == '__main__':
     df_fubon_5m = pd.DataFrame()
     df_fubon_15m = pd.DataFrame()
 
+    df_flag = {}
+
     try:
         while True:
             now = datetime.datetime.now()
@@ -413,15 +432,19 @@ if __name__ == '__main__':
                 period, tmp_df = data_queue.get()
                 # print(f"received period[{period}] data")
                 # print(f"{tmp_df}")
-                tmp_df = indicators_calculation(tmp_df)
+                indicators_calculation(tmp_df)
                 if period == PERIOD_30S:
                     df_twse_30s = tmp_df
+                    df_flag[period] = 1
                 elif period == PERIOD_1M:
                     df_fubon_1m = tmp_df
+                    df_flag[period] = 1
                 elif period == PERIOD_5M:
                     df_fubon_5m = tmp_df
+                    df_flag[period] = 1
                 elif period == PERIOD_15M:
                     df_fubon_15m = tmp_df
+                    df_flag[period] = 1
 
             if now.minute % 15 == 0 and now.minute != Last_executed_minute:
                 if is_data_ready(now, [[df_fubon_1m, PERIOD_1M],\
@@ -440,14 +463,20 @@ if __name__ == '__main__':
                     # show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
                     # time.sleep(10)
 
-            #multi_timeframe_strategy()
             show_user_settings()
             show_account_info()
-            #show_realtime(realtime_candle)
-            show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            show_realtime(realtime_candle)
+            print(df_fubon_5m.tail(5))
+            #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+
             #chk_stop_loss(realtime_candle, df_fubon_5m)
             if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
                 print(f'ATR trailing stop at: {stop_pt}')
+
+            if Last_executed_minute == now.minute and df_flag[PERIOD_5M]:
+                trading_strategy(df_fubon_5m)
+                df_flag[PERIOD_5M] = 0
+
             time.sleep(0.01)
             os.system('cls')
 
