@@ -172,14 +172,14 @@ class Fubon_trade(object):
     
     def get_order_results(self):
         orderResults = self.SDK.futopt.get_order_results(self.Acc_futures)
-        price = 0
+        filled_money = 0
         #print(orderResults)
 
         if orderResults.data[-1].symbol == self.chk_symbol:
-            price = orderResults.data[-1].filled_money
+            filled_money = orderResults.data[-1].filled_money
 
-        if price:
-            return price
+        if filled_money:
+            return filled_money
 
         return 0
     

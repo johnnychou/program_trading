@@ -28,10 +28,11 @@ Trade_record = []
 Margin = []
 
 Last_price = 0
-Profit = 0
+Total_profit = 0
 Balance = 0
 OrderAmount = 0
 PT_price = 0
+Max_profit_pt = 0
 
 Flag_1m = 0
 Flag_5m = 0
@@ -149,17 +150,17 @@ def show_user_settings():
 
 def show_account_info():
     position = ''
-    profit = 0
+    unrealized = 0
     if Buy_at:
         position = f'Buy: {Buy_at}'
         if Last_price:
-            profit = (Last_price - Buy_at[0])*PT_price*OrderAmount
+            unrealized = (Last_price - Buy_at[0])*PT_price*OrderAmount
     elif Sell_at:
         position = f'Sell: {Sell_at}'
         if Last_price:
-            profit = (Sell_at[0] - Last_price)*PT_price*OrderAmount
+            unrealized = (Sell_at[0] - Last_price)*PT_price*OrderAmount
 
-    print(f'Position: {position}, Profit: {profit}')
+    print(f'Position: {position}, Unrealized: {unrealized}, Profit: {Total_profit}'), 
     print('====================================================================')
     return
 
@@ -211,12 +212,24 @@ def open_position(account, sig):
     return
     
 def close_position(account, sig):
+    global Total_profit
     if not Buy_at and not Sell_at:
         return 0
     if (Buy_at and sig == 1) or\
          (Sell_at and sig == -1):
         return 0
     account.send_order(sig, OrderAmount)
+
+    if sig == 1:
+        entry_price = Sell_at[0]
+        filled = account.get_order_results()
+        profit = entry_price - filled
+    elif sig == -1:
+        entry_price = Buy_at[0]
+        filled = account.get_order_results()
+        profit = filled - entry_price
+
+    Total_profit += profit*PT_price
     update_account_info(account)
     return
 
@@ -225,7 +238,6 @@ def close_all_position(account):
         close_position(account, -1)
     if Sell_at:
         close_position(account, 1)
-    update_account_info(account)
     return
 
 def before_end_of_market(market, now):
@@ -319,35 +331,36 @@ def chk_take_profit(realtime_candle, df):
     return 0
 
 def atr_trailing_stop(realtime_candle, df):
+    global Max_profit_pt
     if 'lastprice' not in realtime_candle:
-        return
+        return 0
     if ATR_KEY not in df.columns:
-        return
+        return 0
 
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
     atr = df.loc[last_valid_idx, ATR_KEY]
 
     if Buy_at:
-        Max_profit_pt = max(Last_price, Buy_at[0], Max_profit_pt)
+        Max_profit_pt = max(lastprice, Buy_at[0], Max_profit_pt)
         stop_price = Max_profit_pt - atr * 1.5
-        if Last_price <= stop_price:
+        if lastprice <= stop_price:
             close_position(-1)
-            Stop_loss_times += 1
-            return
+            Max_profit_pt = 0
+            return stop_price
 
     elif Sell_at:
         if not Max_profit_pt:
-            Max_profit_pt = min(Last_price, Sell_at[0])
+            Max_profit_pt = min(lastprice, Sell_at[0])
         else:
-            Max_profit_pt = min(Last_price, Sell_at[0], Max_profit_pt)
+            Max_profit_pt = min(lastprice, Sell_at[0], Max_profit_pt)
         stop_price = Max_profit_pt + atr * 1.5
-        if Last_price >= stop_price:
+        if lastprice >= stop_price:
             close_position(1)
-            Stop_loss_times += 1
-            return
+            Max_profit_pt = 0
+            return stop_price
 
-    return
+    return 0
 
 def chk_trade_signal(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     if KD_KEY in df_fubon_1m.columns:
@@ -428,12 +441,13 @@ if __name__ == '__main__':
                     # time.sleep(10)
 
             #multi_timeframe_strategy()
-
             show_user_settings()
             show_account_info()
             #show_realtime(realtime_candle)
             show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
-            chk_stop_loss(realtime_candle, df_fubon_5m)
+            #chk_stop_loss(realtime_candle, df_fubon_5m)
+            if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
+                print(f'ATR trailing stop at: {stop_pt}')
             time.sleep(0.01)
             os.system('cls')
 
