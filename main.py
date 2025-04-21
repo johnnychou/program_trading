@@ -137,10 +137,13 @@ def chk_peak_value(realtime_candle):
 
 def show_realtime(realtime_candle):
     global Last_price
+    level = 0
     if 'lastprice' in realtime_candle:
         Last_price = realtime_candle['lastprice']
     chk_peak_value(realtime_candle)
-    print(f'Lastprice: {Last_price}, Highest: {Highest}, Lowest: {Lowest}')
+    if Highest != Lowest:
+        level = round((Last_price - Lowest) / (Highest - Lowest) * 100, 2)
+    print(f'Lastprice: {Last_price}, Highest: {Highest}, Lowest: {Lowest}, Level: {level}%')
     print('====================================================================')
     print(realtime_candle)
     return
@@ -181,7 +184,8 @@ def show_account_info():
         if Last_price:
             unrealized = (Sell_at[0] - Last_price)*PT_price*OrderAmount
 
-    print(f'Position: {position}, Unrealized: {unrealized}, Profit: {Total_profit}, TradeTimes: {Trade_times}')
+    print(f'Balance: {Balance}, Profit: {Total_profit}, TradeTimes: {Trade_times}')
+    print(f'Position: {position}, Unrealized: {unrealized}')
     print('====================================================================')
     return
 
@@ -310,7 +314,7 @@ def indicators_calculation(df): # 直接在df新增欄位
     indicators.indicator_kd(df, KD_PERIOD[0], KD_PERIOD[1], KD_PERIOD[2])
     indicators.indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
     indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
-    indicators.calculate_or_update_vwap_cumulative(df)
+    indicators.indicator_vwap_cumulative(df)
     return
 
 def chk_stop_loss(realtime_candle, df):

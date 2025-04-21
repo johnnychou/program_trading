@@ -296,7 +296,7 @@ def indicator_bollingsband(df, period=20, std_dev=2):
         )
     return
 
-def calculate_or_update_vwap_cumulative(df):
+def indicator_vwap_cumulative(df):
     """
     計算或更新累積 VWAP，儲存必要的中間值。
 
