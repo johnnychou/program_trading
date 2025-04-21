@@ -7,6 +7,7 @@ import csv
 import time
 import multiprocessing
 import pandas as pd
+import winsound
 
 import twse
 import fubon
@@ -33,6 +34,8 @@ Balance = 0
 OrderAmount = 0
 PT_price = 0
 Max_profit_pt = 0
+Highest = 0
+Lowest = 0
 
 Flag_1m = 0
 Flag_5m = 0
@@ -113,11 +116,30 @@ def user_input_settings():
 
     return
 
+def chk_peak_value(realtime_candle):
+    global Highest, Lowest
+    if 'highest' not in realtime_candle or 'lowest' not in realtime_candle:
+        return
+
+    if not Highest:
+        Highest = realtime_candle['highest']
+    if not Lowest:
+        Lowest = realtime_candle['lowest']
+
+    if Highest < realtime_candle['highest']:
+        Highest = realtime_candle['highest']
+        winsound.Beep(1000,50)
+    if Lowest > realtime_candle['lowest']:
+        Lowest = realtime_candle['lowest']
+        winsound.Beep(200,50)
+    return
+
 def show_realtime(realtime_candle):
     global Last_price
     if 'lastprice' in realtime_candle:
         Last_price = realtime_candle['lastprice']
-    print(f'lastprice: {Last_price}')
+    chk_peak_value(realtime_candle)
+    print(f'Lastprice: {Last_price}, Highest: {Highest}, Lowest: {Lowest}')
     print('====================================================================')
     print(realtime_candle)
     return
@@ -384,12 +406,12 @@ def chk_ema_signal(df):
 
 def trading_strategy(df):
     position = len(Buy_at) + len(Sell_at)
-    if position:
-        return
-    
     if sig := chk_ema_signal(df):
-        open_position(sig)
-
+        if not position:
+            open_position(sig)
+        else:
+            close_position(sig)
+            open_position(sig)
     return
 
 if __name__ == '__main__':
@@ -466,7 +488,16 @@ if __name__ == '__main__':
             show_user_settings()
             show_account_info()
             show_realtime(realtime_candle)
+
             print(df_fubon_5m.tail(5))
+
+            if len(df_fubon_5m) > 2:
+                dfs = df_fubon_5m.tail(5)
+                for index, row_series in dfs.iterrows():
+                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}')
+                print(f'ATR: {dfs.iloc[-1][ATR_KEY]}')
+
+
             #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
             #chk_stop_loss(realtime_candle, df_fubon_5m)

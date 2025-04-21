@@ -25,8 +25,12 @@ class TWSE(object):
         #process控制
         self.data_queue = data_queue #共享data
         self.realtime_candle = shared_data
+
         self.total_vol = 0
         self.pre_vol = 0
+        self.highest = 0
+        self.lowest = 0
+
         self._init_twse_requirement()
 
         return
@@ -117,6 +121,9 @@ class TWSE(object):
         if vol <= 0:
             return None
 
+        self.highest = data['CHighPrice']
+        self.lowest = data['CLowPrice']
+
         filtered_data = {
             'CLastPrice': int(float(data['CLastPrice'])),
             'CTime': data['CTime'],
@@ -161,6 +168,8 @@ class TWSE(object):
                 self.realtime_candle['volume'] = cvolume
                 self.realtime_candle['time'] = ctime
                 self.realtime_candle['cnt'] = round(during_time, 2)
+                self.realtime_candle['highest'] = self.highest
+                self.realtime_candle['lowest'] = self.lowest
 
             now = time.time()
             during_time = now - start
