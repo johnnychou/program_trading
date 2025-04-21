@@ -218,51 +218,44 @@ def indicator_macd(df, fast_period=12, slow_period=26, signal_period=9):
     alpha_signal = 2 / (signal_period + 1)
 
     if key not in df.columns:
-        df[key] = None
-
-    if len(df) < slow_period:
-        df.at[df.index[-1], key] = (0, 0, 0)
-        return
-
-    close_now = df['close'].iloc[-1]
-
-    # 初始化：沒狀態就用全量計算一次最後一筆的 EMA，並儲存在 state 中
-    if 'fast_ema' not in Macd_state or 'slow_ema' not in Macd_state or 'signal' not in Macd_state:
+        # 初次計算：從頭計算 EMA 與 MACD
         fast_ema_series = df['close'].ewm(span=fast_period, adjust=False).mean()
         slow_ema_series = df['close'].ewm(span=slow_period, adjust=False).mean()
         macd_line = fast_ema_series - slow_ema_series
         signal_line = macd_line.ewm(span=signal_period, adjust=False).mean()
         hist = macd_line - signal_line
 
+        df[key] = list(zip(
+            macd_line.round(1),
+            signal_line.round(1),
+            hist.round(1)
+        ))
+
+        # 儲存最後一筆 EMA 狀態到 Macd_state
         Macd_state['fast_ema'] = fast_ema_series.iloc[-1]
         Macd_state['slow_ema'] = slow_ema_series.iloc[-1]
         Macd_state['signal'] = signal_line.iloc[-1]
-
-        df.at[df.index[-1], key] = (
-            round(macd_line.iloc[-1], 1),
-            round(signal_line.iloc[-1], 1),
-            round(hist.iloc[-1], 1)
-        )
         return
 
-    # 增量更新
+    # 後續增量更新
+    close_now = df['close'].iloc[-1]
+
     fast_ema = alpha_fast * close_now + (1 - alpha_fast) * Macd_state['fast_ema']
     slow_ema = alpha_slow * close_now + (1 - alpha_slow) * Macd_state['slow_ema']
     macd_line = fast_ema - slow_ema
     signal_line = alpha_signal * macd_line + (1 - alpha_signal) * Macd_state['signal']
     hist = macd_line - signal_line
 
-    # 更新狀態
-    Macd_state['fast_ema'] = fast_ema
-    Macd_state['slow_ema'] = slow_ema
-    Macd_state['signal'] = signal_line
-
-    # 寫入結果欄位
     df.at[df.index[-1], key] = (
         round(macd_line, 1),
         round(signal_line, 1),
         round(hist, 1)
     )
+
+    # 更新狀態
+    Macd_state['fast_ema'] = fast_ema
+    Macd_state['slow_ema'] = slow_ema
+    Macd_state['signal'] = signal_line
     return
 
 def indicator_bollingsband(df, period=20, std_dev=2):
