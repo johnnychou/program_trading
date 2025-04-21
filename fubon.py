@@ -171,15 +171,24 @@ class Fubon_trade(object):
         return 0
     
     def get_order_results(self):
-        orderResults = self.SDK.futopt.get_order_results(self.Acc_futures)
-        filled_money = 0
+        market_type = utils.get_market_type()
+        if market_type == '-1':
+            print("Market time error")
+            return 1
+
+        if market_type == '0':
+            market = FutOptMarketType.Future
+        if market_type == '1':
+            market = FutOptMarketType.FutureNight
+        orderResults = self.SDK.futopt.get_order_results(self.Acc_futures, market)
+        filled_price = 0
         #print(orderResults)
 
         if orderResults.data[-1].symbol == self.chk_symbol:
-            filled_money = orderResults.data[-1].filled_money
+            filled_price = orderResults.data[-1].filled_money
 
-        if filled_money:
-            return filled_money
+        if filled_price:
+            return filled_price
 
         return 0
     

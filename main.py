@@ -226,7 +226,7 @@ def update_account_info(account):
         OrderAmount = get_max_lots()
     else:
         OrderAmount = Userinput_OrderAmount
-    time.sleep(5)
+    #time.sleep(5)
     return
 
 def open_position(sig):
@@ -253,10 +253,14 @@ def close_position(sig):
     if sig == 1:
         entry_price = Sell_at[0]
         filled = Fubon_account.get_order_results()
+        if not filled:
+            filled = Last_price
         profit = entry_price - filled
     elif sig == -1:
         entry_price = Buy_at[0]
         filled = Fubon_account.get_order_results()
+        if not filled:
+            filled = Last_price
         profit = filled - entry_price
 
     Total_profit += profit*PT_price
@@ -381,6 +385,8 @@ def atr_trailing_stop(realtime_candle, df):
     if Buy_at:
         Max_profit_pt = max(lastprice, Buy_at[0], Max_profit_pt)
         stop_price = Max_profit_pt - atr * 1.5
+        print(f'Max Profit at: {Max_profit_pt}, {(Max_profit_pt-Buy_at[0])*PT_price}')
+        print(f'ATR trailing stop price: {stop_price}')
         if lastprice <= stop_price:
             close_position(-1)
             Max_profit_pt = 0
@@ -392,6 +398,8 @@ def atr_trailing_stop(realtime_candle, df):
         else:
             Max_profit_pt = min(lastprice, Sell_at[0], Max_profit_pt)
         stop_price = Max_profit_pt + atr * 1.5
+        print(f'Max Profit at: {Max_profit_pt}, {(Sell_at[0]-Max_profit_pt)*PT_price}')
+        print(f'ATR trailing stop price: {stop_price}')
         if lastprice >= stop_price:
             close_position(1)
             Max_profit_pt = 0
@@ -464,16 +472,6 @@ if __name__ == '__main__':
     try:
         while True:
             now = datetime.datetime.now()
-            if not is_trading_time(Userinput_Market, now):
-                print(f"[{now.strftime('%H:%M:%S')}] 不在交易時間...")
-                time.sleep(60)
-                continue
-
-            if before_end_of_market(Userinput_Market, now):
-                print(f"[{now.strftime('%H:%M:%S')}] 時段即將結束，執行平倉操作...")
-                #close_all_position()
-                time.sleep(60)
-                continue
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
@@ -510,23 +508,34 @@ if __name__ == '__main__':
                     # show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
                     # time.sleep(10)
 
+            if not is_trading_time(Userinput_Market, now):
+                print(f"[{now.strftime('%H:%M:%S')}] 不在交易時間...")
+                time.sleep(60)
+                continue
+
+            if before_end_of_market(Userinput_Market, now):
+                print(f"[{now.strftime('%H:%M:%S')}] 時段即將結束，執行平倉操作...")
+                #close_all_position()
+                time.sleep(60)
+                continue
+
             show_user_settings()
             show_account_info()
             show_realtime(realtime_candle)
-
+            #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            
             print(df_fubon_5m.tail(5))
 
+            # check specific data
             if len(df_fubon_5m) > 2:
                 dfs = df_fubon_5m.tail(5)
                 for index, row_series in dfs.iterrows():
-                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}')
+                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series["VWAP"]}')
                 print(f'ATR: {dfs.iloc[-1][ATR_KEY]}')
-
-
-            #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
             #chk_stop_loss(realtime_candle, df_fubon_5m)
             #chk_take_profit(realtime_candle, df_fubon_5m)
+
             if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
                 print(f'ATR trailing stop at: {stop_pt}')
 
