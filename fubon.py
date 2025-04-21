@@ -269,7 +269,7 @@ class Fubon_data(object):
         self.key = period
         self.product = product
         self.data_queue = data_queue
-        self.candles_list = []
+        self.df = pd.DataFrame()
         return
 
     def _init_data(self):
@@ -287,8 +287,8 @@ class Fubon_data(object):
     
     def get_candles(self):
         candles_list = self.get_candles_list()
-        df = pd.DataFrame(candles_list)
-        self.data_queue.put((self.key, df))
+        self.df = pd.DataFrame(candles_list)
+        self.data_queue.put((self.key, self.df))
         while True:
             utils.sync_time(self.period)
             self.Trade_symbol = self.get_trade_symbol()
@@ -308,8 +308,13 @@ class Fubon_data(object):
                 del data['data'][-1]
 
             candles_list = data['data']
-            df = pd.DataFrame(candles_list)
-            self.data_queue.put((self.key, df))
+            new_row = candles_list[-1]
+            new_df = pd.DataFrame([new_row])
+            self.df = pd.concat([self.df, new_df], ignore_index=True)
+            if len(self.df) > MAX_CANDLE_AMOUNT[self.key]:
+                self.df = self.df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
+
+            self.data_queue.put((self.key, self.df))
             time.sleep(self.period*59)
 
     def get_candles_list(self):

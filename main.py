@@ -156,13 +156,13 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     print('==================================')
     print(realtime_candle)
     print('===30s============================')
-    print(f"{df_twse_30s.tail(10)}")
+    print(f"{df_twse_30s.tail(5)}")
     print('===1m=============================')
-    print(f"{df_fubon_1m.tail(10)}")
+    print(f"{df_fubon_1m.tail(5)}")
     print('===5m=============================')
-    print(f"{df_fubon_5m.tail(10)}")
+    print(f"{df_fubon_5m.tail(5)}")
     print('===15m============================')
-    print(f"{df_fubon_15m.tail(10)}")
+    print(f"{df_fubon_15m.tail(5)}")
     return
 
 def show_user_settings():
@@ -467,7 +467,12 @@ if __name__ == '__main__':
     df_fubon_5m = pd.DataFrame()
     df_fubon_15m = pd.DataFrame()
 
-    df_flag = {}
+    df_flag = {
+        PERIOD_30S: 0,
+        PERIOD_1M: 0,
+        PERIOD_5M: 0,
+        PERIOD_15M: 0,
+    }
 
     try:
         while True:
@@ -523,7 +528,7 @@ if __name__ == '__main__':
             show_account_info()
             show_realtime(realtime_candle)
             #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
-            
+
             print(df_fubon_5m.tail(5))
 
             # check specific data
