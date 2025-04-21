@@ -110,7 +110,7 @@ class Fubon_trade(object):
 
     #成交回報
     @handle_exceptions
-    def on_filled(code, content):
+    def on_filled(self, code, content):
         print("===Filled===")
         print(code)
         print(content)
@@ -427,7 +427,7 @@ class Fubon_data(object):
 
     #成交回報
     @handle_exceptions
-    def on_filled(code, content):
+    def on_filled(self, code, content):
         print("===Filled===")
         print(code)
         print(content)

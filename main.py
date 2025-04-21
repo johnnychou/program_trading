@@ -534,7 +534,7 @@ if __name__ == '__main__':
                 trading_strategy(df_fubon_5m)
                 df_flag[PERIOD_5M] = 0
 
-            time.sleep(0.01)
+            time.sleep(1)
             os.system('cls')
 
     except KeyboardInterrupt:
