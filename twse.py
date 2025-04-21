@@ -10,6 +10,7 @@ import pandas as pd
 
 import utils
 import fubon
+import indicators
 from conf import *
 
 #global variables
@@ -31,6 +32,10 @@ class TWSE(object):
         self.pre_vol = 0
         self.highest = 0
         self.lowest = 0
+        self.VWAP_state = {
+            'cumulative_pv': 0.0,
+            'cumulative_volume': 0.0,
+        }
 
         self._init_twse_requirement()
 
@@ -57,6 +62,7 @@ class TWSE(object):
                 self.df = pd.concat([self.df, new_row], ignore_index=True)
                 if len(self.df) > MAX_CANDLE_AMOUNT[self.key]:
                     self.df = self.df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
+                indicators.indicators_calculation_all(self.df, self.VWAP_state)
                 self.data_queue.put((self.key, self.df))
 
     def _init_twse_requirement(self):

@@ -1,6 +1,19 @@
 import numpy as np
 import pandas as pd
 from constant import *
+from conf import *
+
+def indicators_calculation_all(df, VWAP_state): # 直接在df新增欄位
+    indicator_ma(df, MA_PERIOD)
+    indicator_ema(df, EMA_PERIOD)
+    indicator_ema(df, EMA2_PERIOD)
+    indicator_atr(df, ATR_PERIOD)
+    indicator_rsi(df, RSI_PERIOD)
+    indicator_kd(df, KD_PERIOD[0], KD_PERIOD[1], KD_PERIOD[2])
+    indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
+    indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
+    indicator_vwap_cumulative(df, VWAP_state)
+    return
 
 def indicator_ma(df, period):
     """
@@ -289,123 +302,64 @@ def indicator_bollingsband(df, period=20, std_dev=2):
         )
     return
 
-def indicator_vwap_cumulative(df):
+def indicator_vwap_cumulative(df, VWAP_state):
     """
-    計算或更新累積 VWAP，儲存必要的中間值。
+    使用 VWAP_state 儲存累積 PV 與 Volume，只更新 VWAP 欄位。
 
+    Args:
+        df (pd.DataFrame): 包含至少 ['high', 'low', 'close', 'volume'] 欄位的 DataFrame。
+        VWAP_state (dict): 包含 'cumulative_pv' 與 'cumulative_volume' 的狀態字典。
     """
     required_cols = ['high', 'low', 'close', 'volume']
     if not all(col in df.columns for col in required_cols):
         print(f"錯誤：DataFrame 缺少必要欄位: {required_cols}")
         return
 
-    # 確保 Volume 是數值型態 (這個賦值模式是安全的)
     df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
-
-    # 計算典型價格 (TP) 和 TP * Volume
     tp = (df['high'] + df['low'] + df['close']) / 3
     pv = tp * df['volume']
 
-    # --- 判斷計算模式 ---
-    start_loc = 0
-    last_cumulative_pv = 0.0
-    last_cumulative_volume = 0.0
+    if 'VWAP' not in df.columns:
+        df['VWAP'] = np.nan
 
-    can_update = ('VWAP' in df.columns and
-                  'Cumulative_PV' in df.columns and
-                  'Cumulative_Volume' in df.columns and
-                  df['VWAP'].notna().any())
+    start_loc = df['VWAP'].last_valid_index()
+    if start_loc is None:
+        start_iloc = 0
+    else:
+        start_iloc = df.index.get_loc(start_loc) + 1
 
-    if can_update:
-        last_valid_idx = df['VWAP'].last_valid_index()
-        if last_valid_idx is not None:
-            last_valid_iloc = df.index.get_loc(last_valid_idx)
-            if last_valid_iloc < len(df) - 1:
-                start_loc = last_valid_iloc + 1
-                last_cumulative_pv = df.loc[last_valid_idx, 'Cumulative_PV']
-                last_cumulative_volume = df.loc[last_valid_idx, 'Cumulative_Volume']
-            else:
-                return # 已是最新
-        else: # VWAP 欄位存在但全為 NaN
-            if 'Cumulative_PV' in df.columns: del df['Cumulative_PV']
-            if 'Cumulative_Volume' in df.columns: del df['Cumulative_Volume']
-            start_loc = 0
-            last_cumulative_pv = 0.0
-            last_cumulative_volume = 0.0
-    else: # 無法更新，準備完整計算
-        if 'VWAP' in df.columns: del df['VWAP']
-        if 'Cumulative_PV' in df.columns: del df['Cumulative_PV']
-        if 'Cumulative_Volume' in df.columns: del df['Cumulative_Volume']
-        start_loc = 0
-        last_cumulative_pv = 0.0
-        last_cumulative_volume = 0.0
+    if start_iloc >= len(df):
+        return  # 無新資料可更新
 
-    # --- 執行計算 ---
-    if start_loc >= len(df):
-        # 如果 start_loc 指向 DataFrame 範圍之外 (例如，首次計算時 df 為空)
-        # 確保欄位存在
-        if 'VWAP' not in df.columns: df['VWAP'] = np.nan
-        if 'Cumulative_PV' not in df.columns: df['Cumulative_PV'] = np.nan
-        if 'Cumulative_Volume' not in df.columns: df['Cumulative_Volume'] = np.nan
-        return
+    indices = df.iloc[start_iloc:].index
+    pv_to_add = pv.iloc[start_iloc:]
+    volume_to_add = df['volume'].iloc[start_iloc:]
 
+    cumulative_pv = pv_to_add.cumsum() + VWAP_state['cumulative_pv']
+    cumulative_volume = volume_to_add.cumsum() + VWAP_state['cumulative_volume']
 
-    rows_to_calculate_iloc = slice(start_loc, None)
-    target_indices = df.iloc[rows_to_calculate_iloc].index
+    vwap_series = cumulative_pv / cumulative_volume
+    df.loc[indices, 'VWAP'] = round(vwap_series)
 
-    pv_to_calculate = pv.iloc[rows_to_calculate_iloc]
-    volume_to_calculate = df['volume'].iloc[rows_to_calculate_iloc]
+    VWAP_state['cumulative_pv'] = cumulative_pv.iloc[-1]
+    VWAP_state['cumulative_volume'] = cumulative_volume.iloc[-1]
 
-    if pv_to_calculate.empty:
-         # 沒有需要計算的行，確保欄位存在
-        if 'VWAP' not in df.columns: df['VWAP'] = np.nan
-        if 'Cumulative_PV' not in df.columns: df['Cumulative_PV'] = np.nan
-        if 'Cumulative_Volume' not in df.columns: df['Cumulative_Volume'] = np.nan
-        return
-
-
-    current_pv_cumsum = pv_to_calculate.cumsum() + last_cumulative_pv
-    current_volume_cumsum = volume_to_calculate.cumsum() + last_cumulative_volume
-
-    # 賦值計算結果 (使用 .loc 是安全的)
-    df.loc[target_indices, 'Cumulative_PV'] = current_pv_cumsum
-    df.loc[target_indices, 'Cumulative_Volume'] = current_volume_cumsum
-
-    vwap_calculated = current_pv_cumsum / current_volume_cumsum
-    df.loc[target_indices, 'VWAP'] = round(vwap_calculated)
-
-    # --- 處理 NaNs (使用建議的方法) ---
-
-    # 修正 FutureWarning 1 & 2: 使用 ffill() 並重新賦值，取代 fillna(method='ffill', inplace=True)
     df['VWAP'] = df['VWAP'].ffill()
 
-    # 如果開頭仍然是 NaN (初始 Volume 為 0)
-    first_row_index = df.index[0] # 獲取第一行的索引標籤
-    if pd.isna(df.loc[first_row_index, 'VWAP']): # 使用 loc 檢查第一行
-        first_valid_volume_index = df['volume'][df['volume'] > 0].first_valid_index()
-        if first_valid_volume_index is not None:
-            first_valid_tp_value = tp[first_valid_volume_index]
-
-            # 找到第一個非 NaN 的 VWAP 的索引標籤
-            first_non_nan_vwap_index = df['VWAP'].first_valid_index()
-
-            if first_non_nan_vwap_index is not None:
-                 # 選取第一個有效 VWAP 之前的所有行
-                 indices_to_fill = df.index < first_non_nan_vwap_index
-                 # 修正 FutureWarning 2: 使用 fillna() 重新賦值給 .loc 選定的 slice
-                 # 這裡 df.loc[indices_to_fill, 'VWAP'] 是一個 Series 的視圖或副本
-                 # 在這個 Series 上調用 fillna 並賦值回去是安全的
-                 df.loc[indices_to_fill, 'VWAP'] = df.loc[indices_to_fill, 'VWAP'].fillna(first_valid_tp_value)
-            else: # 如果所有 VWAP 值都是 NaN (例如所有 Volume 都是 0)
-                 df['VWAP'] = df['VWAP'].fillna(first_valid_tp_value)
-
-        else: # 如果整個 DataFrame 都沒有成交量
-            # 修正 FutureWarning 2: 使用 fillna(0) 並重新賦值
-            df['VWAP'] = df['VWAP'].fillna(0) # 用 0 填充所有 NaN
-
-    # 確保欄位最終存在
-    if 'VWAP' not in df.columns: df['VWAP'] = np.nan
-    if 'Cumulative_PV' not in df.columns: df['Cumulative_PV'] = np.nan
-    if 'Cumulative_Volume' not in df.columns: df['Cumulative_Volume'] = np.nan
+    if pd.isna(df.loc[df.index[0], 'VWAP']):
+        first_valid_idx = df['volume'][df['volume'] > 0].first_valid_index()
+        if first_valid_idx is not None:
+            df['VWAP'] = df['VWAP'].fillna(tp[first_valid_idx])
+        else:
+            df['VWAP'] = df['VWAP'].fillna(0)
 
     return
+
+def reset_vwap_state():
+    """
+    建立新的 VWAP 狀態，通常在換日或盤別切換時使用。
+    """
+    return {
+        'cumulative_pv': 0.0,
+        'cumulative_volume': 0.0
+    }

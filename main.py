@@ -309,18 +309,6 @@ def is_data_ready(now, datas):
     else:
         return False
 
-def indicators_calculation(df): # 直接在df新增欄位
-    indicators.indicator_ma(df, MA_PERIOD)
-    indicators.indicator_ema(df, EMA_PERIOD)
-    indicators.indicator_ema(df, EMA2_PERIOD)
-    indicators.indicator_atr(df, ATR_PERIOD)
-    indicators.indicator_rsi(df, RSI_PERIOD)
-    indicators.indicator_kd(df, KD_PERIOD[0], KD_PERIOD[1], KD_PERIOD[2])
-    indicators.indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
-    indicators.indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
-    indicators.indicator_vwap_cumulative(df)
-    return
-
 def chk_stop_loss(realtime_candle, df):
     if 'lastprice' not in realtime_candle:
         return
@@ -482,7 +470,6 @@ if __name__ == '__main__':
                 period, tmp_df = data_queue.get()
                 # print(f"received period[{period}] data")
                 # print(f"{tmp_df}")
-                indicators_calculation(tmp_df)
                 if period == PERIOD_30S:
                     df_twse_30s = tmp_df
                     df_flag[period] = 1
@@ -526,17 +513,17 @@ if __name__ == '__main__':
 
             show_user_settings()
             show_account_info()
-            show_realtime(realtime_candle)
-            #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            #show_realtime(realtime_candle)
+            show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
-            print(df_fubon_5m.tail(5))
+            #print(df_fubon_5m.tail(5))
 
             # check specific data
-            if len(df_fubon_5m) > 2:
-                dfs = df_fubon_5m.tail(5)
-                for index, row_series in dfs.iterrows():
-                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series["VWAP"]}')
-                print(f'ATR: {dfs.iloc[-1][ATR_KEY]}')
+            # if len(df_fubon_5m) > 2:
+            #     dfs = df_fubon_5m.tail(5)
+            #     for index, row_series in dfs.iterrows():
+            #         print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series["VWAP"]}')
+            #     print(f'ATR: {dfs.iloc[-1][ATR_KEY]}')
 
             #chk_stop_loss(realtime_candle, df_fubon_5m)
             #chk_take_profit(realtime_candle, df_fubon_5m)

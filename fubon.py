@@ -13,6 +13,7 @@ import fubon_neo
 from fubon_neo.sdk import FubonSDK, Mode, FutOptOrder
 from fubon_neo.constant import TimeInForce, FutOptOrderType, FutOptPriceType, FutOptMarketType, CallPut, BSAction
 import utils
+import indicators
 from conf import *
 
 sys.path.append("C:\\Users\\ChengWei\\Desktop\\my project")
@@ -270,6 +271,10 @@ class Fubon_data(object):
         self.product = product
         self.data_queue = data_queue
         self.df = pd.DataFrame()
+        self.VWAP_state = {
+            'cumulative_pv': 0.0,
+            'cumulative_volume': 0.0,
+        }
         return
 
     def _init_data(self):
@@ -288,6 +293,7 @@ class Fubon_data(object):
     def get_candles(self):
         candles_list = self.get_candles_list()
         self.df = pd.DataFrame(candles_list)
+        indicators.indicators_calculation_all(self.df, self.VWAP_state)
         self.data_queue.put((self.key, self.df))
         while True:
             utils.sync_time(self.period)
@@ -313,7 +319,7 @@ class Fubon_data(object):
             self.df = pd.concat([self.df, new_df], ignore_index=True)
             if len(self.df) > MAX_CANDLE_AMOUNT[self.key]:
                 self.df = self.df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
-
+            indicators.indicators_calculation_all(self.df, self.VWAP_state)
             self.data_queue.put((self.key, self.df))
             time.sleep(self.period*59)
 
