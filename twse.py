@@ -121,8 +121,8 @@ class TWSE(object):
         if vol <= 0:
             return None
 
-        self.highest = data['CHighPrice']
-        self.lowest = data['CLowPrice']
+        self.highest = int(data['CHighPrice'])
+        self.lowest = int(data['CLowPrice'])
 
         filtered_data = {
             'CLastPrice': int(float(data['CLastPrice'])),
