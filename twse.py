@@ -48,7 +48,7 @@ class TWSE(object):
         return None  # 如果單位不正確，則傳回 None
 
     def get_candles(self):
-        utils.sync_time(self.period/60)
+        #utils.sync_time(self.period/60)
         while True:
             candle = self._get_candles_from_twse()
             if candle:

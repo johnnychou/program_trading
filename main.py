@@ -226,6 +226,7 @@ def update_account_info(account):
         OrderAmount = get_max_lots()
     else:
         OrderAmount = Userinput_OrderAmount
+    time.sleep(5)
     return
 
 def open_position(sig):
@@ -233,8 +234,7 @@ def open_position(sig):
     if (Userinput_Direction == 'buy' and sig == -1) or\
          (Userinput_Direction == 'sell' and sig == 1):
         return 0
-    if (Buy_at and sig == 1) or\
-         (Sell_at and sig == -1):
+    if Buy_at or Sell_at:
         return 0
     Fubon_account.send_order(sig, OrderAmount)
     Trade_times += 1
@@ -534,7 +534,7 @@ if __name__ == '__main__':
                 trading_strategy(df_fubon_5m)
                 df_flag[PERIOD_5M] = 0
 
-            time.sleep(1)
+            time.sleep(0.01)
             os.system('cls')
 
     except KeyboardInterrupt:

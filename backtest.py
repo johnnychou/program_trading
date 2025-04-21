@@ -75,7 +75,7 @@ def fake_close_position(sig, lastprice, now): # 1=close_sell_position, -1=close_
             price, open_time = Sell_at.pop(0)
             profit += (price - lastprice)*PT_PRICE
             Sell_profit.append(profit)
-            Sell_record.append([price, lastprice, open_time, close_time])
+            Sell_record.append([price, lastprice, open_time, close_time, profit])
             Total_profit += profit
             Trade_times += 1
     elif sig == -1:
@@ -83,7 +83,7 @@ def fake_close_position(sig, lastprice, now): # 1=close_sell_position, -1=close_
             price, open_time = Buy_at.pop(0)
             profit += (lastprice - price)*PT_PRICE
             Buy_profit.append(profit)
-            Buy_record.append([price, lastprice, open_time, close_time])
+            Buy_record.append([price, lastprice, open_time, close_time, profit])
             Total_profit += profit
             Trade_times += 1
     return
@@ -113,22 +113,22 @@ def export_trade_log(fullpath):
         writer.writerow([])  # 空行分隔
 
 
-    for buy, sell, entry_time, exit_time in Buy_record:
+    for buy, sell, entry_time, exit_time, profit in Buy_record:
         records.append({
             'type': 'Buy',
             'entry': buy,
             'exit': sell,
-            'profit': (sell - buy) * PT_PRICE,
+            'profit': profit,
             'entry_time': entry_time,
             'exit_time': exit_time
         })
 
-    for sell, buy, entry_time, exit_time in Sell_record:
+    for sell, buy, entry_time, exit_time, profit in Sell_record:
         records.append({
             'type': 'Sell',
             'entry': sell,
             'exit': buy,
-            'profit': (sell - buy) * PT_PRICE,
+            'profit': profit,
             'entry_time': entry_time,
             'exit_time': exit_time
         })
@@ -161,7 +161,7 @@ def get_ema_trend(df, period=20):
     slope = ema.iloc[-1] - ema.iloc[-2]
     return 'up' if slope > 0 else 'down'
 
-def check_atr_trailing_stop(last_price, now):
+def check_atr_trailing_stop(last_price, now, df):
     position = 0
     if Buy_at:
         position = 1
@@ -172,12 +172,10 @@ def check_atr_trailing_stop(last_price, now):
     else:
         return
     
-    df = df_1m if is_day_session(now) else df_5m
-    if len(df) < 20:
-        return
+    if ATR_KEY in df.columns:
+        atr_val = df.iloc[-1][ATR_KEY]
 
-    atr_val = df.iloc[-1][ATR_KEY]
-    if atr_val is None:
+    if not atr_val:
         return
 
     stop_distance = atr_val * 1.5  # 可調整倍數
@@ -186,9 +184,6 @@ def check_atr_trailing_stop(last_price, now):
         fake_close_position(-1, last_price, now)
     elif position < 0 and last_price > entry_price + stop_distance:
         fake_close_position(1, last_price, now)
-
-def multi_timeframe_strategy(now, df):
-    return
 
 def run_test(fullpath, market='main'):
     global df_1m, df_5m, df_15m, Last_price
@@ -226,6 +221,11 @@ def run_test(fullpath, market='main'):
         if m.before_end_of_market(market, now):
             fake_close_all_position(Last_price, now)
             continue
+        
+        check_atr_trailing_stop(Last_price, now, df_5m)
+
+        if candle_5:
+            trading_strategy(Last_price, now, df_5m)
 
 
         # 放最後以讓上面k線收完
@@ -251,6 +251,31 @@ def run_test(fullpath, market='main'):
         record[3] = record[3].strftime('%H:%M:%S')
         print(record)
     print('======================================================')
+
+
+def trading_strategy(lastprice, now, df):
+    position = len(Buy_at) + len(Sell_at)
+    signal = 0
+
+    if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
+         (df.iloc[-1]['close'] > df.iloc[-1][EMA2_KEY]) and\
+         (df.iloc[-1]['close'] > df.iloc[-1]['VWAP']) and\
+         (df.iloc[-1][RSI_KEY] < 70):
+        signal = 1
+    elif (df.iloc[-1]['close'] < df.iloc[-2]['low']) and\
+         (df.iloc[-1]['close'] < df.iloc[-1][EMA2_KEY]) and\
+         (df.iloc[-1]['close'] < df.iloc[-1]['VWAP']) and\
+         (df.iloc[-1][RSI_KEY] > 30):
+        signal = -1
+
+    if signal:
+        if not position:
+            fake_open_position(signal, lastprice, now)
+        else:
+            fake_close_position(signal, lastprice, now)
+            fake_open_position(signal, lastprice, now)
+
+    return
 
 
 if __name__ == '__main__':
