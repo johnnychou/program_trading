@@ -13,6 +13,7 @@ import fubon_neo
 from fubon_neo.sdk import FubonSDK, Mode, FutOptOrder
 from fubon_neo.constant import TimeInForce, FutOptOrderType, FutOptPriceType, FutOptMarketType, CallPut, BSAction
 import utils
+from conf import *
 
 sys.path.append("C:\\Users\\ChengWei\\Desktop\\my project")
 import accinfo as key

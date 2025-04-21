@@ -10,6 +10,7 @@ import pandas as pd
 
 import utils
 import fubon
+from conf import *
 
 #global variables
 TWSE_TXF_API = 'https://mis.taifex.com.tw/futures/api/getQuoteList'
@@ -54,6 +55,8 @@ class TWSE(object):
             if candle:
                 new_row = pd.DataFrame([candle])
                 self.df = pd.concat([self.df, new_row], ignore_index=True)
+                if len(df) > MAX_CANDLE_AMOUNT[self.key]:
+                    df = df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
                 self.data_queue.put((self.key, self.df))
 
     def _init_twse_requirement(self):
