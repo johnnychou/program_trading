@@ -12,19 +12,20 @@ def period_to_minute(period_str):
     return value  # 如果單位不正確，則傳回 None
 
 def sync_time(period): #period->minutes
-    if period < 1: #秒級K線均同步開始於0秒
+    if period < 1:
         period = 1
-    localtime = time.localtime()
+
     while True:
-        while localtime.tm_sec != 0:
-            #print(f'time synchronizing... {period-(localtime.tm_min % period)-1}:{60-localtime.tm_sec}')
+        now = datetime.now()
+        while now.second != 0:
+            # print(f'time synchronizing... {period - (now.minute % period) - 1}:{60 - now.second}')
             time.sleep(0.1)
-            localtime = time.localtime()
-            
-        if (localtime.tm_min % period) == 0:
+            now = datetime.now()
+
+        if (now.minute % period) == 0:
             break
+
         time.sleep(1)
-        localtime = time.localtime()
     return
 
 def get_market_type():  # 0 = 日盤 / regular, 1 = 夜盤 / afterhours, -1 = 非交易時段
@@ -85,22 +86,24 @@ def get_expiremonth_realtime():
     return expiremonth
 
 def get_settlementDate_realtime():
-    localtime = time.localtime()
-    today=datetime.date.today()
+    now = datetime.datetime.now()
+    today = now.date()
     settlementDate = get_third_wen(today.year, today.month)
 
     if today >= settlementDate:
         if today == settlementDate:
-            if localtime.tm_hour < 14:
+            if now.hour < 14:
                 return settlementDate
 
+        # 若已過本月結算日，則找下個月的
         if today.month == 12:
-            year = today.year+1
+            year = today.year + 1
             next_month = 1
         else:
             year = today.year
-            next_month = today.month+1
+            next_month = today.month + 1
         settlementDate = get_third_wen(year, next_month)
+
     return settlementDate
 
 def get_third_wen(y, m):
