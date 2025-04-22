@@ -305,6 +305,7 @@ def indicator_bollingsband(df, period=20, std_dev=2):
 VWAP_state = {
     'cumulative_pv': 0.0,
     'cumulative_volume': 0.0,
+    'last_market': '-1',
 }
 def indicator_vwap_cumulative(df):
     """
@@ -366,23 +367,22 @@ def reset_vwap_if_needed(current_market):
     """
     global VWAP_state
 
-    # 檢查是否處於非交易時段並且需要重置 VWAP_state
     if current_market == '-1':
         return VWAP_state  # 不重置，處於非交易時段
 
-    if 'last_market' not in VWAP_state:
+    # 如果首次進入有效盤別，或從非交易時段進入盤別，初始化
+    if VWAP_state.get('last_market') == '-1':
+        VWAP_state = reset_vwap_state()
         VWAP_state['last_market'] = current_market
         return VWAP_state
 
     # 根據市場類型判斷是否需要重置
-    if current_market == '0':  # 日盤
-        if VWAP_state.get('last_market', '') != '0':  # 如果之前是夜盤或非交易時段
-            VWAP_state = reset_vwap_state()
-            VWAP_state['last_market'] = '0'
-    elif current_market == '1':  # 夜盤
-        if VWAP_state.get('last_market', '') != '1':  # 如果之前是日盤或非交易時段
-            VWAP_state = reset_vwap_state()
-            VWAP_state['last_market'] = '1'
+    if current_market == '0' and VWAP_state['last_market'] != '0':
+        VWAP_state = reset_vwap_state()
+        VWAP_state['last_market'] = '0'
+    elif current_market == '1' and VWAP_state['last_market'] != '1':
+        VWAP_state = reset_vwap_state()
+        VWAP_state['last_market'] = '1'
 
     return VWAP_state
 
@@ -393,4 +393,5 @@ def reset_vwap_state():
     return {
         'cumulative_pv': 0.0,
         'cumulative_volume': 0.0,
+        'last_market': '-1',
     }

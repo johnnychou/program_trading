@@ -26,7 +26,6 @@ class Fubon_trade(object):
         self.Account = None
         self.Acc_futures = None
         self.Restfut = None
-        self.Trade_symbol = None
         self.product = product
 
         if product == 'TXF':
@@ -133,7 +132,7 @@ class Fubon_trade(object):
         return equity, [initial_margin, maintenance_margin]
 
     def send_order(self, decision, amount=1):
-        self.Trade_symbol = self.get_trade_symbol()
+        trade_symbol = self.get_trade_symbol()
         # 1=buy, -1=sell
         if decision == 1:
             buy_or_sell = BSAction.Buy
@@ -152,7 +151,7 @@ class Fubon_trade(object):
 
         order = FutOptOrder(
             buy_sell = buy_or_sell,
-            symbol = self.Trade_symbol,
+            symbol = trade_symbol,
             lot = amount,
             market_type = market,
             price_type = FutOptPriceType.RangeMarket,
@@ -277,7 +276,6 @@ class Fubon_data(object):
         self.Account = None
         self.Acc_futures = None
         self.Restfut = None
-        self.Trade_symbol = None
         self.SDK = FubonSDK()
         self.login_account()
         self.SDK.init_realtime(Mode.Normal)
@@ -294,12 +292,12 @@ class Fubon_data(object):
             self.data_queue.put((self.key, self.df))
         while True:
             utils.sync_time(self.period)
-            self.Trade_symbol = self.get_trade_symbol()
+            trade_symbol = self.get_trade_symbol()
             market = utils.get_market_type()
             if market == '0':
-                data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
+                data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period))
             elif market == '1':
-                data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
+                data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period), session='afterhours')
             else:
                 time.sleep(60)
                 continue
@@ -328,12 +326,12 @@ class Fubon_data(object):
     def get_candles_list(self):
         self._init_data()
         candles_list = []
-        self.Trade_symbol = self.get_trade_symbol()
+        trade_symbol = self.get_trade_symbol()
         market = utils.get_market_type()
         if market == '0':
-                data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
+                data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period))
         elif market == '1':
-                data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
+                data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period), session='afterhours')
         else:
             return candles_list
         
