@@ -294,11 +294,17 @@ class Fubon_data(object):
             utils.sync_time(self.period)
             trade_symbol = self.get_trade_symbol()
             market = utils.get_market_type()
-            if market == '0':
-                data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period))
-            elif market == '1':
-                data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period), session='afterhours')
-            else:
+
+            try:
+                if market == '0':
+                    data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period))
+                elif market == '1':
+                    data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period), session='afterhours')
+                else: # 非交易時間
+                    time.sleep(60)
+                    continue
+            except Exception as e:
+                print(f"[ERROR] Fetching candles failed: {e}")
                 time.sleep(60)
                 continue
 
@@ -328,12 +334,16 @@ class Fubon_data(object):
         candles_list = []
         trade_symbol = self.get_trade_symbol()
         market = utils.get_market_type()
-        if market == '0':
-                data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period))
-        elif market == '1':
-                data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period), session='afterhours')
-        else:
-            return candles_list
+        try:
+            if market == '0':
+                    data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period))
+            elif market == '1':
+                    data = self.Restfut.intraday.candles(symbol=trade_symbol, timeframe=str(self.period), session='afterhours')
+            else:
+                return
+        except Exception as e:
+            print(f"[ERROR] Fetching candles failed: {e}")
+            return
         
         # 富邦api的k線時間跟一般app看的不同，差距一個週期
         # 最後一根都會是未完整k線
