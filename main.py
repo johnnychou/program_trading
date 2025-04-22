@@ -417,12 +417,12 @@ def trading_strategy(df):
 
     if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
          (df.iloc[-1]['close'] > df.iloc[-1][EMA2_KEY]) and\
-         (df.iloc[-1]['close'] > df.iloc[-1]['VWAP']) and\
+         (df.iloc[-1]['close'] > df.iloc[-1][VWAP_KEY]) and\
          (df.iloc[-1][RSI_KEY] < 70):
         signal = 1
     elif (df.iloc[-1]['close'] < df.iloc[-2]['low']) and\
          (df.iloc[-1]['close'] < df.iloc[-1][EMA2_KEY]) and\
-         (df.iloc[-1]['close'] < df.iloc[-1]['VWAP']) and\
+         (df.iloc[-1]['close'] < df.iloc[-1][VWAP_KEY]) and\
          (df.iloc[-1][RSI_KEY] > 30):
         signal = -1
 

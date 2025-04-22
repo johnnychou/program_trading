@@ -308,7 +308,7 @@ class Fubon_data(object):
                 time.sleep(60)
                 continue
 
-            indicators.reset_vwap_if_needed(market)
+            indicators.reset_state_if_needed(market)
 
             # 檢查最後一筆資料是不是完整candle
             # 富邦api的k線時間跟一般app看的不同，差距一個週期

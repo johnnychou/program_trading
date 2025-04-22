@@ -13,6 +13,12 @@ def indicators_calculation_all(df): # 直接在df新增欄位
     indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
     indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
     indicator_vwap_cumulative(df)
+    indicator_adx(df, ADX_PERIOD)
+    return
+
+def reset_state_if_needed(market):
+    reset_vwap_if_needed(market)
+    reset_adx_if_needed(market)
     return
 
 def indicator_ma(df, period):
@@ -316,6 +322,8 @@ def indicator_vwap_cumulative(df):
         VWAP_state (dict): 包含 'cumulative_pv' 與 'cumulative_volume' 的狀態字典。
     """
     global VWAP_state
+    key = VWAP_KEY
+
     required_cols = ['high', 'low', 'close', 'volume']
     if not all(col in df.columns for col in required_cols):
         print(f"錯誤：DataFrame 缺少必要欄位: {required_cols}")
@@ -325,10 +333,10 @@ def indicator_vwap_cumulative(df):
     tp = (df['high'] + df['low'] + df['close']) / 3
     pv = tp * df['volume']
 
-    if 'VWAP' not in df.columns:
-        df['VWAP'] = np.nan
+    if key not in df.columns:
+        df[key] = np.nan
 
-    start_loc = df['VWAP'].last_valid_index()
+    start_loc = df[key].last_valid_index()
     if start_loc is None:
         start_iloc = 0
     else:
@@ -345,19 +353,19 @@ def indicator_vwap_cumulative(df):
     cumulative_volume = volume_to_add.cumsum() + VWAP_state['cumulative_volume']
 
     vwap_series = cumulative_pv / cumulative_volume
-    df.loc[indices, 'VWAP'] = round(vwap_series)
+    df.loc[indices, key] = round(vwap_series)
 
     VWAP_state['cumulative_pv'] = cumulative_pv.iloc[-1]
     VWAP_state['cumulative_volume'] = cumulative_volume.iloc[-1]
 
-    df['VWAP'] = df['VWAP'].ffill()
+    df[key] = df[key].ffill()
 
-    if pd.isna(df.loc[df.index[0], 'VWAP']):
+    if pd.isna(df.loc[df.index[0], key]):
         first_valid_idx = df['volume'][df['volume'] > 0].first_valid_index()
         if first_valid_idx is not None:
-            df['VWAP'] = df['VWAP'].fillna(tp[first_valid_idx])
+            df[key] = df[key].fillna(tp[first_valid_idx])
         else:
-            df['VWAP'] = df['VWAP'].fillna(0)
+            df[key] = df[key].fillna(0)
 
     return
 
@@ -395,3 +403,108 @@ def reset_vwap_state():
         'cumulative_volume': 0.0,
         'last_market': '-1',
     }
+
+ADX_state = {}
+def indicator_adx(df, period=14):
+    """
+    計算 ADX 並增量更新 df，結果會新增一欄 ADX_KEY。
+    只會從上次計算過的最後一筆資料開始接續處理。
+    """
+    global ADX_state
+    key = ADX_PREFIX + str(period)
+
+    # 初次計算：檢查欄位不存在或長度不足，直接計算全部
+    if key not in df.columns or len(df[key].dropna()) < period + 1:
+        df[key] = np.nan
+        tr_list = []
+        dm_plus_list = []
+        dm_minus_list = []
+
+        for i in range(1, len(df)):
+            high = df.loc[i, 'high']
+            low = df.loc[i, 'low']
+            prev_close = df.loc[i - 1, 'close']
+            prev_high = df.loc[i - 1, 'high']
+            prev_low = df.loc[i - 1, 'low']
+
+            tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
+            dm_plus = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
+            dm_minus = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
+
+            tr_list.append(tr)
+            dm_plus_list.append(dm_plus)
+            dm_minus_list.append(dm_minus)
+
+            if i >= period:
+                tr14 = sum(tr_list[-period:])
+                plus_di14 = 100 * sum(dm_plus_list[-period:]) / tr14 if tr14 != 0 else 0
+                minus_di14 = 100 * sum(dm_minus_list[-period:]) / tr14 if tr14 != 0 else 0
+                dx = 100 * abs(plus_di14 - minus_di14) / (plus_di14 + minus_di14) if (plus_di14 + minus_di14) != 0 else 0
+                if i == period:
+                    ADX_state['adx_series'] = [dx]
+                else:
+                    prev_adx = ADX_state['adx_series'][-1]
+                    adx = (prev_adx * (period - 1) + dx) / period
+                    ADX_state['adx_series'].append(adx)
+                    df.loc[i, key] = adx
+    else:
+        # 增量計算
+        i = len(df) - 1
+        high = df.loc[i, 'high']
+        low = df.loc[i, 'low']
+        prev_close = df.loc[i - 1, 'close']
+        prev_high = df.loc[i - 1, 'high']
+        prev_low = df.loc[i - 1, 'low']
+
+        tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
+        dm_plus = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
+        dm_minus = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
+
+        ADX_state.setdefault('tr_list', []).append(tr)
+        ADX_state.setdefault('dm_plus_list', []).append(dm_plus)
+        ADX_state.setdefault('dm_minus_list', []).append(dm_minus)
+
+        # 僅保留最新 period 筆
+        ADX_state['tr_list'] = ADX_state['tr_list'][-period:]
+        ADX_state['dm_plus_list'] = ADX_state['dm_plus_list'][-period:]
+        ADX_state['dm_minus_list'] = ADX_state['dm_minus_list'][-period:]
+
+        tr14 = sum(ADX_state['tr_list'])
+        plus_di14 = 100 * sum(ADX_state['dm_plus_list']) / tr14 if tr14 != 0 else 0
+        minus_di14 = 100 * sum(ADX_state['dm_minus_list']) / tr14 if tr14 != 0 else 0
+        dx = 100 * abs(plus_di14 - minus_di14) / (plus_di14 + minus_di14) if (plus_di14 + minus_di14) != 0 else 0
+
+        prev_adx = ADX_state['adx_series'][-1] if ADX_state['adx_series'] else dx
+        adx = (prev_adx * (period - 1) + dx) / period
+        ADX_state['adx_series'].append(adx)
+        df.loc[i, key] = adx
+
+def reset_adx_if_needed(current_market):
+    """
+    根據市場類型 (日盤、夜盤或非交易時段)，檢查是否需要重置 ADX_state。
+    """
+    global ADX_state
+
+    if current_market == '-1':
+        return ADX_state  # 不重置，處於非交易時段
+
+    # 如果尚未紀錄 last_market，代表初始進入盤別
+    if ADX_state.get('last_market', '-1') == '-1':
+        adx_state_reset()
+        ADX_state['last_market'] = current_market
+        return ADX_state
+
+    # 根據市場類型判斷是否需要重置
+    if current_market == '0' and ADX_state['last_market'] != '0':
+        adx_state_reset()
+        ADX_state['last_market'] = '0'
+    elif current_market == '1' and ADX_state['last_market'] != '1':
+        adx_state_reset()
+        ADX_state['last_market'] = '1'
+
+    return ADX_state
+
+def adx_state_reset():
+    """重置 ADX_state 狀態，適用於市場切換等情境。"""
+    global ADX_state
+    ADX_state.clear()
