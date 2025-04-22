@@ -147,7 +147,7 @@ class Fubon_trade(object):
 
         if market_type == '0':
             market = FutOptMarketType.Future
-        if market_type == '1':
+        elif market_type == '1':
             market = FutOptMarketType.FutureNight
 
         order = FutOptOrder(
@@ -180,7 +180,7 @@ class Fubon_trade(object):
 
         if market_type == '0':
             market = FutOptMarketType.Future
-        if market_type == '1':
+        elif market_type == '1':
             market = FutOptMarketType.FutureNight
         orderResults = self.SDK.futopt.get_order_results(self.Acc_futures, market)
         filled_price = 0
@@ -271,10 +271,6 @@ class Fubon_data(object):
         self.product = product
         self.data_queue = data_queue
         self.df = pd.DataFrame()
-        self.VWAP_state = {
-            'cumulative_pv': 0.0,
-            'cumulative_volume': 0.0,
-        }
         return
 
     def _init_data(self):
@@ -290,35 +286,10 @@ class Fubon_data(object):
         self._set_event()
         return
 
-    def reset_vwap_if_needed(self, VWAP_state, current_market):
-        """
-        根據市場類型 (日盤、夜盤或非交易時段)，檢查是否需要重置 VWAP_state。
-        """
-
-        if 'last_market' not in VWAP_state:
-            VWAP_state['last_market'] = current_market
-            return VWAP_state
-
-        # 檢查是否處於非交易時段並且需要重置 VWAP_state
-        if current_market == '-1':
-            return VWAP_state  # 不重置，處於非交易時段
-
-        # 根據市場類型判斷是否需要重置
-        if current_market == '0':  # 日盤
-            if VWAP_state.get('last_market', '') != '0':  # 如果之前是夜盤或非交易時段
-                VWAP_state = indicators.reset_vwap_state()
-                VWAP_state['last_market'] = '0'
-        elif current_market == '1':  # 夜盤
-            if VWAP_state.get('last_market', '') != '1':  # 如果之前是日盤或非交易時段
-                VWAP_state = indicators.reset_vwap_state()
-                VWAP_state['last_market'] = '1'
-
-        return VWAP_state
-
     def get_candles(self):
         candles_list = self.get_candles_list()
         self.df = pd.DataFrame(candles_list)
-        indicators.indicators_calculation_all(self.df, self.VWAP_state)
+        indicators.indicators_calculation_all(self.df)
         self.data_queue.put((self.key, self.df))
         while True:
             utils.sync_time(self.period)
@@ -326,10 +297,12 @@ class Fubon_data(object):
             market = utils.get_market_type()
             if market == '0':
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
-            else:
+            elif market == '1':
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
+            else:
+                continue
 
-            self.reset_vwap_if_needed(self.VWAP_state, market)
+            indicators.reset_vwap_if_needed(market)
 
             # 檢查最後一筆資料是不是完整candle
             # 富邦api的k線時間跟一般app看的不同，差距一個週期
@@ -346,7 +319,7 @@ class Fubon_data(object):
             self.df = pd.concat([self.df, new_df], ignore_index=True)
             if len(self.df) > MAX_CANDLE_AMOUNT[self.key]:
                 self.df = self.df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
-            indicators.indicators_calculation_all(self.df, self.VWAP_state)
+            indicators.indicators_calculation_all(self.df)
             self.data_queue.put((self.key, self.df))
             time.sleep(self.period*59)
 
@@ -356,9 +329,11 @@ class Fubon_data(object):
         self.Trade_symbol = self.get_trade_symbol()
         market = utils.get_market_type()
         if market == '0':
-            data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
+                data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period))
+        elif market == '1':
+                data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
         else:
-            data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
+            return
         
         # 富邦api的k線時間跟一般app看的不同，差距一個週期
         # 最後一根都會是未完整k線

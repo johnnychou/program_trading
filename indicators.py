@@ -3,7 +3,7 @@ import pandas as pd
 from constant import *
 from conf import *
 
-def indicators_calculation_all(df, VWAP_state): # 直接在df新增欄位
+def indicators_calculation_all(df): # 直接在df新增欄位
     indicator_ma(df, MA_PERIOD)
     indicator_ema(df, EMA_PERIOD)
     indicator_ema(df, EMA2_PERIOD)
@@ -12,7 +12,7 @@ def indicators_calculation_all(df, VWAP_state): # 直接在df新增欄位
     indicator_kd(df, KD_PERIOD[0], KD_PERIOD[1], KD_PERIOD[2])
     indicator_macd(df, MACD_PERIOD[0], MACD_PERIOD[1], MACD_PERIOD[2])
     indicator_bollingsband(df, BB_PERIOD[0], BB_PERIOD[1])
-    indicator_vwap_cumulative(df, VWAP_state)
+    indicator_vwap_cumulative(df)
     return
 
 def indicator_ma(df, period):
@@ -302,7 +302,11 @@ def indicator_bollingsband(df, period=20, std_dev=2):
         )
     return
 
-def indicator_vwap_cumulative(df, VWAP_state):
+VWAP_state = {
+    'cumulative_pv': 0.0,
+    'cumulative_volume': 0.0,
+}
+def indicator_vwap_cumulative(df):
     """
     使用 VWAP_state 儲存累積 PV 與 Volume，只更新 VWAP 欄位。
 
@@ -310,6 +314,7 @@ def indicator_vwap_cumulative(df, VWAP_state):
         df (pd.DataFrame): 包含至少 ['high', 'low', 'close', 'volume'] 欄位的 DataFrame。
         VWAP_state (dict): 包含 'cumulative_pv' 與 'cumulative_volume' 的狀態字典。
     """
+    global VWAP_state
     required_cols = ['high', 'low', 'close', 'volume']
     if not all(col in df.columns for col in required_cols):
         print(f"錯誤：DataFrame 缺少必要欄位: {required_cols}")
@@ -354,6 +359,32 @@ def indicator_vwap_cumulative(df, VWAP_state):
             df['VWAP'] = df['VWAP'].fillna(0)
 
     return
+
+def reset_vwap_if_needed(current_market):
+    """
+    根據市場類型 (日盤、夜盤或非交易時段)，檢查是否需要重置 VWAP_state。
+    """
+    global VWAP_state
+
+    # 檢查是否處於非交易時段並且需要重置 VWAP_state
+    if current_market == '-1':
+        return VWAP_state  # 不重置，處於非交易時段
+
+    if 'last_market' not in VWAP_state:
+        VWAP_state['last_market'] = current_market
+        return VWAP_state
+
+    # 根據市場類型判斷是否需要重置
+    if current_market == '0':  # 日盤
+        if VWAP_state.get('last_market', '') != '0':  # 如果之前是夜盤或非交易時段
+            VWAP_state = reset_vwap_state()
+            VWAP_state['last_market'] = '0'
+    elif current_market == '1':  # 夜盤
+        if VWAP_state.get('last_market', '') != '1':  # 如果之前是日盤或非交易時段
+            VWAP_state = reset_vwap_state()
+            VWAP_state['last_market'] = '1'
+
+    return VWAP_state
 
 def reset_vwap_state():
     """

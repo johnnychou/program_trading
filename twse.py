@@ -32,10 +32,6 @@ class TWSE(object):
         self.pre_vol = 0
         self.highest = 0
         self.lowest = 0
-        self.VWAP_state = {
-            'cumulative_pv': 0.0,
-            'cumulative_volume': 0.0,
-        }
 
         self._init_twse_requirement()
 
@@ -53,31 +49,6 @@ class TWSE(object):
             return value * 60 * 60
         return None  # 如果單位不正確，則傳回 None
 
-    def reset_vwap_if_needed(self, VWAP_state, current_market):
-        """
-        根據市場類型 (日盤、夜盤或非交易時段)，檢查是否需要重置 VWAP_state。
-        """
-
-        if 'last_market' not in VWAP_state:
-            VWAP_state['last_market'] = current_market
-            return VWAP_state
-
-        # 檢查是否處於非交易時段並且需要重置 VWAP_state
-        if current_market == '-1':
-            return VWAP_state  # 不重置，處於非交易時段
-
-        # 根據市場類型判斷是否需要重置
-        if current_market == '0':  # 日盤
-            if VWAP_state.get('last_market', '') != '0':  # 如果之前是夜盤或非交易時段
-                VWAP_state = indicators.reset_vwap_state()
-                VWAP_state['last_market'] = '0'
-        elif current_market == '1':  # 夜盤
-            if VWAP_state.get('last_market', '') != '1':  # 如果之前是日盤或非交易時段
-                VWAP_state = indicators.reset_vwap_state()
-                VWAP_state['last_market'] = '1'
-
-        return VWAP_state
-
     def get_candles(self):
         #utils.sync_time(self.period/60)
         while True:
@@ -87,7 +58,7 @@ class TWSE(object):
                 self.df = pd.concat([self.df, new_row], ignore_index=True)
                 if len(self.df) > MAX_CANDLE_AMOUNT[self.key]:
                     self.df = self.df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
-                indicators.indicators_calculation_all(self.df, self.VWAP_state)
+                indicators.indicators_calculation_all(self.df)
                 self.data_queue.put((self.key, self.df))
 
     def _init_twse_requirement(self):
@@ -100,7 +71,7 @@ class TWSE(object):
         if market_type == '-1':
             return None
 
-        self.reset_vwap_if_needed(self.VWAP_state, market_type)
+        indicators.reset_vwap_if_needed(market_type)
 
         txf_payload = {
             "MarketType":market_type, #0=日盤, 1=夜盤

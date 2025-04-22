@@ -1,6 +1,7 @@
 import time
 import datetime
 
+
 def period_to_minute(period_str):
     value = int(period_str[:-1])  # 提取數值
     unit = period_str[-1]       # 提取單位
@@ -26,22 +27,26 @@ def sync_time(period): #period->minutes
         localtime = time.localtime()
     return
 
-def get_market_type(): #0=日盤/regular, 1=夜盤/Afterhours -1=非交易時段
-    localtime = time.localtime()
+def get_market_type():  # 0 = 日盤 / regular, 1 = 夜盤 / afterhours, -1 = 非交易時段
+    now = datetime.datetime.now()
+    hour = now.hour
+    minute = now.minute
+    weekday = now.weekday()  # Monday=0, Sunday=6
 
-    #start from 08:45
-    if (8 <= localtime.tm_hour <= 13) and (0 <= localtime.tm_wday <= 4): #台股日盤
-        if (localtime.tm_hour == 8) and (localtime.tm_min < 45):
+    # 台股日盤：週一～週五，08:45 至 13:45
+    if (0 <= weekday <= 4) and (8 <= hour <= 13):
+        if hour == 8 and minute < 45:
             return '-1'
-        if (localtime.tm_hour == 13) and (localtime.tm_min > 45):
+        if hour == 13 and minute > 45:
             return '-1'
         return '0'
 
-    if ((0 <= localtime.tm_hour < 5) and (1 <= localtime.tm_wday <= 5)) or\
-         ((15 <= localtime.tm_hour <= 23) and (0 <= localtime.tm_wday <= 4)): #夜盤
+    # 台股夜盤：週一晚到週五晚 (15:00~24:00) 及週二凌晨到週六凌晨 (00:00~05:00)
+    if ((0 <= hour < 5 and 1 <= weekday <= 5) or
+        (15 <= hour <= 23 and 0 <= weekday <= 4)):
         return '1'
 
-    return '-1' #非交易時段
+    return '-1'  # 非交易時段
 
 def get_txf_settlementDate():
     today = datetime.date.today()
