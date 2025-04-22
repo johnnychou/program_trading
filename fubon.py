@@ -288,9 +288,10 @@ class Fubon_data(object):
 
     def get_candles(self):
         candles_list = self.get_candles_list()
-        self.df = pd.DataFrame(candles_list)
-        indicators.indicators_calculation_all(self.df)
-        self.data_queue.put((self.key, self.df))
+        if candles_list:
+            self.df = pd.DataFrame(candles_list)
+            indicators.indicators_calculation_all(self.df)
+            self.data_queue.put((self.key, self.df))
         while True:
             utils.sync_time(self.period)
             self.Trade_symbol = self.get_trade_symbol()
@@ -300,6 +301,7 @@ class Fubon_data(object):
             elif market == '1':
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
             else:
+                time.sleep(60)
                 continue
 
             indicators.reset_vwap_if_needed(market)
@@ -333,7 +335,7 @@ class Fubon_data(object):
         elif market == '1':
                 data = self.Restfut.intraday.candles(symbol=self.Trade_symbol, timeframe=str(self.period), session='afterhours')
         else:
-            return
+            return candles_list
         
         # 富邦api的k線時間跟一般app看的不同，差距一個週期
         # 最後一根都會是未完整k線

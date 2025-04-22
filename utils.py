@@ -16,11 +16,11 @@ def sync_time(period): #period->minutes
         period = 1
 
     while True:
-        now = datetime.now()
+        now = datetime.datetime.now()
         while now.second != 0:
             # print(f'time synchronizing... {period - (now.minute % period) - 1}:{60 - now.second}')
             time.sleep(0.1)
-            now = datetime.now()
+            now = datetime.datetime.now()
 
         if (now.minute % period) == 0:
             break

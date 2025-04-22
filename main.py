@@ -502,7 +502,9 @@ if __name__ == '__main__':
 
             if not is_trading_time(Userinput_Market, now):
                 print(f"[{now.strftime('%H:%M:%S')}] 不在交易時間...")
+                print(df_fubon_5m.tail(5))
                 time.sleep(60)
+                os.system('cls')
                 continue
 
             if before_end_of_market(Userinput_Market, now):

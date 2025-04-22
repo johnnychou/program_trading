@@ -50,8 +50,13 @@ class TWSE(object):
         return None  # 如果單位不正確，則傳回 None
 
     def get_candles(self):
-        #utils.sync_time(self.period/60)
+        utils.sync_time(self.period/60)
         while True:
+            market = utils.get_market_type()
+            if market == '-1':
+                time.sleep(60)
+                continue
+            indicators.reset_vwap_if_needed(market)
             candle = self._get_candles_from_twse()
             if candle:
                 new_row = pd.DataFrame([candle])
@@ -67,14 +72,12 @@ class TWSE(object):
 
     def _get_twse_data(self):
         response = None
-        market_type = utils.get_market_type()
-        if market_type == '-1':
+        market = utils.get_market_type()
+        if market == '-1':
             return None
 
-        indicators.reset_vwap_if_needed(market_type)
-
         txf_payload = {
-            "MarketType":market_type, #0=日盤, 1=夜盤
+            "MarketType":market, #0=日盤, 1=夜盤
             "SymbolType":"F",
             "KindID":"1",
             "CID":self.product,
