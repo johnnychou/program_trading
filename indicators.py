@@ -375,109 +375,149 @@ def reset_vwap_if_needed(current_market):
     """
     global VWAP_state
 
-    if current_market == '-1':
-        return VWAP_state  # 不重置，處於非交易時段
-
-    # 如果首次進入有效盤別，或從非交易時段進入盤別，初始化
-    if VWAP_state.get('last_market') == '-1':
-        VWAP_state = reset_vwap_state()
+    if 'last_market' not in VWAP_state.keys():
         VWAP_state['last_market'] = current_market
-        return VWAP_state
+        return # 不重置，處於非交易時段
 
     # 根據市場類型判斷是否需要重置
     if current_market == '0' and VWAP_state['last_market'] != '0':
-        VWAP_state = reset_vwap_state()
+        reset_vwap_state(VWAP_state)
         VWAP_state['last_market'] = '0'
     elif current_market == '1' and VWAP_state['last_market'] != '1':
-        VWAP_state = reset_vwap_state()
+        reset_vwap_state(VWAP_state)
         VWAP_state['last_market'] = '1'
 
-    return VWAP_state
+    return
 
-def reset_vwap_state():
+def reset_vwap_state(state):
     """
     建立新的 VWAP 狀態，通常在換日或盤別切換時使用。
     """
-    return {
-        'cumulative_pv': 0.0,
-        'cumulative_volume': 0.0,
-        'last_market': '-1',
-    }
+    state['cumulative_pv'] = 0.0
+    state['cumulative_volume'] = 0.0
+    return
 
 ADX_state = {}
 def indicator_adx(df, period=14):
     """
-    計算 ADX 並增量更新 df，結果會新增一欄 ADX_KEY。
-    只會從上次計算過的最後一筆資料開始接續處理。
+    計算 ADX 並增量更新 DataFrame，結果會新增一欄 ADX_KEY。
+    中間狀態儲存在全局變量 ADX_state 中，不會污染 DataFrame。
+    
+    參數:
+    df -- 包含 'high', 'low', 'close' 欄位的 DataFrame
+    period -- ADX 的計算週期，預設為 14
     """
     global ADX_state
     key = ADX_PREFIX + str(period)
-
-    # 初次計算：檢查欄位不存在或長度不足，直接計算全部
-    if key not in df.columns or len(df[key].dropna()) < period + 1:
+    
+    # 初始化 ADX_state[period] 如果不存在
+    if not ADX_state:
+        ADX_state = {
+            'tr_list': [],
+            'dm_plus_list': [],
+            'dm_minus_list': [],
+            'dx_list': [],
+            'adx_series': []
+        }
+    
+    state = ADX_state
+    
+    # 檢查是否需要全量計算
+    if key not in df.columns or len(df[key].dropna()) < period:
         df[key] = np.nan
-        tr_list = []
-        dm_plus_list = []
-        dm_minus_list = []
-
+        state['tr_list'] = []
+        state['dm_plus_list'] = []
+        state['dm_minus_list'] = []
+        state['dx_list'] = []
+        state['adx_series'] = []
+        
         for i in range(1, len(df)):
             high = df.loc[i, 'high']
             low = df.loc[i, 'low']
             prev_close = df.loc[i - 1, 'close']
             prev_high = df.loc[i - 1, 'high']
             prev_low = df.loc[i - 1, 'low']
-
+            
+            # 計算 TR, DM+, DM-
             tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
             dm_plus = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
             dm_minus = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
-
-            tr_list.append(tr)
-            dm_plus_list.append(dm_plus)
-            dm_minus_list.append(dm_minus)
-
+            
+            state['tr_list'].append(tr)
+            state['dm_plus_list'].append(dm_plus)
+            state['dm_minus_list'].append(dm_minus)
+            
             if i >= period:
-                tr14 = sum(tr_list[-period:])
-                plus_di14 = 100 * sum(dm_plus_list[-period:]) / tr14 if tr14 != 0 else 0
-                minus_di14 = 100 * sum(dm_minus_list[-period:]) / tr14 if tr14 != 0 else 0
+                # 計算 TR14, +DI14, -DI14
+                tr14 = sum(state['tr_list'][-period:])
+                plus_di14 = 100 * sum(state['dm_plus_list'][-period:]) / tr14 if tr14 != 0 else 0
+                minus_di14 = 100 * sum(state['dm_minus_list'][-period:]) / tr14 if tr14 != 0 else 0
                 dx = 100 * abs(plus_di14 - minus_di14) / (plus_di14 + minus_di14) if (plus_di14 + minus_di14) != 0 else 0
+                state['dx_list'].append(dx)
+                
                 if i == period:
-                    ADX_state['adx_series'] = [dx]
-                else:
-                    prev_adx = ADX_state['adx_series'][-1]
-                    adx = (prev_adx * (period - 1) + dx) / period
-                    ADX_state['adx_series'].append(adx)
+                    # 初始 ADX 使用前 period 個 DX 的平均值
+                    adx = sum(state['dx_list']) / len(state['dx_list'])
+                    state['adx_series'].append(adx)
                     df.loc[i, key] = adx
+                else:
+                    # 平滑計算 ADX
+                    prev_adx = state['adx_series'][-1]
+                    adx = (prev_adx * (period - 1) + dx) / period
+                    state['adx_series'].append(adx)
+                    df.loc[i, key] = round(adx, 1)
+                
+                # 保持列表長度不超過 period
+                if len(state['tr_list']) > period:
+                    state['tr_list'].pop(0)
+                    state['dm_plus_list'].pop(0)
+                    state['dm_minus_list'].pop(0)
+                    state['dx_list'].pop(0)
     else:
-        # 增量計算
+        # 增量計算，只處理最新一筆數據
         i = len(df) - 1
         high = df.loc[i, 'high']
         low = df.loc[i, 'low']
         prev_close = df.loc[i - 1, 'close']
         prev_high = df.loc[i - 1, 'high']
         prev_low = df.loc[i - 1, 'low']
-
+        
         tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
         dm_plus = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
         dm_minus = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
-
-        ADX_state.setdefault('tr_list', []).append(tr)
-        ADX_state.setdefault('dm_plus_list', []).append(dm_plus)
-        ADX_state.setdefault('dm_minus_list', []).append(dm_minus)
-
-        # 僅保留最新 period 筆
-        ADX_state['tr_list'] = ADX_state['tr_list'][-period:]
-        ADX_state['dm_plus_list'] = ADX_state['dm_plus_list'][-period:]
-        ADX_state['dm_minus_list'] = ADX_state['dm_minus_list'][-period:]
-
-        tr14 = sum(ADX_state['tr_list'])
-        plus_di14 = 100 * sum(ADX_state['dm_plus_list']) / tr14 if tr14 != 0 else 0
-        minus_di14 = 100 * sum(ADX_state['dm_minus_list']) / tr14 if tr14 != 0 else 0
+        
+        # 更新 state 列表
+        state['tr_list'].append(tr)
+        state['dm_plus_list'].append(dm_plus)
+        state['dm_minus_list'].append(dm_minus)
+        
+        # 保持列表長度為 period
+        if len(state['tr_list']) > period:
+            state['tr_list'].pop(0)
+            state['dm_plus_list'].pop(0)
+            state['dm_minus_list'].pop(0)
+        
+        # 計算 TR14, +DI14, -DI14
+        tr14 = sum(state['tr_list'])
+        plus_di14 = 100 * sum(state['dm_plus_list']) / tr14 if tr14 != 0 else 0
+        minus_di14 = 100 * sum(state['dm_minus_list']) / tr14 if tr14 != 0 else 0
         dx = 100 * abs(plus_di14 - minus_di14) / (plus_di14 + minus_di14) if (plus_di14 + minus_di14) != 0 else 0
-
-        prev_adx = ADX_state['adx_series'][-1] if ADX_state['adx_series'] else dx
+        state['dx_list'].append(dx)
+        
+        # 平滑計算 ADX
+        if len(state['adx_series']) == 0:
+            prev_adx = df.loc[i - 1, key]
+        else:
+            prev_adx = state['adx_series'][-1]
         adx = (prev_adx * (period - 1) + dx) / period
-        ADX_state['adx_series'].append(adx)
-        df.loc[i, key] = adx
+        state['adx_series'].append(adx)
+        df.loc[i, key] = round(adx, 1)
+        
+        # 保持 dx_list 長度不超過 period
+        if len(state['dx_list']) > period:
+            state['dx_list'].pop(0)
+    
+    return
 
 def reset_adx_if_needed(current_market):
     """
@@ -485,26 +525,21 @@ def reset_adx_if_needed(current_market):
     """
     global ADX_state
 
-    if current_market == '-1':
-        return ADX_state  # 不重置，處於非交易時段
-
-    # 如果尚未紀錄 last_market，代表初始進入盤別
-    if ADX_state.get('last_market', '-1') == '-1':
-        adx_state_reset()
-        ADX_state['last_market'] = current_market
-        return ADX_state
+    if 'last_market' not in ADX_state.keys():
+        VWAP_state['last_market'] = current_market
+        return # 不重置，處於非交易時段
 
     # 根據市場類型判斷是否需要重置
     if current_market == '0' and ADX_state['last_market'] != '0':
-        adx_state_reset()
+        ADX_state_reset()
         ADX_state['last_market'] = '0'
     elif current_market == '1' and ADX_state['last_market'] != '1':
-        adx_state_reset()
+        ADX_state_reset()
         ADX_state['last_market'] = '1'
 
     return ADX_state
 
-def adx_state_reset():
+def ADX_state_reset():
     """重置 ADX_state 狀態，適用於市場切換等情境。"""
     global ADX_state
     ADX_state.clear()

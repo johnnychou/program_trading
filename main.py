@@ -323,13 +323,15 @@ def chk_stop_loss(realtime_candle, df):
 
     if Buy_at:
         entry_price = Buy_at[0]
-        close_price = entry_price - atr * 1.5
+        close_price = entry_price - atr * 1
         if lastprice <= close_price:
+            close_position(-1)
             return 1
     elif Sell_at:
         entry_price = Sell_at[0]
-        close_price = entry_price + atr * 1.5
+        close_price = entry_price + atr * 1
         if lastprice >= close_price:
+            close_position(1)
             return 1
     return 0
 
@@ -347,13 +349,15 @@ def chk_take_profit(realtime_candle, df):
 
     if Buy_at:
         entry_price = Buy_at[0]
-        close_price = entry_price + atr * 2
+        close_price = entry_price + atr * 1.5
         if lastprice >= close_price:
+            close_position(-1)
             return 1
     elif Sell_at:
         entry_price = Sell_at[0]
-        close_price = entry_price - atr * 2
+        close_price = entry_price - atr * 1.5
         if lastprice <= close_price:
+            close_position(1)
             return 1
     return 0
 
@@ -412,7 +416,6 @@ def chk_ema_signal(df):
     return 0
 
 def trading_strategy(df):
-    position = len(Buy_at) + len(Sell_at)
     signal = 0
 
     if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
@@ -426,14 +429,7 @@ def trading_strategy(df):
          (df.iloc[-1][RSI_KEY] > 30):
         signal = -1
 
-    if signal:
-        if not position:
-            open_position(signal)
-        else:
-            close_position(signal)
-            open_position(signal)
-
-    return
+    return signal
 
 if __name__ == '__main__':
 
@@ -501,8 +497,11 @@ if __name__ == '__main__':
                     # time.sleep(10)
 
             if not is_trading_time(Userinput_Market, now):
-                print(f"[{now.strftime('%H:%M:%S')}] 不在交易時間...")
+                show_account_info()
+                show_realtime(realtime_candle)
                 print(df_fubon_5m.tail(5))
+
+                print(f"[{now.strftime('%H:%M:%S')}] 不在交易時間...")
                 time.sleep(60)
                 os.system('cls')
                 continue
@@ -524,17 +523,26 @@ if __name__ == '__main__':
             if len(df_fubon_5m) > 2:
                 dfs = df_fubon_5m.tail(5)
                 for index, row_series in dfs.iterrows():
-                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series["VWAP"]}')
-                print(f'ATR: {dfs.iloc[-1][ATR_KEY]}')
+                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series[VWAP_KEY]}')
+                atr = dfs.iloc[-1][ATR_KEY]
+                adx = dfs.iloc[-1][ADX_KEY]
+                print(f'ATR: {atr}, ADX: {adx}')
 
-            #chk_stop_loss(realtime_candle, df_fubon_5m)
-            #chk_take_profit(realtime_candle, df_fubon_5m)
-
-            if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
-                print(f'ATR trailing stop at: {stop_pt}')
+                if atr < 20:
+                    chk_stop_loss(realtime_candle, df_fubon_5m)
+                    chk_take_profit(realtime_candle, df_fubon_5m)
+                else:
+                    if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
+                        print(f'ATR trailing stop at: {stop_pt}')
 
             if Last_executed_minute == now.minute and df_flag[PERIOD_5M]:
-                trading_strategy(df_fubon_5m)
+                sig = trading_strategy(df_fubon_5m)
+                if sig:
+                    if not Buy_at and not Sell_at:
+                        open_position(sig)
+                    else:
+                        close_position(sig)
+                        open_position(sig)
                 df_flag[PERIOD_5M] = 0
 
             time.sleep(0.01)

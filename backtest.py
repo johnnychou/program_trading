@@ -9,6 +9,7 @@ from datetime import timedelta
 
 import twse
 import main as m
+import indicators as i
 from conf import *
 from constant import *
 
@@ -201,19 +202,19 @@ def run_test(fullpath, market='main'):
         if candle_1:
             new_row = pd.DataFrame([candle_1])
             df_1m = pd.concat([df_1m, new_row], ignore_index=True)
-            m.indicators_calculation(df_1m)
+            i.indicators_calculation_all(df_1m)
 
         candle_5 = candles_5m.get_candles(data)
         if candle_5:
             new_row = pd.DataFrame([candle_5])
             df_5m = pd.concat([df_5m, new_row], ignore_index=True)
-            m.indicators_calculation(df_5m)
+            i.indicators_calculation_all(df_5m)
 
         candle_15 = candles_15m.get_candles(data)
         if candle_15:
             new_row = pd.DataFrame([candle_15])
             df_15m = pd.concat([df_15m, new_row], ignore_index=True)
-            m.indicators_calculation(df_15m)
+            i.indicators_calculation_all(df_15m)
 
         if not m.is_trading_time(market, now):
             continue
@@ -225,7 +226,13 @@ def run_test(fullpath, market='main'):
         check_atr_trailing_stop(Last_price, now, df_5m)
 
         if candle_5:
-            trading_strategy(Last_price, now, df_5m)
+            sig = m.trading_strategy(df_5m)
+            if sig:
+                if not Buy_at and not Sell_at:
+                    fake_open_position(sig, Last_price, now)
+                else:
+                    fake_close_position(sig, Last_price, now)
+                    fake_open_position(sig, Last_price, now)
 
 
         # 放最後以讓上面k線收完
@@ -251,31 +258,6 @@ def run_test(fullpath, market='main'):
         record[3] = record[3].strftime('%H:%M:%S')
         print(record)
     print('======================================================')
-
-
-def trading_strategy(lastprice, now, df):
-    position = len(Buy_at) + len(Sell_at)
-    signal = 0
-
-    if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
-         (df.iloc[-1]['close'] > df.iloc[-1][EMA2_KEY]) and\
-         (df.iloc[-1]['close'] > df.iloc[-1]['VWAP']) and\
-         (df.iloc[-1][RSI_KEY] < 70):
-        signal = 1
-    elif (df.iloc[-1]['close'] < df.iloc[-2]['low']) and\
-         (df.iloc[-1]['close'] < df.iloc[-1][EMA2_KEY]) and\
-         (df.iloc[-1]['close'] < df.iloc[-1]['VWAP']) and\
-         (df.iloc[-1][RSI_KEY] > 30):
-        signal = -1
-
-    if signal:
-        if not position:
-            fake_open_position(signal, lastprice, now)
-        else:
-            fake_close_position(signal, lastprice, now)
-            fake_open_position(signal, lastprice, now)
-
-    return
 
 
 if __name__ == '__main__':
