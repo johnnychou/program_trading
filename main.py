@@ -205,9 +205,9 @@ def is_trading_time(market, now):
         return True
     elif market == 'night' and is_market_time(NIGHT_MARKET, now):
         return True
-    elif market == 'main' and (is_market_time(DAY_MARKET, now) or is_market_time(AMER_MARKET, now)):
+    elif market == 'main' and ((is_market_time(DAY_MARKET, now) or is_market_time(AMER_MARKET, now))):
         return True
-    elif market == 'all' and (is_market_time(DAY_MARKET, now) or is_market_time(NIGHT_MARKET, now)):
+    elif market == 'all' and ((is_market_time(DAY_MARKET, now) or is_market_time(NIGHT_MARKET, now))):
         return True
     return False
 

@@ -15,11 +15,11 @@ from constant import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
-CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_14.csv'
+CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_08.csv'
 PT_PRICE = 200
 
 class Backtest():
-    def __init__(self, fullpath, trade_market):
+    def __init__(self, fullpath, trade_market='main'):
         self.fullpath = fullpath
         self.trade_market = trade_market
         self.Buy_at = []
@@ -233,6 +233,11 @@ class Backtest():
                 idicators_15m.indicators_calculation_all(self.df_15m)
                 candle_15 = 0
 
+            # 讓上面k線收完
+            if data is None:
+                twse_data.csvfile.close()
+                break
+
             if not m.is_trading_time(self.trade_market, self.Pre_data_time):
                 df_flag = {
                     PERIOD_30S: 0,
@@ -258,16 +263,12 @@ class Backtest():
                         self.fake_open_position(sig, self.Last_price, now)
                 df_flag[PERIOD_5M] = 0
                 # print(f'sig : {sig}')
-                # print(df_5m.iloc[-5:])
+                # print(self.df_5m.iloc[-5:])
                 # input()
 
             idicators_1m.reset_state_if_needed(market)
             idicators_5m.reset_state_if_needed(market)
             idicators_15m.reset_state_if_needed(market)
-
-            # 放最後以讓上面k線收完
-            if data is None:
-                break
 
         print('======================================================')
         print(f'Total_profit: {self.Total_profit}, Real_profit: {self.Total_profit-self.Trade_times*150}')

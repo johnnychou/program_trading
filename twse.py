@@ -264,9 +264,11 @@ class TWSE_CSV(object):
         return my_candle
 
     def get_row_from_csv(self):
-        row = next(self.csvdata, 'end')
-        if row == 'end':
-            self.csvfile.close()
+        try:
+            row = next(self.csvdata, 'end')
+            if row == 'end':
+                return None
+        except:
             return None
 
         row_datatime = self.trans_datetime(int(row[0]), int(row[3]))
@@ -323,7 +325,7 @@ class CandleCollector:
     def get_candles(self, data):
         # 如果資料結束，強制產生最後一根K線（即使不滿 period）
         if data is None:
-            if self.buffer:
+            if self.buffer and self.start_time:
                 prices = [item['price'] for item in self.buffer]
                 volumes = [item['volume'] for item in self.buffer]
                 candle = {
@@ -363,7 +365,7 @@ class CandleCollector:
             self.buffer = []
             self.buffer.append(data)
 
-            if m.is_market_time(DAY_MARKET, end_time) or m.is_market_time(NIGHT_MARKET, end_time):
+            if m.is_trading_time('all', end_time):
                 self.start_time = end_time
             else: 
                 self.start_time = None

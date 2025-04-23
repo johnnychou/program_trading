@@ -8,7 +8,7 @@ import time
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
 TRADING_MARKET = 'main'
-MAX_CONCURRENT = multiprocessing.cpu_count()  # 最多同時跑幾個 process
+MAX_CONCURRENT = multiprocessing.cpu_count()-1  # 最多同時跑幾個 process
 # MAX_CONCURRENT = 1
 
 class TestProcess(multiprocessing.Process):
@@ -16,11 +16,11 @@ class TestProcess(multiprocessing.Process):
         super(TestProcess, self).__init__()
         self.filename = filename
         self.fullpath = pullpath
-        self.test = backtest
+        self.backtest = backtest.Backtest(self.fullpath, TRADING_MARKET)
 
     def run(self):
         print(f'File:{self.filename}, starting test!')
-        self.test.run_test(self.fullpath, TRADING_MARKET)
+        self.backtest.run_test()
 
 All_Process = []
 Month_statistics = {}
@@ -41,12 +41,12 @@ if __name__ == '__main__':
 
     while remaining or running:
         # 啟動新的 process（不超過 MAX_CONCURRENT）
-        while remaining and len(running) < (MAX_CONCURRENT):
+        while remaining and (len(running) < (MAX_CONCURRENT)):
             filename = remaining.pop(0)
             fullpath = os.path.join(CSV_INPUT_PATH, filename)
             p = TestProcess(filename, fullpath)
-            p.start()
             running.append((p, filename))
+            p.start()
         
         # 檢查已完成的 process
         for p, filename in running[:]:
