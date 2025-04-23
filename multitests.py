@@ -9,16 +9,18 @@ CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
 TRADING_MARKET = 'main'
 MAX_CONCURRENT = multiprocessing.cpu_count()  # 最多同時跑幾個 process
+# MAX_CONCURRENT = 1
 
 class TestProcess(multiprocessing.Process):
     def __init__(self, filename, pullpath):
         super(TestProcess, self).__init__()
         self.filename = filename
         self.fullpath = pullpath
+        self.test = backtest
 
     def run(self):
         print(f'File:{self.filename}, starting test!')
-        backtest.run_test(self.fullpath, TRADING_MARKET)
+        self.test.run_test(self.fullpath, TRADING_MARKET)
 
 All_Process = []
 Month_statistics = {}
@@ -39,7 +41,7 @@ if __name__ == '__main__':
 
     while remaining or running:
         # 啟動新的 process（不超過 MAX_CONCURRENT）
-        while remaining and len(running) < MAX_CONCURRENT:
+        while remaining and len(running) < (MAX_CONCURRENT):
             filename = remaining.pop(0)
             fullpath = os.path.join(CSV_INPUT_PATH, filename)
             p = TestProcess(filename, fullpath)
@@ -50,7 +52,7 @@ if __name__ == '__main__':
         for p, filename in running[:]:
             if not p.is_alive():
                 running.remove((p, filename))
-                print(f'{filename} completed. Remaining: {len(remaining)}')
+                print(f'{filename} completed. Remaining: {len(remaining)}. Running: {len(running)}')
 
         time.sleep(0.5)  # 減少 CPU 資源浪費
 

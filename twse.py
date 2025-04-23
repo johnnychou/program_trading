@@ -266,6 +266,7 @@ class TWSE_CSV(object):
     def get_row_from_csv(self):
         row = next(self.csvdata, 'end')
         if row == 'end':
+            self.csvfile.close()
             return None
 
         row_datatime = self.trans_datetime(int(row[0]), int(row[3]))
@@ -365,7 +366,7 @@ class CandleCollector:
             if m.is_market_time(DAY_MARKET, end_time) or m.is_market_time(NIGHT_MARKET, end_time):
                 self.start_time = end_time
             else: 
-                self.start_time = 0
+                self.start_time = None
 
             return candle
         else:
