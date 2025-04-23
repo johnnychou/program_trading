@@ -48,9 +48,8 @@ df_30m = pd.DataFrame()
 
 def fake_open_position(sig, lastprice, now): # 1=buy, -1=sell
     global Buy_at, Sell_at, Trade_times
-    positions = len(Buy_at) + len(Sell_at)
-    if positions:
-        return
+    if Buy_at or Sell_at:
+        return 0
     if sig == 1:
         Buy_at.append((lastprice, now))
         Trade_times += 1
@@ -62,12 +61,12 @@ def fake_open_position(sig, lastprice, now): # 1=buy, -1=sell
 def fake_close_position(sig, lastprice, now): # 1=close_sell_position, -1=close_buy_position
     global Buy_at, Sell_at, Total_profit, Trade_times
     global Sell_profit, Sell_record, Buy_profit, Buy_record
-    positions = len(Buy_at) + len(Sell_at)
     profit = 0
-    if not positions:
-        return
-    if (Buy_at and sig == 1) or (Sell_at and sig == -1):
-        return
+    if not Buy_at and not Sell_at:
+        return 0
+    if (Buy_at and sig == 1) or\
+         (Sell_at and sig == -1):
+        return 0
 
     close_time = now
 
@@ -162,70 +161,92 @@ def get_ema_trend(df, period=20):
     slope = ema.iloc[-1] - ema.iloc[-2]
     return 'up' if slope > 0 else 'down'
 
-def check_atr_trailing_stop(last_price, now, df):
-    position = 0
-    if Buy_at:
-        position = 1
-        entry_price = Buy_at[0][0]
-    elif Sell_at:
-        position = -1
-        entry_price = Sell_at[0][0]
-    else:
+Max_profit_pt = 0
+def atr_trailing_stop(lastprice, now, df):
+    global Max_profit_pt
+    if ATR_KEY not in df.columns:
+        return 0
+    if not (len(Buy_at) + len(Sell_at)):
         return
     
-    if ATR_KEY in df.columns:
-        atr_val = df.iloc[-1][ATR_KEY]
+    last_valid_idx = df[ATR_KEY].last_valid_index()
+    atr = df.loc[last_valid_idx, ATR_KEY]
 
-    if not atr_val:
-        return
+    if Buy_at:
+        Max_profit_pt = max(lastprice, Buy_at[0][0], Max_profit_pt)
+        stop_price = Max_profit_pt - atr * 1.5
+        if lastprice <= stop_price:
+            fake_close_position(-1, lastprice, now)
+            Max_profit_pt = 0
+            return stop_price
 
-    stop_distance = atr_val * 1.5  # 可調整倍數
+    elif Sell_at:
+        if not Max_profit_pt:
+            Max_profit_pt = min(lastprice, Sell_at[0][0])
+        else:
+            Max_profit_pt = min(lastprice, Sell_at[0][0], Max_profit_pt)
+        stop_price = Max_profit_pt + atr * 1.5
+        if lastprice >= stop_price:
+            fake_close_position(1, lastprice, now)
+            Max_profit_pt = 0
+            return stop_price
 
-    if position > 0 and last_price < entry_price - stop_distance:
-        fake_close_position(-1, last_price, now)
-    elif position < 0 and last_price > entry_price + stop_distance:
-        fake_close_position(1, last_price, now)
+    return 0
 
-def run_test(fullpath, market='main'):
+def run_test(fullpath, trade_market='main'):
     global df_1m, df_5m, df_15m, Last_price
     global candles_1m, candles_5m, candles_15m
     twse_data = twse.TWSE_CSV(fullpath)
-
+    idicators_1m = i.indicator_calculator()
+    idicators_5m = i.indicator_calculator()
+    idicators_15m = i.indicator_calculator()
+    df_flag = {
+        PERIOD_30S: 0,
+        PERIOD_1M: 0,
+        PERIOD_5M: 0,
+        PERIOD_15M: 0,
+    }
+    
     while True:
         data = twse_data.get_row_from_csv()
 
         if data:
             now = data['time']
             Last_price = data['price']
+            market = data['market']
 
         candle_1 = candles_1m.get_candles(data)
         if candle_1:
             new_row = pd.DataFrame([candle_1])
             df_1m = pd.concat([df_1m, new_row], ignore_index=True)
-            i.indicators_calculation_all(df_1m)
+            idicators_1m.indicators_calculation_all(df_1m)
+            candle_1 = 0
 
         candle_5 = candles_5m.get_candles(data)
         if candle_5:
             new_row = pd.DataFrame([candle_5])
             df_5m = pd.concat([df_5m, new_row], ignore_index=True)
-            i.indicators_calculation_all(df_5m)
+            idicators_5m.indicators_calculation_all(df_5m)
+            candle_5 = 0
+            df_flag[PERIOD_5M] = 1
 
         candle_15 = candles_15m.get_candles(data)
         if candle_15:
             new_row = pd.DataFrame([candle_15])
             df_15m = pd.concat([df_15m, new_row], ignore_index=True)
-            i.indicators_calculation_all(df_15m)
+            idicators_15m.indicators_calculation_all(df_15m)
+            candle_15 = 0
 
-        if not m.is_trading_time(market, now):
+        if not m.is_trading_time(trade_market, now):
             continue
 
-        if m.before_end_of_market(market, now):
+        if m.before_end_of_market(trade_market, now):
             fake_close_all_position(Last_price, now)
             continue
-        
-        check_atr_trailing_stop(Last_price, now, df_5m)
 
-        if candle_5:
+        atr_trailing_stop(Last_price, now, df_5m)
+
+        if df_flag[PERIOD_5M]:
             sig = m.trading_strategy(df_5m)
             if sig:
                 if not Buy_at and not Sell_at:
@@ -233,7 +254,11 @@ def run_test(fullpath, market='main'):
                 else:
                     fake_close_position(sig, Last_price, now)
                     fake_open_position(sig, Last_price, now)
+            df_flag[PERIOD_5M] = 0
 
+        idicators_1m.reset_state_if_needed(market)
+        idicators_5m.reset_state_if_needed(market)
+        idicators_15m.reset_state_if_needed(market)
 
         # 放最後以讓上面k線收完
         if data is None:

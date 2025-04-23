@@ -10,8 +10,10 @@ import pandas as pd
 
 import utils
 import fubon
-import indicators
+import indicators as i
+import main as m
 from conf import *
+from constant import *
 
 #global variables
 TWSE_TXF_API = 'https://mis.taifex.com.tw/futures/api/getQuoteList'
@@ -34,6 +36,7 @@ class TWSE(object):
         self.lowest = 0
 
         self._init_twse_requirement()
+        self.indicators = i.indicator_calculator()
 
         return
 
@@ -56,14 +59,14 @@ class TWSE(object):
             if market == '-1':
                 time.sleep(60)
                 continue
-            indicators.reset_state_if_needed(market)
+            self.indicators.reset_state_if_needed(market)
             candle = self._get_candles_from_twse()
             if candle:
                 new_row = pd.DataFrame([candle])
                 self.df = pd.concat([self.df, new_row], ignore_index=True)
                 if len(self.df) > MAX_CANDLE_AMOUNT[self.key]:
                     self.df = self.df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
-                indicators.indicators_calculation_all(self.df)
+                self.indicators.indicators_calculation_all(self.df)
                 self.data_queue.put((self.key, self.df))
 
     def _init_twse_requirement(self):
@@ -265,13 +268,26 @@ class TWSE_CSV(object):
         if row == 'end':
             return None
 
-        datatime = self.trans_datetime(int(row[0]), int(row[3]))
+        row_datatime = self.trans_datetime(int(row[0]), int(row[3]))
+        row_market = self.is_day_market(row_datatime)
         data = {
             'price': int(row[4]),
             'volume': int(row[5]),
-            'time': datatime,
+            'time': row_datatime,
+            'market': row_market,
         }
         return data
+    
+    def is_day_market(self, row_time):
+        current_time_tuple = (row_time.hour, row_time.minute)
+        start_time_tuple = (8, 45)   # 代表 08:45
+        end_time_tuple = (13, 45)  # 代表 13:45
+
+        if start_time_tuple <= current_time_tuple <= end_time_tuple:
+            return '0'
+        else:
+            return '1'
+
 
     def period_to_seconds(self, period_str):
         value = int(period_str[:-1])  # 提取數值
@@ -345,9 +361,13 @@ class CandleCollector:
             }
             self.buffer = []
             self.buffer.append(data)
-            self.start_time = end_time
+
+            if m.is_market_time(DAY_MARKET, end_time) or m.is_market_time(NIGHT_MARKET, end_time):
+                self.start_time = end_time
+            else: 
+                self.start_time = 0
+
             return candle
         else:
             self.buffer.append(data)
-
-        return None
+            return None

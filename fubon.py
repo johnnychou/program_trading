@@ -13,7 +13,7 @@ import fubon_neo
 from fubon_neo.sdk import FubonSDK, Mode, FutOptOrder
 from fubon_neo.constant import TimeInForce, FutOptOrderType, FutOptPriceType, FutOptMarketType, CallPut, BSAction
 import utils
-import indicators
+import indicators as i
 from conf import *
 
 sys.path.append("C:\\Users\\ChengWei\\Desktop\\my project")
@@ -41,6 +41,8 @@ class Fubon_trade(object):
         self.Restfut = self.SDK.marketdata.rest_client.futopt
         self.Acc_futures = self.get_future_account()
         self._set_event()
+
+        self.indicators = i.indicator_calculator()
         return
 
     def login_account(self, retrytimes=6):
@@ -288,7 +290,7 @@ class Fubon_data(object):
         candles_list = self.get_candles_list()
         if candles_list:
             self.df = pd.DataFrame(candles_list)
-            indicators.indicators_calculation_all(self.df)
+            self.indicators.indicators_calculation_all(self.df)
             self.data_queue.put((self.key, self.df))
         while True:
             utils.sync_time(self.period)
@@ -308,7 +310,7 @@ class Fubon_data(object):
                 time.sleep(60)
                 continue
 
-            indicators.reset_state_if_needed(market)
+            self.indicators.reset_state_if_needed(market)
 
             # 檢查最後一筆資料是不是完整candle
             # 富邦api的k線時間跟一般app看的不同，差距一個週期
@@ -325,7 +327,7 @@ class Fubon_data(object):
             self.df = pd.concat([self.df, new_df], ignore_index=True)
             if len(self.df) > MAX_CANDLE_AMOUNT[self.key]:
                 self.df = self.df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
-            indicators.indicators_calculation_all(self.df)
+            self.indicators.indicators_calculation_all(self.df)
             self.data_queue.put((self.key, self.df))
             time.sleep(self.period*59)
 

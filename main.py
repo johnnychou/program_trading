@@ -196,9 +196,9 @@ def is_market_time(market_hours, now):
     now_time = now.time()
 
     if end_time < start_time:  # 處理跨日
-        return start_time <= now_time or now_time <= end_time
+        return start_time <= now_time or now_time < end_time
     else:
-        return start_time <= now_time <= end_time
+        return start_time <= now_time < end_time
 
 def is_trading_time(market, now):
     if market == 'day' and is_market_time(DAY_MARKET, now):
@@ -416,6 +416,9 @@ def chk_ema_signal(df):
     return 0
 
 def trading_strategy(df):
+    if len(df) < 2:
+        return
+    
     signal = 0
 
     if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
