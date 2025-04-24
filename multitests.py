@@ -130,8 +130,6 @@ if __name__ == '__main__':
                 except Exception as e:
                     print(f"處理行數據時發生錯誤: {e}")
                     break
-
-
     
     print('================================================')
     print(f'Total_income: {Total_income}, WinRate: {get_winrate(Win_count, total_files)}')
