@@ -9,6 +9,7 @@ from constant import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
+TRADE_FEE = 150
 TRADING_MARKET = 'main'
 MAX_CONCURRENT = multiprocessing.cpu_count()-3  # 最多同時跑幾個 process
 # MAX_CONCURRENT = 1
@@ -65,7 +66,7 @@ if __name__ == '__main__':
     results = os.listdir(CSV_OUTPUT_PATH)
     for file in results:
         data_date = file.split('_')
-        year_month = data_date[1]+data_date[2]
+        year_month = data_date[1] + data_date[2]
         if year_month not in Month_statistics.keys():
             Month_statistics[year_month] = [0, 0, 0] #income, profit, costs
 
@@ -76,6 +77,16 @@ if __name__ == '__main__':
             trade_times = int(next(data)[1])
             buy_profit = int(next(data)[1])
             sell_profit = int(next(data)[1])
+
+            Total_profit += profit
+            Total_income += income
+            Total_trade_times += trade_times
+            Total_buy_profit += buy_profit
+            Total_sell_profit += sell_profit
+
+            Month_statistics[year_month][0] += income
+            Month_statistics[year_month][1] += profit
+            Month_statistics[year_month][2] += trade_times*TRADE_FEE
 
             next(data) # 空行
             next(data) # 欄位名稱
@@ -98,21 +109,13 @@ if __name__ == '__main__':
                     print(f"處理行數據時發生錯誤: {e}")
                     break
 
-            Total_profit += profit
-            Total_income += income
-            Total_trade_times += trade_times
-            Total_buy_profit += buy_profit
-            Total_sell_profit += sell_profit
 
-            Month_statistics[year_month][1] += profit
-            Month_statistics[year_month][2] += trade_times*150
-            Month_statistics[year_month][0] += income
     
     print('================================================')
-    print(f'Total_profit: {Total_profit}')
     print(f'Total_income: {Total_income}')
-    print(f'Total_trade_times: {Total_trade_times}')
-    print(f'Total_buy_profit: {Total_buy_profit}')
-    print(f'Total_sell_profit: {Total_sell_profit}')
+    print(f'Total_profit: {Total_profit}')
+    print(f'Total_trade_times: {Total_trade_times}, Costs: {Total_trade_times*TRADE_FEE}')
+    print(f'Total_buy_profit: {Total_buy_profit}, Total_sell_profit: {Total_sell_profit}')
+    print(f'Total_day_profit: {Total_day_profit}, Total_night_profit: {Total_night_profit}')
     for key, value in Month_statistics.items():
         print(f'Month: {key}, Income: {value[0]}, Profit: {value[1]}, Costs: {value[2]}')
