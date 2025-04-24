@@ -77,16 +77,24 @@ if __name__ == '__main__':
             buy_profit = int(next(data)[1])
             sell_profit = int(next(data)[1])
 
-            start_time = datetime.datetime.strptime(DAY_MARKET[0], "%H:%M:%S").time()
-            end_time = datetime.datetime.strptime(DAY_MARKET[1], "%H:%M:%S").time()
-            
-            trade_details = next(next(next(data)))
-            while trade_details:
-                if start_time <= trade_details[5].time() <= end_time:
-                    Total_day_profit += trade_details[3]
-                else:
-                    Total_night_profit += trade_details[3]
-                trade_details = next(data)
+            next(data) # 空行
+            next(data) # 欄位名稱
+
+            day_start_time = datetime.datetime.strptime(DAY_MARKET[0], "%H:%M:%S").time()
+            day_end_time = datetime.datetime.strptime(DAY_MARKET[1], "%H:%M:%S").time()
+
+            while True:  # 無限迴圈
+                try:
+                    trade_details = next(data)
+                    if day_start_time <= trade_details[5].time() <= day_end_time:
+                        Total_day_profit += trade_details[3]
+                    else:
+                        Total_night_profit += trade_details[3]
+                except StopIteration:
+                    break
+                except Exception as e:
+                    print(f"處理行數據時發生錯誤: {e}")
+                    break
 
             Total_profit += profit
             Total_income += income
