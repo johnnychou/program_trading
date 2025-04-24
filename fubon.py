@@ -272,6 +272,7 @@ class Fubon_data(object):
         self.product = product
         self.data_queue = data_queue
         self.df = pd.DataFrame()
+        self.indicators = i.indicator_calculator()
         return
 
     def _init_data(self):
