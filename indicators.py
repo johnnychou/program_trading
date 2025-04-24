@@ -160,10 +160,16 @@ class indicator_calculator(object):
         key = RSI_PREFIX + str(period)
 
         # --- 判斷是否需要完整重算 ---
-        if key not in df.columns:
+        needs_full_calculation = (
+            key not in df.columns or          # 1. RSI 列不存在
+            not self.RSI_state.get('initialized') or # 2. 狀態未初始化
+            self.RSI_state.get('period') != period or # 3. 計算週期改變
+            self.RSI_state.get('key') != key         # 4. 請求的 key 改變
+        )
+
+        if needs_full_calculation:
             # --- 完整計算 (Initial Calculation / Recalculation) ---
             if len(df) < 2:
-                print("DataFrame length < 2, cannot calculate diff. Assigning NaN.")
                 df[key] = np.nan
                 # 重置狀態，因為無法有效初始化
                 self.RSI_state = {'initialized': False, 'avg_gain': None, 'avg_loss': None, 'period': None, 'key': None}
@@ -209,7 +215,6 @@ class indicator_calculator(object):
 
         else:
             # --- 增量計算 (Incremental Calculation) ---
-            print(f"Performing incremental RSI calculation for {key}.")
             if len(df) < 2:
                 print("DataFrame length < 2, cannot calculate increment. Assigning NaN.")
                 df.loc[df.index[-1], key] = np.nan
@@ -222,7 +227,7 @@ class indicator_calculator(object):
             # 理論上如果 initialized=True, 這裡不該是 None, 但做個健壯性檢查
             if prev_avg_gain is None or pd.isna(prev_avg_gain) or \
                prev_avg_loss is None or pd.isna(prev_avg_loss):
-                print(f"Error: Incremental calculation called with invalid state: {self.RSI_state}. Forcing full recalc next time.")
+                #print(f"Error: Incremental calculation called with invalid state: {self.RSI_state}. Forcing full recalc next time.")
                 self.RSI_state['initialized'] = False # 標記狀態失效，下次強制重算
                 df.loc[df.index[-1], key] = np.nan # 本次增量計算失敗
                 return
