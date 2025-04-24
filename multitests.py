@@ -10,7 +10,7 @@ from constant import *
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
 TRADING_MARKET = 'main'
-MAX_CONCURRENT = multiprocessing.cpu_count()-4  # 最多同時跑幾個 process
+MAX_CONCURRENT = multiprocessing.cpu_count()-3  # 最多同時跑幾個 process
 # MAX_CONCURRENT = 1
 
 class TestProcess(multiprocessing.Process):
@@ -82,14 +82,16 @@ if __name__ == '__main__':
 
             day_start_time = datetime.datetime.strptime(DAY_MARKET[0], "%H:%M:%S").time()
             day_end_time = datetime.datetime.strptime(DAY_MARKET[1], "%H:%M:%S").time()
+            format_code = "%Y-%m-%d %H:%M:%S"
 
             while True:  # 無限迴圈
                 try:
                     trade_details = next(data)
-                    if day_start_time <= trade_details[5].time() <= day_end_time:
-                        Total_day_profit += trade_details[3]
+                    data_datetime = datetime.datetime.strptime(trade_details[5], format_code)
+                    if day_start_time <= data_datetime.time() <= day_end_time:
+                        Total_day_profit += int(trade_details[3])
                     else:
-                        Total_night_profit += trade_details[3]
+                        Total_night_profit += int(trade_details[3])
                 except StopIteration:
                     break
                 except Exception as e:
