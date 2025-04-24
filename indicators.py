@@ -10,8 +10,21 @@ class indicator_calculator(object):
             'cumulative_pv': 0.0,
             'cumulative_volume': 0.0,
             'last_market': '-1',
-            }
-        self.ADX_state = {}
+        }
+        self.ADX_state = {
+                'tr_list': [],
+                'dm_plus_list': [],
+                'dm_minus_list': [],
+                'dx_list': [],
+                'adx_series': []
+        }
+        self.RSI_state = {
+            'initialized': False,
+            'avg_gain': None,
+            'avg_loss': None,
+            'period': None,
+            'key': None  # 記錄上次計算的 key
+        }
         return
     
     def indicators_calculation_all(self, df): # 直接在df新增欄位
@@ -146,36 +159,130 @@ class indicator_calculator(object):
     def indicator_rsi(self, df, period=10):
         key = RSI_PREFIX + str(period)
 
-        if key not in df.columns or len(df) < period:
-            # 初始化 RSI 全量計算
+        # --- 判斷是否需要完整重算 ---
+        if key not in df.columns:
+            # --- 完整計算 (Initial Calculation / Recalculation) ---
+            if len(df) < 2:
+                print("DataFrame length < 2, cannot calculate diff. Assigning NaN.")
+                df[key] = np.nan
+                # 重置狀態，因為無法有效初始化
+                self.RSI_state = {'initialized': False, 'avg_gain': None, 'avg_loss': None, 'period': None, 'key': None}
+                return
+
             delta = df['close'].diff()
             up = delta.where(delta > 0, 0)
             down = -delta.where(delta < 0, 0)
 
-            avg_gain = up.rolling(window=period).mean()
-            avg_loss = down.rolling(window=period).mean()
+            # 使用 ewm 計算 Wilder's Smoothing (adjust=False 確保遞歸定義)
+            # min_periods=1 會讓它從第一個非 NaN 的 diff 結果開始計算
+            avg_gain_full = up.ewm(alpha=1/period, adjust=False, min_periods=1).mean()
+            avg_loss_full = down.ewm(alpha=1/period, adjust=False, min_periods=1).mean()
 
-            rs = avg_gain / avg_loss
-            rsi = 100 - (100 / (1 + rs))
-            df[key] = rsi.fillna(0).round(1)
+            # 計算 RS 和 RSI
+            rs = avg_gain_full / avg_loss_full
+            # 使用 np.where 處理除零和 NaN (當 avg_loss=0 或 rs=NaN)
+            # 條件1: avg_loss == 0 -> RSI = 100
+            # 條件2: avg_loss != 0 -> RSI = 100 - (100 / (1 + rs))
+            # np.where 會自動處理 rs 為 NaN 的情況 (因為比較和計算都會產生 NaN)
+            rsi = np.where(avg_loss_full == 0, 100.0, 100.0 - (100.0 / (1.0 + rs)))
+
+            # 將計算結果賦值給 DataFrame 列，保留初期的 NaN
+            df[key] = np.round(rsi, 1)
+
+            # --- 更新狀態 ---
+            self.RSI_state['period'] = period
+            self.RSI_state['key'] = key
+            # 只有當最後的 avg_gain/loss 有效時才認為初始化成功
+            last_avg_gain = avg_gain_full.iloc[-1] if not avg_gain_full.empty else None
+            last_avg_loss = avg_loss_full.iloc[-1] if not avg_loss_full.empty else None
+
+            if last_avg_gain is not None and not pd.isna(last_avg_gain) and \
+               last_avg_loss is not None and not pd.isna(last_avg_loss):
+                self.RSI_state['avg_gain'] = last_avg_gain
+                self.RSI_state['avg_loss'] = last_avg_loss
+                self.RSI_state['initialized'] = True
+            else:
+                # 如果數據太少連最後的 avg 都無法計算，則狀態仍未初始化
+                self.RSI_state['avg_gain'] = None
+                self.RSI_state['avg_loss'] = None
+                self.RSI_state['initialized'] = False
+
         else:
-            # 增量計算（更新最後一筆 RSI）
-            delta = df['close'].diff()
-            up = delta.iloc[-1] if delta.iloc[-1] > 0 else 0
-            down = -delta.iloc[-1] if delta.iloc[-1] < 0 else 0
+            # --- 增量計算 (Incremental Calculation) ---
+            print(f"Performing incremental RSI calculation for {key}.")
+            if len(df) < 2:
+                print("DataFrame length < 2, cannot calculate increment. Assigning NaN.")
+                df.loc[df.index[-1], key] = np.nan
+                return
 
-            # 使用上一筆 gain/loss 的平均
-            prev_avg_gain = df['close'].diff().where(lambda x: x > 0, 0).iloc[-(period+1):-1].mean()
-            prev_avg_loss = -df['close'].diff().where(lambda x: x < 0, 0).iloc[-(period+1):-1].mean()
+            # 獲取前一個狀態
+            prev_avg_gain = self.RSI_state['avg_gain']
+            prev_avg_loss = self.RSI_state['avg_loss']
 
-            avg_gain = (prev_avg_gain * (period - 1) + up) / period
-            avg_loss = (prev_avg_loss * (period - 1) + down) / period
+            # 理論上如果 initialized=True, 這裡不該是 None, 但做個健壯性檢查
+            if prev_avg_gain is None or pd.isna(prev_avg_gain) or \
+               prev_avg_loss is None or pd.isna(prev_avg_loss):
+                print(f"Error: Incremental calculation called with invalid state: {self.RSI_state}. Forcing full recalc next time.")
+                self.RSI_state['initialized'] = False # 標記狀態失效，下次強制重算
+                df.loc[df.index[-1], key] = np.nan # 本次增量計算失敗
+                return
 
-            rs = avg_gain / avg_loss if avg_loss != 0 else float('inf')
-            rsi = 100 - (100 / (1 + rs)) if avg_loss != 0 else 100.0
+            # 計算最後一步的 delta, up, down
+            delta = df['close'].iloc[-1] - df['close'].iloc[-2]
+            up = delta if delta > 0 else 0
+            down = -delta if delta < 0 else 0
 
+            # 應用 Wilder's Smoothing 公式更新平均值
+            current_avg_gain = (prev_avg_gain * (period - 1) + up) / period
+            current_avg_loss = (prev_avg_loss * (period - 1) + down) / period
+
+            # 計算 RS 和 RSI
+            if current_avg_loss == 0:
+                rs = np.inf
+                rsi = 100.0
+            else:
+                rs = current_avg_gain / current_avg_loss
+                rsi = 100.0 - (100.0 / (1.0 + rs))
+                # 如果 rs 是 NaN (因 current_avg_gain/loss 都是 0), rsi 會是 NaN
+
+            # 更新 DataFrame 的最後一行
             df.loc[df.index[-1], key] = round(rsi, 1)
+
+            # --- 更新狀態以備下次使用 ---
+            self.RSI_state['avg_gain'] = current_avg_gain
+            self.RSI_state['avg_loss'] = current_avg_loss
+
+        return # 函數修改 DataFrame，不需要返回值
+
+    def reset_rsi_if_needed(self, current_market):
+        """
+        根據市場類型 (日盤、夜盤或非交易時段)，檢查是否需要重置 RSI_state。
+        """
+        if 'last_market' not in self.RSI_state.keys():
+            self.RSI_state['last_market'] = current_market
+            return # 不重置，處於非交易時段
+
+        # 根據市場類型判斷是否需要重置
+        if current_market == '0' and self.RSI_state['last_market'] != '0':
+            self.reset_RSI_state(self.RSI_state)
+            self.RSI_state['last_market'] = '0'
+        elif current_market == '1' and self.RSI_state['last_market'] != '1':
+            self.reset_RSI_state(self.RSI_state)
+            self.RSI_state['last_market'] = '1'
+
         return
+
+    def reset_RSI_state(self):
+        """重置 ADX_state 狀態，適用於市場切換等情境。"""
+        self.RSI_state = {
+            'initialized': False,
+            'avg_gain': None,
+            'avg_loss': None,
+            'period': None, 
+            'key': None
+        }
+        return
+
 
     def indicator_kd(self, df, n=9, k=3, d=3):
         """計算 DataFrame 的 KD 指標。
@@ -382,20 +489,23 @@ class indicator_calculator(object):
 
         # 根據市場類型判斷是否需要重置
         if current_market == '0' and self.VWAP_state['last_market'] != '0':
-            self.reset_vwap_state(self.VWAP_state)
+            self.reset_vwap_state()
             self.VWAP_state['last_market'] = '0'
         elif current_market == '1' and self.VWAP_state['last_market'] != '1':
-            self.reset_vwap_state(self.VWAP_state)
+            self.reset_vwap_state()
             self.VWAP_state['last_market'] = '1'
 
         return
 
-    def reset_vwap_state(self, state):
+    def reset_vwap_state(self):
         """
         建立新的 VWAP 狀態，通常在換日或盤別切換時使用。
         """
-        state['cumulative_pv'] = 0.0
-        state['cumulative_volume'] = 0.0
+        self.VWAP_state = {
+            'cumulative_pv': 0.0,
+            'cumulative_volume': 0.0,
+            'last_market': '-1',
+        }
         return
 
     def indicator_adx(self, df, period=14):
@@ -408,17 +518,6 @@ class indicator_calculator(object):
         period -- ADX 的計算週期，預設為 14
         """
         key = ADX_PREFIX + str(period)
-        
-        # 初始化 ADX_state[period] 如果不存在
-        if not self.ADX_state:
-            self.ADX_state = {
-                'tr_list': [],
-                'dm_plus_list': [],
-                'dm_minus_list': [],
-                'dx_list': [],
-                'adx_series': []
-            }
-        
         state = self.ADX_state
         
         # 檢查是否需要全量計算
@@ -523,19 +622,26 @@ class indicator_calculator(object):
         根據市場類型 (日盤、夜盤或非交易時段)，檢查是否需要重置 ADX_state。
         """
         if 'last_market' not in self.ADX_state.keys():
-            self.VWAP_state['last_market'] = current_market
+            self.ADX_state['last_market'] = current_market
             return # 不重置，處於非交易時段
 
         # 根據市場類型判斷是否需要重置
         if current_market == '0' and self.ADX_state['last_market'] != '0':
-            self.ADX_state_reset(self.ADX_state)
+            self.ADX_state_reset()
             self.ADX_state['last_market'] = '0'
         elif current_market == '1' and self.ADX_state['last_market'] != '1':
-            self.ADX_state_reset(self.ADX_state)
+            self.ADX_state_reset()
             self.ADX_state['last_market'] = '1'
 
-        return ADX_state
+        return
 
-    def ADX_state_reset(self, state):
+    def ADX_state_reset(self):
         """重置 ADX_state 狀態，適用於市場切換等情境。"""
-        state.clear()
+        self.ADX_state = {
+                'tr_list': [],
+                'dm_plus_list': [],
+                'dm_minus_list': [],
+                'dx_list': [],
+                'adx_series': []
+        }
+        return

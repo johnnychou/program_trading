@@ -42,7 +42,6 @@ class Fubon_trade(object):
         self.Acc_futures = self.get_future_account()
         self._set_event()
 
-        self.indicators = i.indicator_calculator()
         return
 
     def login_account(self, retrytimes=6):
@@ -272,13 +271,13 @@ class Fubon_data(object):
         self.product = product
         self.data_queue = data_queue
         self.df = pd.DataFrame()
-        self.indicators = i.indicator_calculator()
         return
 
     def _init_data(self):
         self.Account = None
         self.Acc_futures = None
         self.Restfut = None
+        self.indicators = i.indicator_calculator()
         self.SDK = FubonSDK()
         self.login_account()
         self.SDK.init_realtime(Mode.Normal)

@@ -4,11 +4,13 @@ import os
 import csv
 import backtest
 import time
+import datetime
+from constant import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
 TRADING_MARKET = 'main'
-MAX_CONCURRENT = multiprocessing.cpu_count()-1  # 最多同時跑幾個 process
+MAX_CONCURRENT = multiprocessing.cpu_count()-3  # 最多同時跑幾個 process
 # MAX_CONCURRENT = 1
 
 class TestProcess(multiprocessing.Process):
@@ -29,6 +31,8 @@ Total_income = 0
 Total_trade_times = 0
 Total_buy_profit = 0
 Total_sell_profit = 0
+Total_day_profit = 0
+Total_night_profit = 0
 
 if __name__ == '__main__':
     files = [f for f in os.listdir(CSV_INPUT_PATH) if f.endswith('.csv')]
@@ -72,6 +76,17 @@ if __name__ == '__main__':
             trade_times = int(next(data)[1])
             buy_profit = int(next(data)[1])
             sell_profit = int(next(data)[1])
+
+            start_time = datetime.datetime.strptime(DAY_MARKET[0], "%H:%M:%S").time()
+            end_time = datetime.datetime.strptime(DAY_MARKET[1], "%H:%M:%S").time()
+            
+            trade_details = next(next(next(data)))
+            while trade_details:
+                if start_time <= trade_details[5].time() <= end_time:
+                    Total_day_profit += trade_details[3]
+                else:
+                    Total_night_profit += trade_details[3]
+                trade_details = next(data)
 
             Total_profit += profit
             Total_income += income
