@@ -75,7 +75,7 @@ def create_twse_process(period, product, data_queue, realtime_candle, processes)
     process = multiprocessing.Process(target=twse_instance.get_candles)
     process.daemon = True
     process.start()
-    processes.append(process)
+    processes.append([process, period])
     return
 
 def user_input_settings():
@@ -528,27 +528,27 @@ if __name__ == '__main__':
                 show_realtime(realtime_candle)
                 print(df_fubon_5m.tail(5))
 
-                print(f"[{now.strftime('%H:%M:%S')}] 不在交易時間...")
+                print(f"[{now.strftime('%H:%M:%S')}] Not in trading time now...")
                 for p in Processes:
                     process_obj = p[0]  # 獲取 Process 物件
                     period_key = p[1]   # 獲取對應的 period
 
                     if process_obj.is_alive():
-                        print(f"進程 (Period: {period_key}) 仍在運行中。")
+                        print(f"Process (Period: {period_key}) is alive.")
                     else:
                         # 如果進程已結束，可以檢查它的退出碼 (exitcode)
                         # exitcode 為 0 通常代表正常結束
                         # exitcode 為負值 -N 代表被信號 N 終止 (Unix-like)
                         # exitcode 為正值 通常代表程式內部有錯誤退出
                         exit_code = process_obj.exitcode
-                        print(f"進程 (Period: {period_key}) 已結束。 Exit Code: {exit_code}")
+                        print(f"Process (Period: {period_key}) is dead. Exit Code: {exit_code}")
                 
                 time.sleep(60)
                 os.system('cls')
                 continue
 
             if before_end_of_market(Userinput_Market, now):
-                print(f"[{now.strftime('%H:%M:%S')}] 時段即將結束，執行平倉操作...")
+                print(f"[{now.strftime('%H:%M:%S')}] Closing positions before the end of market...")
                 close_all_position()
                 time.sleep(60)
                 continue
