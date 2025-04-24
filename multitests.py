@@ -25,6 +25,10 @@ class TestProcess(multiprocessing.Process):
         print(f'File:{self.filename}, starting test!')
         self.backtest.run_test()
 
+def get_winrate(win_days, total_days):
+    rate = round((win_days / total_days) * 100, 2)
+    return str(rate) + '%'
+
 All_Process = []
 Month_statistics = {}
 Total_profit = 0
@@ -34,6 +38,11 @@ Total_buy_profit = 0
 Total_sell_profit = 0
 Total_day_profit = 0
 Total_night_profit = 0
+Win_count = 0
+Win_day = 0
+Win_night = 0
+Win_buy = 0
+Win_sell = 0
 
 if __name__ == '__main__':
     files = [f for f in os.listdir(CSV_INPUT_PATH) if f.endswith('.csv')]
@@ -72,14 +81,14 @@ if __name__ == '__main__':
 
         with open(CSV_OUTPUT_PATH+'\\'+file, newline='') as profitdata:
             data = csv.reader(profitdata)
-            profit = int(next(data)[1])
             income = int(next(data)[1])
+            profit = int(next(data)[1])
             trade_times = int(next(data)[1])
             buy_profit = int(next(data)[1])
             sell_profit = int(next(data)[1])
 
-            Total_profit += profit
             Total_income += income
+            Total_profit += profit
             Total_trade_times += trade_times
             Total_buy_profit += buy_profit
             Total_sell_profit += sell_profit
@@ -87,6 +96,13 @@ if __name__ == '__main__':
             Month_statistics[year_month][0] += income
             Month_statistics[year_month][1] += profit
             Month_statistics[year_month][2] += trade_times*TRADE_FEE
+
+            if income > 0:
+                Win_count += 1
+            if buy_profit > 0:
+                Win_buy += 1
+            if sell_profit > 0:
+                Win_sell += 1
 
             next(data) # 空行
             next(data) # 欄位名稱
@@ -100,10 +116,16 @@ if __name__ == '__main__':
                     trade_details = next(data)
                     data_datetime = datetime.datetime.strptime(trade_details[5], format_code)
                     if day_start_time <= data_datetime.time() <= day_end_time:
-                        Total_day_profit += int(trade_details[3])
+                        day_profit += int(trade_details[3])
                     else:
-                        Total_night_profit += int(trade_details[3])
+                        night_profit += int(trade_details[3])
                 except StopIteration:
+                    Total_day_profit += day_profit
+                    Total_night_profit += night_profit
+                    if day_profit > 0:
+                        Win_day += 1
+                    if night_profit > 0:
+                        Win_night += 1
                     break
                 except Exception as e:
                     print(f"處理行數據時發生錯誤: {e}")
@@ -112,10 +134,13 @@ if __name__ == '__main__':
 
     
     print('================================================')
-    print(f'Total_income: {Total_income}')
+    print(f'Total_income: {Total_income}, WinRate: {get_winrate(Win_count, total_files)}')
     print(f'Total_profit: {Total_profit}')
     print(f'Total_trade_times: {Total_trade_times}, Costs: {Total_trade_times*TRADE_FEE}')
-    print(f'Total_buy_profit: {Total_buy_profit}, Total_sell_profit: {Total_sell_profit}')
-    print(f'Total_day_profit: {Total_day_profit}, Total_night_profit: {Total_night_profit}')
+    print(f'Total_buy_profit: {Total_buy_profit}, WinRate: {get_winrate(Win_buy, total_files)}')
+    print(f'Total_sell_profit: {Total_sell_profit}, WinRate: {get_winrate(Win_sell, total_files)}')
+    print(f'Total_day_profit: {Total_day_profit}, WinRate: {get_winrate(Win_day, total_files)}')
+    print(f'Total_night_profit: {Total_night_profit}, WinRate: {get_winrate(Win_night, total_files)}')
     for key, value in Month_statistics.items():
         print(f'Month: {key}, Income: {value[0]}, Profit: {value[1]}, Costs: {value[2]}')
+

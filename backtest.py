@@ -101,8 +101,8 @@ class Backtest():
             writer = csv.writer(f)
 
             # 寫入統計資訊
+            writer.writerow(['Income', self.Total_profit - self.Trade_times*150])
             writer.writerow(['Total_profit', self.Total_profit])
-            writer.writerow(['Real_profit', self.Total_profit - self.Trade_times*150])
             writer.writerow(['Trade_times', self.Trade_times, self.Trade_times*150])
             writer.writerow(['Buy_profit', sum(self.Buy_profit) ,self.Buy_profit])
             writer.writerow(['Sell_profit', sum(self.Sell_profit), self.Sell_profit])
