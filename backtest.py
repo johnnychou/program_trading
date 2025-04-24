@@ -242,7 +242,8 @@ class Backtest():
                 self.fake_close_all_position(self.Last_price, now)
                 continue
 
-            if not m.is_trading_time(self.trade_market, self.Pre_data_time):
+            if (not m.is_trading_time(self.trade_market, now)) or\
+                  (not m.is_trading_time(self.trade_market, self.Pre_data_time)):
                 df_flag = {
                     PERIOD_30S: 0,
                     PERIOD_1M: 0,
@@ -272,7 +273,7 @@ class Backtest():
             idicators_15m.reset_state_if_needed(market)
 
         print('======================================================')
-        print(f'Total_profit: {self.Total_profit}, Real_profit: {self.Total_profit-self.Trade_times*150}')
+        print(f'Income: {self.Total_profit-self.Trade_times*150}, Total_profit: {self.Total_profit}')
         print(f'Trade_times: {self.Trade_times}, Costs: {self.Trade_times*150}')
         print(f'Buy_profit: {sum(self.Buy_profit)}')
         print(f'Sell_profit: {sum(self.Sell_profit)}')

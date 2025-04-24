@@ -439,8 +439,10 @@ def chk_ema_signal(df):
 
 def trading_strategy(df):
     if len(df) < 2:
-        return
-    
+        return 0
+    if df.iloc[-1][ATR_KEY] < 20:
+        return 0
+
     signal = 0
 
     if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
