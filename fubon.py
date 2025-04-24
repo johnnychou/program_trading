@@ -44,7 +44,7 @@ class Fubon_trade(object):
 
         return
 
-    def login_account(self, retrytimes=6):
+    def login_account(self):
         try:
             self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
         except Exception as error:
@@ -53,9 +53,9 @@ class Fubon_trade(object):
         if self.Account.is_success == True:
             self.Account = self.Account.data
         else:
-            print("**Login failed** Retry after 10s...")
-            time.sleep(10)
-            return self.login_account(retrytimes-1)
+            print("**Login failed** Retry after 30s...")
+            time.sleep(30)
+            return self.login_account()
 
         #print(f"===Login sucess===\n{self.Account}")
         #time.sleep(1)
@@ -360,7 +360,7 @@ class Fubon_data(object):
 
         return candles_list
 
-    def login_account(self, retrytimes=6):
+    def login_account(self):
         try:
             self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
         except Exception as error:
@@ -369,9 +369,9 @@ class Fubon_data(object):
         if self.Account.is_success == True:
             self.Account = self.Account.data
         else:
-            print("**Login failed** Retry after 10s...")
-            time.sleep(10)
-            return self.login_account(retrytimes-1)
+            print("**Login failed** Retry after 30s...")
+            time.sleep(30)
+            return self.login_account()
 
         #print(f"===Login sucess===\n{self.Account}")
         #time.sleep(1)
