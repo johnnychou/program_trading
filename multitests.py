@@ -110,10 +110,10 @@ if __name__ == '__main__':
             day_start_time = datetime.datetime.strptime(DAY_MARKET[0], "%H:%M:%S").time()
             day_end_time = datetime.datetime.strptime(DAY_MARKET[1], "%H:%M:%S").time()
             format_code = "%Y-%m-%d %H:%M:%S"
-
+            day_profit = 0
+            night_profit = 0
+            
             while True:  # 無限迴圈
-                day_profit = 0
-                night_profit = 0
                 try:
                     trade_details = next(data)
                     data_datetime = datetime.datetime.strptime(trade_details[5], format_code)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
                         Win_night += 1
                     break
                 except Exception as e:
-                    print(f"處理行數據時發生錯誤: {e}")
+                    print(f"error while processing csv: {e}")
                     break
     
     print('================================================')

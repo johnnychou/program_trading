@@ -536,7 +536,7 @@ if __name__ == '__main__':
                     if process_obj.is_alive():
                         print(f"Process (Period: {period_key}) is alive.")
                     else:
-                        # 如果進程已結束，可以檢查它的退出碼 (exitcode)
+                        # 如果進程已結束，檢查它的退出碼 (exitcode)
                         # exitcode 為 0 通常代表正常結束
                         # exitcode 為負值 -N 代表被信號 N 終止 (Unix-like)
                         # exitcode 為正值 通常代表程式內部有錯誤退出
