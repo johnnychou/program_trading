@@ -112,6 +112,8 @@ if __name__ == '__main__':
             format_code = "%Y-%m-%d %H:%M:%S"
 
             while True:  # 無限迴圈
+                day_profit = 0
+                night_profit = 0
                 try:
                     trade_details = next(data)
                     data_datetime = datetime.datetime.strptime(trade_details[5], format_code)
