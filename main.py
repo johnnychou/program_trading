@@ -277,17 +277,39 @@ def close_all_position():
 
 def before_end_of_market(market, now):
     """判斷是否應該在收盤前一分鐘平倉"""
-    now_str = now.strftime("%H:%M:%S")
-    if market == 'day' and now_str == CLOSE_POSITION_TIME[0]:
-        return True
-    elif market == 'night' and now_str == CLOSE_POSITION_TIME[1]:
-        return True
-    elif market == 'main' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[2]) and is_trading_time(market, now):
-        return True
-    elif market == 'all' and now_str in (CLOSE_POSITION_TIME[0], CLOSE_POSITION_TIME[1]) and is_trading_time(market, now):
-        return True
-    else:
-        return False
+    close_position_times = []
+    if market == 'day':
+        close_position_times = [datetime.datetime.strptime(DAY_MARKET[1], "%H:%M:%S").time()]
+    elif market == 'night':
+        close_position_times = [datetime.datetime.strptime(NIGHT_MARKET[1], "%H:%M:%S").time()]
+    elif market == 'main':
+        close_position_times = [datetime.datetime.strptime(DAY_MARKET[1], "%H:%M:%S").time(),
+                                datetime.datetime.strptime(AMER_MARKET[1], "%H:%M:%S").time()]
+    elif market == 'all':
+        close_position_times = [datetime.datetime.strptime(DAY_MARKET[1], "%H:%M:%S").time(),
+                                datetime.datetime.strptime(NIGHT_MARKET[1], "%H:%M:%S").time()]
+    now_time = now.time()
+    dummy_date = now.date() # 用於 timedelta 計算
+
+    for close_time in close_position_times:
+        # --- 核心計算邏輯 ---
+        close_dt = datetime.datetime.combine(dummy_date, close_time)
+        start_of_last_minute_dt = close_dt - datetime.timedelta(minutes=1)
+        start_of_last_minute_time = start_of_last_minute_dt.time()
+        # --- 結束核心計算 ---
+
+        # 判斷區間 (處理跨午夜)
+        in_interval = False
+        if start_of_last_minute_time > close_time: # 區間跨午夜
+            in_interval = (now_time >= start_of_last_minute_time) or (now_time < close_time)
+        else: # 標準區間
+            in_interval = start_of_last_minute_time <= now_time < close_time
+
+        # 只要任何一個時間點符合條件，就立刻返回 True
+        if in_interval:
+            return True
+
+    return False
 
 def is_data_ready(now, datas):
     """檢查指定週期資料是否已更新"""
@@ -511,7 +533,7 @@ if __name__ == '__main__':
 
             if before_end_of_market(Userinput_Market, now):
                 print(f"[{now.strftime('%H:%M:%S')}] 時段即將結束，執行平倉操作...")
-                #close_all_position()
+                close_all_position()
                 time.sleep(60)
                 continue
 

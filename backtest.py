@@ -15,7 +15,7 @@ from constant import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
-CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_08.csv'
+CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_07.csv'
 PT_PRICE = 200
 
 class Backtest():
@@ -238,6 +238,10 @@ class Backtest():
                 twse_data.csvfile.close()
                 break
 
+            if m.before_end_of_market(self.trade_market, now):
+                self.fake_close_all_position(self.Last_price, now)
+                continue
+
             if not m.is_trading_time(self.trade_market, self.Pre_data_time):
                 df_flag = {
                     PERIOD_30S: 0,
@@ -247,9 +251,6 @@ class Backtest():
                 }
                 continue
 
-            if m.before_end_of_market(self.trade_market, now):
-                self.fake_close_all_position(self.Last_price, now)
-                continue
 
             self.atr_trailing_stop(self.Last_price, now, self.df_5m)
 
