@@ -592,20 +592,21 @@ if __name__ == '__main__':
             print(df_fubon_5m.tail(5))
 
             # check specific data
-            if len(df_fubon_5m) > 2:
+            if len(df_fubon_5m) > 3:
                 dfs = df_fubon_5m.tail(5)
                 for index, row_series in dfs.iterrows():
                     print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series[VWAP_KEY]}')
                 atr = dfs.iloc[-1][ATR_KEY]
                 adx = dfs.iloc[-1][ADX_KEY]
-                print(f'ATR: {atr}, ADX: {adx}')
+                pre_adx = dfs.iloc[-2][ADX_KEY]
+                print(f'ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
 
-                if atr < 25:
-                    chk_stop_loss(realtime_candle, df_fubon_5m)
-                    chk_take_profit(realtime_candle, df_fubon_5m)
-                else:
+                if adx > 25 and adx > pre_adx:
                     if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
                         print(f'ATR trailing stop at: {stop_pt}')
+                else:
+                    chk_stop_loss(realtime_candle, df_fubon_5m)
+                    chk_take_profit(realtime_candle, df_fubon_5m)
 
             if Last_executed_minute == now.minute and df_flag[PERIOD_5M]:
                 sig = trading_strategy(df_fubon_5m)
