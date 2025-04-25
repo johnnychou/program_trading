@@ -166,10 +166,11 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     return
 
 def show_user_settings():
+    print('====================================================================')
     print(f'Product: {Userinput_Product}/{OrderAmount},\
             Market: {Userinput_Market},\
             Direction: {Userinput_Direction}')
-    print('====================================================================')
+
     return
 
 def show_account_info():
@@ -525,10 +526,13 @@ if __name__ == '__main__':
         while True:
             now = datetime.datetime.now()
 
-            # 每分鐘檢查一次Processes
-            if now.minute != last_minute_checked :
-                processes = check_process_alive(processes, data_queue, realtime_candle)
-                last_minute_checked = now.minute
+            # 隨時檢查processes
+            processes = check_process_alive(processes, data_queue, realtime_candle)
+
+            # 每分鐘檢查一次processes
+            # if now.minute != last_minute_checked :
+            #     processes = check_process_alive(processes, data_queue, realtime_candle)
+            #     last_minute_checked = now.minute
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
@@ -596,7 +600,7 @@ if __name__ == '__main__':
                 adx = dfs.iloc[-1][ADX_KEY]
                 print(f'ATR: {atr}, ADX: {adx}')
 
-                if atr < 20:
+                if atr < 25:
                     chk_stop_loss(realtime_candle, df_fubon_5m)
                     chk_take_profit(realtime_candle, df_fubon_5m)
                 else:
