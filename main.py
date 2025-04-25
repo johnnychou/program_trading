@@ -183,7 +183,7 @@ def show_account_info():
         position = f'Sell: {Sell_at}'
         if Last_price:
             unrealized = (Sell_at[0] - Last_price)*PT_price*OrderAmount
-
+    print('====================================================================')
     print(f'Balance: {Balance}, Profit: {Total_profit}, TradeTimes: {Trade_times}')
     print(f'Position: {position}, Unrealized: {unrealized}')
     print('====================================================================')
@@ -458,20 +458,54 @@ def trading_strategy(df):
 
     return signal
 
+def check_process_alive(processes, data_queue, realtime_candle):
+    restart_list = []
+    for p in processes:
+        process_obj = p[0]  # 獲取 Process 物件
+        period_key = p[1]   # 獲取對應的 period
+
+        if process_obj.is_alive():
+            print(f"Process (Period: {period_key}) is alive.")
+        else:
+            # 如果進程已結束，檢查它的退出碼 (exitcode)
+            # exitcode 為 0 通常代表正常結束
+            # exitcode 為負值 -N 代表被信號 N 終止 (Unix-like)
+            # exitcode 為正值 通常代表程式內部有錯誤退出
+            exit_code = process_obj.exitcode
+            print(f"Process (Period: {period_key}) is dead. Exit Code: {exit_code}")
+            restart_list.append(period_key)
+
+    if restart_list:
+        processes = [proc_info for proc_info in processes if proc_info[0].is_alive()]
+
+        for period_key in restart_list:
+            if period_key == PERIOD_30S:
+                create_twse_process(period_key, Userinput_Product, data_queue, realtime_candle, processes)
+            else:
+                create_fubon_process(period_key, Userinput_Product, data_queue, processes)
+            print(f'Process (Period: {period_key}) is restarted.')
+
+        winsound.Beep(5000,1000)
+        time.sleep(15)
+
+    return processes
+
+
 if __name__ == '__main__':
 
     user_input_settings()
     Fubon_account = fubon.Fubon_trade(Userinput_Product)
     update_account_info(Fubon_account)
     
-    Processes = []
+    processes = []
+    restart_list = []
     data_queue = multiprocessing.Queue()                # shared data queue
     realtime_candle = multiprocessing.Manager().dict()  # shared dict
 
-    create_twse_process(PERIOD_30S, Userinput_Product, data_queue, realtime_candle, Processes)
-    create_fubon_process(PERIOD_1M, Userinput_Product, data_queue, Processes)
-    create_fubon_process(PERIOD_5M, Userinput_Product, data_queue, Processes)
-    create_fubon_process(PERIOD_15M, Userinput_Product, data_queue, Processes)
+    create_twse_process(PERIOD_30S, Userinput_Product, data_queue, realtime_candle, processes)
+    create_fubon_process(PERIOD_1M, Userinput_Product, data_queue, processes)
+    create_fubon_process(PERIOD_5M, Userinput_Product, data_queue, processes)
+    create_fubon_process(PERIOD_15M, Userinput_Product, data_queue, processes)
 
     df_twse_30s = pd.DataFrame()
     df_fubon_1m = pd.DataFrame()
@@ -485,9 +519,16 @@ if __name__ == '__main__':
         PERIOD_15M: 0,
     }
 
+    last_minute_checked = -1
+
     try:
         while True:
             now = datetime.datetime.now()
+
+            # 每分鐘檢查一次Processes
+            if now.minute != last_minute_checked :
+                processes = check_process_alive(processes, data_queue, realtime_candle)
+                last_minute_checked = now.minute
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
@@ -529,20 +570,6 @@ if __name__ == '__main__':
                 print(df_fubon_5m.tail(5))
 
                 print(f"[{now.strftime('%H:%M:%S')}] Not in trading time now...")
-                for p in Processes:
-                    process_obj = p[0]  # 獲取 Process 物件
-                    period_key = p[1]   # 獲取對應的 period
-
-                    if process_obj.is_alive():
-                        print(f"Process (Period: {period_key}) is alive.")
-                    else:
-                        # 如果進程已結束，檢查它的退出碼 (exitcode)
-                        # exitcode 為 0 通常代表正常結束
-                        # exitcode 為負值 -N 代表被信號 N 終止 (Unix-like)
-                        # exitcode 為正值 通常代表程式內部有錯誤退出
-                        exit_code = process_obj.exitcode
-                        print(f"Process (Period: {period_key}) is dead. Exit Code: {exit_code}")
-                
                 time.sleep(60)
                 os.system('cls')
                 continue
