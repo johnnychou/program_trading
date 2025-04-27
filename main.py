@@ -38,9 +38,6 @@ Max_profit_pt = 0
 Highest = 0
 Lowest = 0
 
-Flag_1m = 0
-Flag_5m = 0
-Flag_15m = 0
 Last_executed_minute = -1
 
 def create_fubon_process(period, product, data_queue, processes):
@@ -77,6 +74,38 @@ def create_twse_process(period, product, data_queue, realtime_candle, processes)
     process.start()
     processes.append([process, period])
     return
+
+def check_process_alive(processes, data_queue, realtime_candle):
+    restart_list = []
+    for p in processes:
+        process_obj = p[0]  # 獲取 Process 物件
+        period_key = p[1]   # 獲取對應的 period
+
+        if process_obj.is_alive():
+            print(f"Process (Period: {period_key}) is alive.")
+        else:
+            # 如果進程已結束，檢查它的退出碼 (exitcode)
+            # exitcode 為 0 通常代表正常結束
+            # exitcode 為負值 -N 代表被信號 N 終止 (Unix-like)
+            # exitcode 為正值 通常代表程式內部有錯誤退出
+            exit_code = process_obj.exitcode
+            print(f"Process (Period: {period_key}) is dead. Exit Code: {exit_code}")
+            restart_list.append(period_key)
+
+    if restart_list:
+        processes = [proc_info for proc_info in processes if proc_info[0].is_alive()]
+
+        for period_key in restart_list:
+            if period_key == PERIOD_30S:
+                create_twse_process(period_key, Userinput_Product, data_queue, realtime_candle, processes)
+            else:
+                create_fubon_process(period_key, Userinput_Product, data_queue, processes)
+            print(f'Process (Period: {period_key}) is restarted.')
+
+        winsound.Beep(5000,1000)
+        time.sleep(15)
+
+    return processes
 
 def user_input_settings():
     global Userinput_Market, Userinput_Direction, Userinput_Product, Userinput_OrderAmount, PT_price
@@ -459,38 +488,6 @@ def trading_strategy(df):
 
     return signal
 
-def check_process_alive(processes, data_queue, realtime_candle):
-    restart_list = []
-    for p in processes:
-        process_obj = p[0]  # 獲取 Process 物件
-        period_key = p[1]   # 獲取對應的 period
-
-        if process_obj.is_alive():
-            print(f"Process (Period: {period_key}) is alive.")
-        else:
-            # 如果進程已結束，檢查它的退出碼 (exitcode)
-            # exitcode 為 0 通常代表正常結束
-            # exitcode 為負值 -N 代表被信號 N 終止 (Unix-like)
-            # exitcode 為正值 通常代表程式內部有錯誤退出
-            exit_code = process_obj.exitcode
-            print(f"Process (Period: {period_key}) is dead. Exit Code: {exit_code}")
-            restart_list.append(period_key)
-
-    if restart_list:
-        processes = [proc_info for proc_info in processes if proc_info[0].is_alive()]
-
-        for period_key in restart_list:
-            if period_key == PERIOD_30S:
-                create_twse_process(period_key, Userinput_Product, data_queue, realtime_candle, processes)
-            else:
-                create_fubon_process(period_key, Userinput_Product, data_queue, processes)
-            print(f'Process (Period: {period_key}) is restarted.')
-
-        winsound.Beep(5000,1000)
-        time.sleep(15)
-
-    return processes
-
 
 if __name__ == '__main__':
 
@@ -520,7 +517,7 @@ if __name__ == '__main__':
         PERIOD_15M: 0,
     }
 
-    last_minute_checked = -1
+    # last_minute_checked = -1
 
     try:
         while True:
