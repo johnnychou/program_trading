@@ -144,16 +144,17 @@ class indicator_calculator(object):
             tr3 = abs(df['low'] - df['close'].shift())
             tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-            df[key] = tr.rolling(window=period, min_periods=1).mean().round(1).astype(float)
+            df[key] = tr.rolling(window=period, min_periods=period).mean().round(1).astype(float)
         else:
-            tr1 = df['high'].iloc[-1] - df['low'].iloc[-1]
-            tr2 = abs(df['high'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
-            tr3 = abs(df['low'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
-            tr_current = max(tr1, tr2, tr3)
+            if len(df) > period:
+                tr1 = df['high'].iloc[-1] - df['low'].iloc[-1]
+                tr2 = abs(df['high'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
+                tr3 = abs(df['low'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
+                tr_current = max(tr1, tr2, tr3)
 
-            atr_prev = df[key].iloc[-2]
-            atr = (atr_prev * (period - 1) + tr_current) / period if len(df) >= period else tr_current
-            df.loc[df.index[-1], key] = atr.round(1)
+                atr_prev = df[key].iloc[-2]
+                atr = (atr_prev * (period - 1) + tr_current) / period if len(df) >= period else tr_current
+                df.loc[df.index[-1], key] = atr.round(1)
         return
 
     def indicator_rsi(self, df, period=10):
@@ -181,8 +182,8 @@ class indicator_calculator(object):
 
             # 使用 ewm 計算 Wilder's Smoothing (adjust=False 確保遞歸定義)
             # min_periods=1 會讓它從第一個非 NaN 的 diff 結果開始計算
-            avg_gain_full = up.ewm(alpha=1/period, adjust=False, min_periods=1).mean()
-            avg_loss_full = down.ewm(alpha=1/period, adjust=False, min_periods=1).mean()
+            avg_gain_full = up.ewm(alpha=1/period, adjust=False, min_periods=period).mean()
+            avg_loss_full = down.ewm(alpha=1/period, adjust=False, min_periods=period).mean()
 
             # 計算 RS 和 RSI
             rs = avg_gain_full / avg_loss_full
@@ -215,8 +216,8 @@ class indicator_calculator(object):
 
         else:
             # --- 增量計算 (Incremental Calculation) ---
-            if len(df) < 2:
-                print("DataFrame length < 2, cannot calculate increment. Assigning NaN.")
+            if len(df) < period:
+                #print("DataFrame length < 2, cannot calculate increment. Assigning NaN.")
                 df.loc[df.index[-1], key] = np.nan
                 return
 
@@ -562,7 +563,7 @@ class indicator_calculator(object):
                         # 初始 ADX 使用前 period 個 DX 的平均值
                         adx = sum(state['dx_list']) / len(state['dx_list'])
                         state['adx_series'].append(adx)
-                        df.loc[i, key] = adx
+                        df.loc[i, key] = round(adx, 1)
                     else:
                         # 平滑計算 ADX
                         prev_adx = state['adx_series'][-1]

@@ -468,9 +468,9 @@ def chk_ema_signal(df):
     return 0
 
 def trading_strategy(df):
-    if len(df) < 2:
+    if len(df) < RSI_PERIOD:
         return 0
-    if df.iloc[-1][ATR_KEY] < 20:
+    if df.iloc[-1][ATR_KEY] < 15:
         return 0
 
     signal = 0
@@ -598,7 +598,7 @@ if __name__ == '__main__':
                 pre_adx = dfs.iloc[-2][ADX_KEY]
                 print(f'ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
 
-                if adx > 25 and adx > pre_adx:
+                if adx and adx < 25 and adx > pre_adx:
                     if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
                         print(f'ATR trailing stop at: {stop_pt}')
                 else:
