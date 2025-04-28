@@ -467,10 +467,45 @@ def chk_ema_signal(df):
 
     return 0
 
-def trading_strategy(df):
+
+def chk_close_position(realtime_candle, trade_type):
+    if not Buy_at and not Sell_at:
+        return
+
+    if trade_type == 'trend':
+        if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
+            print(f'ATR trailing stopped at: {stop_pt}')
+    else:
+        chk_stop_loss(realtime_candle, df_fubon_5m)
+        chk_take_profit(realtime_candle, df_fubon_5m)
+
+def trend_or_consolidation(df):
+    adx = df.iloc[-1][ADX_KEY]
+    pre_adx = df.iloc[-2][ADX_KEY]
+    if adx and adx > 25 and adx > pre_adx: 
+        return 'trend'
+    return 'consolidation'
+
+def consolidation_strategy(df):
+    k = df.iloc[-1][KD_KEY][0]
+    d = df.iloc[-1][KD_KEY][1]
+    rsv = df.iloc[-1][KD_KEY][2]
+    
+    pre_k = df.iloc[-2][KD_KEY][0]
+    pre_d = df.iloc[-2][KD_KEY][1]
+
+    # golden cross
+    if pre_k <= pre_d and k > d and rsv > 90:
+        return -1
+    
+    # death cross
+    if pre_k >= pre_d and k < d and rsv < 10:
+        return 1
+
+    return 0
+
+def trend_strategy(df):
     if len(df) < RSI_PERIOD:
-        return 0
-    if df.iloc[-1][ATR_KEY] < 15:
         return 0
 
     signal = 0
@@ -586,34 +621,41 @@ if __name__ == '__main__':
             show_realtime(realtime_candle)
             #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
-            print(df_fubon_5m.tail(5))
+            dfs_1 = df_fubon_1m.tail(5)
+            print(dfs_1)
+            print('====================================================================')
+            dfs_5 = df_fubon_5m.tail(5)
+            print(dfs_5)
+            print('====================================================================')
 
-            # check specific data
             if len(df_fubon_5m) > 3:
-                dfs = df_fubon_5m.tail(5)
-                for index, row_series in dfs.iterrows():
+               
+                # show some key data
+                for index, row_series in dfs_5.iterrows():
                     print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, VWAP: {row_series[VWAP_KEY]}')
-                atr = dfs.iloc[-1][ATR_KEY]
-                adx = dfs.iloc[-1][ADX_KEY]
-                pre_adx = dfs.iloc[-2][ADX_KEY]
+                atr = dfs_5.iloc[-1][ATR_KEY]
+                adx = dfs_5.iloc[-1][ADX_KEY]
+                pre_adx = dfs_5.iloc[-2][ADX_KEY]
                 print(f'ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
+                
+                trade_type = trend_or_consolidation(df_fubon_5m)
 
-                if adx and adx < 25 and adx > pre_adx:
-                    if stop_pt := atr_trailing_stop(realtime_candle, df_fubon_5m):
-                        print(f'ATR trailing stop at: {stop_pt}')
-                else:
-                    chk_stop_loss(realtime_candle, df_fubon_5m)
-                    chk_take_profit(realtime_candle, df_fubon_5m)
+                # check for close position
+                chk_close_position(realtime_candle, trade_type)
 
-            if Last_executed_minute == now.minute and df_flag[PERIOD_5M]:
-                sig = trading_strategy(df_fubon_5m)
-                if sig:
-                    if not Buy_at and not Sell_at:
-                        open_position(sig)
+                # check for open position
+                if Last_executed_minute == now.minute and not Buy_at and not Sell_at:
+                    if trade_type == 'trend':
+                        if df_flag[PERIOD_5M]:
+                            if sig := trend_strategy(df_fubon_5m):
+                                open_position(sig)
+                            df_flag[PERIOD_5M] = 0
                     else:
-                        close_position(sig)
-                        open_position(sig)
-                df_flag[PERIOD_5M] = 0
+                        if df_flag[PERIOD_1M]:
+                            if sig := consolidation_strategy(df_fubon_1m):
+                                open_position(sig)
+                            df_flag[PERIOD_1M] = 0
+                            
 
             time.sleep(0.01)
             os.system('cls')
