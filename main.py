@@ -497,11 +497,11 @@ def consolidation_strategy(df):
     pre_d = df.iloc[-2][KD_KEY][1]
 
     # golden cross
-    if pre_k <= pre_d and k > d and rsv > 90:
+    if pre_k <= pre_d and k > d and rsv > 85:
         return -1
     
     # death cross
-    if pre_k >= pre_d and k < d and rsv < 10:
+    if pre_k >= pre_d and k < d and rsv < 15:
         return 1
 
     return 0
