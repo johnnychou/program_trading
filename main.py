@@ -323,11 +323,9 @@ def before_end_of_market(market, now):
     dummy_date = now.date() # 用於 timedelta 計算
 
     for close_time in close_position_times:
-        # --- 核心計算邏輯 ---
         close_dt = datetime.datetime.combine(dummy_date, close_time)
         start_of_last_minute_dt = close_dt - datetime.timedelta(minutes=1)
         start_of_last_minute_time = start_of_last_minute_dt.time()
-        # --- 結束核心計算 ---
 
         # 判斷區間 (處理跨午夜)
         in_interval = False
@@ -364,11 +362,11 @@ def is_data_ready(now, datas):
 
 def chk_stop_loss(realtime_candle, df):
     if 'lastprice' not in realtime_candle:
-        return
+        return 0
     if ATR_KEY not in df.columns:
-        return
+        return 0
     if not (len(Buy_at) + len(Sell_at)):
-        return
+        return 0
 
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
@@ -378,23 +376,23 @@ def chk_stop_loss(realtime_candle, df):
         entry_price = Buy_at[0]
         close_price = entry_price - atr * 1.5
         if lastprice <= close_price:
-            close_position(-1)
-            return 1
+            #close_position(-1)
+            return -1
     elif Sell_at:
         entry_price = Sell_at[0]
         close_price = entry_price + atr * 1.5
         if lastprice >= close_price:
-            close_position(1)
+            #close_position(1)
             return 1
     return 0
 
 def chk_take_profit(realtime_candle, df):
     if 'lastprice' not in realtime_candle:
-        return
+        return 0
     if ATR_KEY not in df.columns:
-        return
+        return 0
     if not (len(Buy_at) + len(Sell_at)):
-        return
+        return 0
 
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
@@ -404,24 +402,24 @@ def chk_take_profit(realtime_candle, df):
         entry_price = Buy_at[0]
         close_price = entry_price + atr * 2
         if lastprice >= close_price:
-            close_position(-1)
-            return 1
+            #close_position(-1)
+            return -1
     elif Sell_at:
         entry_price = Sell_at[0]
         close_price = entry_price - atr * 2
         if lastprice <= close_price:
-            close_position(1)
+            #close_position(1)
             return 1
     return 0
 
 def atr_trailing_stop(realtime_candle, df):
     global Max_profit_pt
     if not Buy_at and not Sell_at:
-        return
+        return 0
     if 'lastprice' not in realtime_candle:
-        return
+        return 0
     if ATR_KEY not in df.columns:
-        return
+        return 0
     
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
@@ -433,10 +431,10 @@ def atr_trailing_stop(realtime_candle, df):
         print(f'Max Profit at: {Max_profit_pt}, {(Max_profit_pt-Buy_at[0])*PT_price}')
         print(f'ATR trailing stop price: {stop_price}')
         if lastprice <= stop_price:
-            close_position(-1)
             Max_profit_pt = 0
             print(f'ATR trailing stopped at: {lastprice}')
-            return
+            #close_position(-1)
+            return -1
 
     elif Sell_at:
         if not Max_profit_pt:
@@ -447,19 +445,19 @@ def atr_trailing_stop(realtime_candle, df):
         print(f'Max Profit at: {Max_profit_pt}, {(Sell_at[0]-Max_profit_pt)*PT_price}')
         print(f'ATR trailing stop price: {stop_price}')
         if lastprice >= stop_price:
-            close_position(1)
             Max_profit_pt = 0
             print(f'ATR trailing stopped at: {lastprice}')
-            return
+            #close_position(1)
+            return 1
 
-    return
+    return 0
 
 
 def bband_stop(df):
     if not Buy_at and not Sell_at:
-        return
+        return 0
     if BB_KEY not in df.columns:
-        return
+        return 0
 
     up_band = df.iloc[-1][BB_KEY][1]
     bot_band = df.iloc[-1][BB_KEY][2]
@@ -472,19 +470,23 @@ def bband_stop(df):
 
     if Buy_at:
         if pre_high >= pre_up_band and close < up_band:
-            close_position(-1)
+            #close_position(-1)
+            return -1
     if Sell_at:
         if pre_low <= pre_bot_band and close > bot_band:
-            close_position(1)
-    return
+            #close_position(1)
+            return 1
+    return 0
 
 
 def atr_fixed_stop(realtime_candle, df):
     if not Buy_at and not Sell_at:
-        return
-    chk_stop_loss(realtime_candle, df)
-    chk_take_profit(realtime_candle, df)
-    return
+        return 0
+    if sig := chk_stop_loss(realtime_candle, df):
+        return sig
+    if sig := chk_take_profit(realtime_candle, df):
+        return sig
+    return 0
 
 def trend_or_consolidation_adx(df):
     if ADX_KEY not in df.columns:
@@ -697,7 +699,7 @@ if __name__ == '__main__':
                 adx = dfs_1.iloc[-1][ADX_KEY]
                 print(f'1_min: ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
                 print('====================================================================')
-
+                # show some key data
                 for index, row_series in dfs_5.iterrows():
                     print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}')
                 atr_5 = dfs_5.iloc[-1][ATR_KEY]
@@ -705,16 +707,20 @@ if __name__ == '__main__':
                 print(f'5_min: ATR_{ATR_PERIOD}: {atr_5}, ADX_{ADX_PERIOD}: {adx_5}')
                 print('====================================================================')
                 
+                # get trade type
                 trade_type = trend_or_consolidation_bb(df_fubon_1m)
 
                 print(f'Market type: {trade_type}')
 
                 # check for close position
                 if trade_type == 'trend':
-                    atr_trailing_stop(realtime_candle, df_fubon_5m)
+                    if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
+                        close_position(sig)
                 else:
-                    atr_fixed_stop(realtime_candle, df_fubon_1m)
-                    bband_stop(df_fubon_1m)
+                    if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
+                        close_position(sig)
+                    if sig:= bband_stop(df_fubon_1m):
+                        close_position(sig)
 
                 # check for open position
                 if Last_executed_minute == now.minute and not Buy_at and not Sell_at:

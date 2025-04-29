@@ -252,9 +252,19 @@ class Backtest():
                 }
                 continue
 
+            # get trade type
+            trade_type = m.trend_or_consolidation_bb(self.df_1m)
 
+            # check for close position
             self.atr_trailing_stop(self.Last_price, now, self.df_5m)
+            if trade_type == 'trend':
+                atr_trailing_stop(realtime_candle, df_fubon_5m)
+            else:
+                atr_fixed_stop(realtime_candle, df_fubon_1m)
+                bband_stop(df_fubon_1m)
 
+            
+            # check for open position
             if df_flag[PERIOD_5M]:
                 sig = m.trading_strategy(self.df_5m)
                 if sig:
@@ -264,9 +274,6 @@ class Backtest():
                         self.fake_close_position(sig, self.Last_price, now)
                         self.fake_open_position(sig, self.Last_price, now)
                 df_flag[PERIOD_5M] = 0
-                # print(f'sig : {sig}')
-                # print(self.df_5m.iloc[-5:])
-                # input()
 
             idicators_1m.reset_state_if_needed(market)
             idicators_5m.reset_state_if_needed(market)
