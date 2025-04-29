@@ -508,7 +508,7 @@ def consolidation_strategy_kd(df):
     return 0
 
 def consolidation_strategy_bb(df):
-    if KD_KEY not in df.columns:
+    if BB_KEY not in df.columns:
         return
     up = df.iloc[-1][BB_KEY][1]
     bot = df.iloc[-1][BB_KEY][2]
