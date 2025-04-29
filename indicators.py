@@ -393,9 +393,9 @@ class indicator_calculator(object):
         hist = macd_line - signal_line
 
         df.at[df.index[-1], key] = (
-            round(macd_line, 1),
-            round(signal_line, 1),
-            round(hist, 1)
+            float(round(macd_line, 1)),
+            float(round(signal_line, 1)),
+            float(round(hist, 1)),
         )
 
         # 更新狀態
@@ -429,9 +429,9 @@ class indicator_calculator(object):
             lower = mid - std_dev * std
 
             df.at[df.index[-1], key] = (
-                round(mid, 1),
-                round(upper, 1),
-                round(lower, 1)
+                float(round(mid, 1)),
+                float(round(upper, 1)),
+                float(round(lower, 1)),
             )
         return
 
