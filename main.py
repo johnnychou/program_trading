@@ -415,12 +415,12 @@ def chk_take_profit(realtime_candle, df):
 
 def atr_trailing_stop(realtime_candle, df):
     global Max_profit_pt
+    if not Buy_at and not Sell_at:
+        return
     if 'lastprice' not in realtime_candle:
         return 0
     if ATR_KEY not in df.columns:
         return 0
-    if not (len(Buy_at) + len(Sell_at)):
-        return
     
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
@@ -434,7 +434,8 @@ def atr_trailing_stop(realtime_candle, df):
         if lastprice <= stop_price:
             close_position(-1)
             Max_profit_pt = 0
-            return stop_price
+            print(f'ATR trailing stopped at: {lastprice}')
+            return
 
     elif Sell_at:
         if not Max_profit_pt:
@@ -447,37 +448,18 @@ def atr_trailing_stop(realtime_candle, df):
         if lastprice >= stop_price:
             close_position(1)
             Max_profit_pt = 0
-            return stop_price
+            print(f'ATR trailing stopped at: {lastprice}')
+            return
 
-    return 0
-
-def chk_ema_signal(df):
-    if len(df) < 2:
-        return
-    ema_short = df[EMA_KEY].iloc[-1]
-    ema_long = df[EMA2_KEY].iloc[-1]
-    pre_ema_short = df[EMA_KEY].iloc[-2]
-    pre_ema_long = df[EMA2_KEY].iloc[-2]
-
-    if pre_ema_short < pre_ema_long and ema_short >= ema_long:
-        return 1 # 做多
-
-    if pre_ema_short > pre_ema_long and ema_short <= ema_long:
-        return -1 # 做空
-
-    return 0
+    return
 
 
-def chk_close_position(realtime_candle, trade_type, df):
+def atr_fixed_stop(realtime_candle, df):
     if not Buy_at and not Sell_at:
         return
+    chk_stop_loss(realtime_candle, df)
+    chk_take_profit(realtime_candle, df)
 
-    if trade_type == 'trend':
-        if stop_pt := atr_trailing_stop(realtime_candle, df):
-            print(f'ATR trailing stopped at: {stop_pt}')
-    else:
-        chk_stop_loss(realtime_candle, df)
-        chk_take_profit(realtime_candle, df)
 
 def trend_or_consolidation_adx(df):
     if ADX_KEY not in df.columns:
@@ -666,7 +648,10 @@ if __name__ == '__main__':
                 trade_type = trend_or_consolidation_bb(df_fubon_1m)
 
                 # check for close position
-                chk_close_position(realtime_candle, trade_type, df_fubon_5m)
+                if trade_type == 'trend':
+                    atr_trailing_stop(realtime_candle, df_fubon_5m)
+                else:
+                    atr_fixed_stop(realtime_candle, df_fubon_1m)
 
                 # check for open position
                 if Last_executed_minute == now.minute and not Buy_at and not Sell_at:
