@@ -337,7 +337,11 @@ class indicator_calculator(object):
                 k_value = (1 - (1 / k)) * k_prev + (1 / k) * rsv
                 d_value = (1 - (1 / d)) * d_prev + (1 / d) * k_value
 
-                df.at[df.index[-1], key] = (round(k_value,1), round(d_value,1), round(rsv,1))
+                df.at[df.index[-1], key] = (
+                    float(round(k_value, 1)),
+                    float(round(d_value, 1)),
+                    float(round(rsv, 1))
+                )
             else:
                 df.at[df.index[-1], key] = (50, 50, 0)
 

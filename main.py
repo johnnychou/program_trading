@@ -375,13 +375,13 @@ def chk_stop_loss(realtime_candle, df):
 
     if Buy_at:
         entry_price = Buy_at[0]
-        close_price = entry_price - atr * 1
+        close_price = entry_price - atr * 1.5
         if lastprice <= close_price:
             close_position(-1)
             return 1
     elif Sell_at:
         entry_price = Sell_at[0]
-        close_price = entry_price + atr * 1
+        close_price = entry_price + atr * 1.5
         if lastprice >= close_price:
             close_position(1)
             return 1
@@ -401,13 +401,13 @@ def chk_take_profit(realtime_candle, df):
 
     if Buy_at:
         entry_price = Buy_at[0]
-        close_price = entry_price + atr * 1.5
+        close_price = entry_price + atr * 2
         if lastprice >= close_price:
             close_position(-1)
             return 1
     elif Sell_at:
         entry_price = Sell_at[0]
-        close_price = entry_price - atr * 1.5
+        close_price = entry_price - atr * 2
         if lastprice <= close_price:
             close_position(1)
             return 1
@@ -481,7 +481,8 @@ def trend_or_consolidation_bb(df):
     pre_bb_bot = df.iloc[-2][BB_KEY][2]
     band = bb_up - bb_bot
     pre_band = pre_bb_up - pre_bb_bot
-    if band > 60 and band > pre_band: 
+    print(f'band: {round(band, 2)}, pre_band: {round(pre_band, 2)}')
+    if band > 60 and band >= (pre_band*0.8):
         return 'trend'
     return 'consolidation'
 
@@ -639,7 +640,7 @@ if __name__ == '__main__':
                
                 # show some key data
                 for index, row_series in dfs_1.iterrows():
-                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, ATR: {row_series[ATR_KEY]}')
+                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, KD: {row_series[KD_KEY]}, ATR: {row_series[ATR_KEY]}')
                 atr = dfs_1.iloc[-1][ATR_KEY]
                 adx = dfs_1.iloc[-1][ADX_KEY]
                 pre_adx = dfs_1.iloc[-2][ADX_KEY]
