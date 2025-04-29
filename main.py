@@ -486,7 +486,7 @@ def trend_or_consolidation_bb(df):
         return 'trend'
     return 'consolidation'
 
-def consolidation_strategy(df):
+def consolidation_strategy_kd(df):
     if KD_KEY not in df.columns:
         return
     k = df.iloc[-1][KD_KEY][0]
@@ -504,6 +504,26 @@ def consolidation_strategy(df):
     if pre_k >= pre_d and k < d and rsv < 15:
         return 1
 
+    return 0
+
+def consolidation_strategy_bb(df):
+    if KD_KEY not in df.columns:
+        return
+    up = df.iloc[-1][BB_KEY][1]
+    bot = df.iloc[-1][BB_KEY][2]
+    close = df.iloc[-1]['close']
+
+    pre_up = df.iloc[-2][BB_KEY][1]
+    pre_bot = df.iloc[-2][BB_KEY][2]
+    pre_high = df.iloc[-2]['high']
+    pre_low = df.iloc[-2]['low']
+
+    # buy
+    if pre_low <= pre_bot and close > bot:
+        return 1
+    # sell
+    elif pre_high >= pre_up and close < up:
+        return -1
     return 0
 
 def trend_strategy(df):
@@ -674,7 +694,7 @@ if __name__ == '__main__':
                             df_flag[PERIOD_5M] = 0
                     else:
                         if df_flag[PERIOD_1M]:
-                            if sig := consolidation_strategy(df_fubon_1m):
+                            if sig := consolidation_strategy_bb(df_fubon_1m):
                                 open_position(sig)
                             df_flag[PERIOD_1M] = 0
                             
