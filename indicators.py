@@ -28,6 +28,8 @@ class indicator_calculator(object):
         return
     
     def indicators_calculation_all(self, df): # 直接在df新增欄位
+        if len(df) < 2:
+            return
         self.indicator_ma(df, MA_PERIOD)
         self.indicator_ema(df, EMA_PERIOD)
         self.indicator_ema(df, EMA2_PERIOD)
@@ -143,19 +145,22 @@ class indicator_calculator(object):
             tr1 = df['high'] - df['low']
             tr2 = abs(df['high'] - df['close'].shift())
             tr3 = abs(df['low'] - df['close'].shift())
-            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-
-            df[key] = tr.rolling(window=period, min_periods=period).mean().round(1).astype(float)
+            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1, skipna=True)
+            atr_series = tr.ewm(alpha=1/period, adjust=False, min_periods=1).mean()
+            df[key] = atr_series.round(1).astype(float)
         else:
-            if len(df) > period:
-                tr1 = df['high'].iloc[-1] - df['low'].iloc[-1]
-                tr2 = abs(df['high'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
-                tr3 = abs(df['low'].iloc[-1] - df['close'].iloc[-2]) if len(df) > 1 else 0
-                tr_current = max(tr1, tr2, tr3)
+            current_high = df['high'].iloc[-1]
+            current_low = df['low'].iloc[-1]
+            prev_close = df['close'].iloc[-2]
 
-                atr_prev = df[key].iloc[-2]
-                atr = (atr_prev * (period - 1) + tr_current) / period if len(df) >= period else tr_current
-                df.loc[df.index[-1], key] = atr.round(1)
+            tr1_curr = current_high - current_low
+            tr2_curr = abs(current_high - prev_close)
+            tr3_curr = abs(current_low - prev_close)
+            tr_current = max(tr1_curr, tr2_curr, tr3_curr)
+
+            atr_prev = df[key].iloc[-2]
+            atr = (atr_prev * (period - 1) + tr_current) / period
+            df.loc[df.index[-1], key] = float(np.round(atr, 1))
         return
 
     def indicator_rsi(self, df, period=10):

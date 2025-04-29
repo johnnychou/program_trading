@@ -128,7 +128,10 @@ class Fubon_trade(object):
             maintenance_margin = req.data[0].maintenance_margin
 
         except:
-            print('Get account equity error')
+            print('Get account equity error.')
+            equity = 0
+            initial_margin = 0
+            maintenance_margin = 0
         
         return equity, [initial_margin, maintenance_margin]
 
@@ -164,7 +167,7 @@ class Fubon_trade(object):
         res = self.SDK.futopt.place_order(self.Acc_futures, order)
 
         if res.is_success != True:
-            print(f'res: {res}')
+            print(f'send order error: {res}')
             winsound.Beep(5000,1000)
             time.sleep(30)
             return 0
@@ -198,17 +201,22 @@ class Fubon_trade(object):
         Buy_at = []
         Sel_at = []
 
-        positions = self.SDK.futopt_accounting.query_single_position(self.Acc_futures)
-        # print(positions)
+        try:
+            positions = self.SDK.futopt_accounting.query_single_position(self.Acc_futures)
+            # print(positions)
 
-        if positions.data:
-            for p in positions.data:
-                if p.symbol == self.chk_symbol:
-                    for i in range(p.tradable_lot):
-                        if p.buy_sell == BSAction.Buy:
-                            Buy_at.append(p.price)
-                        elif p.buy_sell == BSAction.Sell:
-                            Sel_at.append(p.price)
+            if positions.data:
+                for p in positions.data:
+                    if p.symbol == self.chk_symbol:
+                        for i in range(p.tradable_lot):
+                            if p.buy_sell == BSAction.Buy:
+                                Buy_at.append(p.price)
+                            elif p.buy_sell == BSAction.Sell:
+                                Sel_at.append(p.price)
+        except:
+            print('Get account positions error.')
+            winsound.Beep(5000,1000)
+
         # print('====================================================')
         # print(Buy_at)
         # print(Sel_at)

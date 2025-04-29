@@ -15,8 +15,8 @@ from constant import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
-CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_07.csv'
-PT_PRICE = 200
+CSV_INPUT_DATA = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered\Daily_2025_04_15.csv'
+PT_price = 200
 
 class Backtest():
     def __init__(self, fullpath, trade_market='main'):
@@ -74,7 +74,7 @@ class Backtest():
             while self.Sell_at:
                 price = self.Sell_at.pop(0)
                 open_time = self.Sell_time.pop(0)
-                profit += (price - lastprice)*PT_PRICE
+                profit += (price - lastprice)*PT_price
                 self.Sell_profit.append(profit)
                 self.Sell_record.append([price, lastprice, open_time, close_time, profit])
                 self.Total_profit += profit
@@ -83,7 +83,7 @@ class Backtest():
             while self.Buy_at:
                 price = self.Buy_at.pop(0)
                 open_time = self.Buy_time.pop(0)
-                profit += (lastprice - price)*PT_PRICE
+                profit += (lastprice - price)*PT_price
                 self.Buy_profit.append(profit)
                 self.Buy_record.append([price, lastprice, open_time, close_time, profit])
                 self.Total_profit += profit
@@ -141,27 +141,132 @@ class Backtest():
         df_record.to_csv(output_file, index=False, encoding='utf-8-sig', mode='a') # mode -> append
         print(f"交易紀錄已儲存到: {output_file}")
 
-    def is_day_session(self, now):
-        return datetime.time(8, 45) <= now.time() <= datetime.time(13, 45)
+    # def detect_kbar_momentum(self, row):
+    #     body = abs(row['close'] - row['open'])
+    #     upper_shadow = row['high'] - max(row['close'], row['open'])
+    #     lower_shadow = min(row['close'], row['open']) - row['low']
 
-    def detect_kbar_momentum(self, row):
-        body = abs(row['close'] - row['open'])
-        upper_shadow = row['high'] - max(row['close'], row['open'])
-        lower_shadow = min(row['close'], row['open']) - row['low']
+    #     if body > upper_shadow * 2 and body > lower_shadow * 2:
+    #         if row['close'] > row['open']:
+    #             return 'long'
+    #         elif row['close'] < row['open']:
+    #             return 'short'
+    #     return None
 
-        if body > upper_shadow * 2 and body > lower_shadow * 2:
-            if row['close'] > row['open']:
-                return 'long'
-            elif row['close'] < row['open']:
-                return 'short'
-        return None
+    # def get_ema_trend(self, df, period=20):
+    #     if len(df) < period + 2:
+    #         return None
+    #     ema = df['close'].ewm(span=period, adjust=False).mean()
+    #     slope = ema.iloc[-1] - ema.iloc[-2]
+    #     return 'up' if slope > 0 else 'down'
 
-    def get_ema_trend(self, df, period=20):
-        if len(df) < period + 2:
-            return None
-        ema = df['close'].ewm(span=period, adjust=False).mean()
-        slope = ema.iloc[-1] - ema.iloc[-2]
-        return 'up' if slope > 0 else 'down'
+    def atr_fixed_stop(self, realtime_candle, df):
+        if sig := self.chk_stop_loss(realtime_candle, df):
+            return sig
+        if sig := self.chk_take_profit(realtime_candle, df):
+            return sig
+        return 0
+
+    def chk_stop_loss(self, realtime_candle, df):
+        if 'lastprice' not in realtime_candle:
+            return 0
+        if ATR_KEY not in df.columns:
+            return 0
+        if not self.Buy_at and not self.Sell_at:
+            return 0
+
+        lastprice = realtime_candle['lastprice']
+        last_valid_idx = df[ATR_KEY].last_valid_index()
+        atr = df.loc[last_valid_idx, ATR_KEY]
+
+        if self.Buy_at:
+            entry_price = self.Buy_at[0]
+            close_price = entry_price - atr * 1.5
+            if lastprice <= close_price:
+                return -1
+        elif self.Sell_at:
+            entry_price = self.Sell_at[0]
+            close_price = entry_price + atr * 1.5
+            if lastprice >= close_price:
+                return 1
+        return 0
+
+    def chk_take_profit(self, realtime_candle, df):
+        if 'lastprice' not in realtime_candle:
+            return 0
+        if ATR_KEY not in df.columns:
+            return 0
+        if not self.Buy_at and not self.Sell_at:
+            return 0
+
+        lastprice = realtime_candle['lastprice']
+        last_valid_idx = df[ATR_KEY].last_valid_index()
+        atr = df.loc[last_valid_idx, ATR_KEY]
+
+        if self.Buy_at:
+            entry_price = self.Buy_at[0]
+            close_price = entry_price + atr * 2
+            if lastprice >= close_price:
+                return -1
+        elif self.Sell_at:
+            entry_price = self.Sell_at[0]
+            close_price = entry_price - atr * 2
+            if lastprice <= close_price:
+                return 1
+        return 0
+
+    def atr_trailing_stop(self, realtime_candle, df):
+        if 'lastprice' not in realtime_candle:
+            return 0
+        if ATR_KEY not in df.columns:
+            return 0
+        
+        lastprice = realtime_candle['lastprice']
+        last_valid_idx = df[ATR_KEY].last_valid_index()
+        if not last_valid_idx:
+            return 0
+        else:
+            atr = df.loc[last_valid_idx, ATR_KEY]
+
+        if self.Buy_at:
+            self.Max_profit_pt = max(lastprice, self.Buy_at[0], self.Max_profit_pt)
+            stop_price = self.Max_profit_pt - atr * 1.5
+            if lastprice <= stop_price:
+                self.Max_profit_pt = 0
+                return -1
+
+        elif self.Sell_at:
+            if not self.Max_profit_pt:
+                self.Max_profit_pt = min(lastprice, self.Sell_at[0])
+            else:
+                self.Max_profit_pt = min(lastprice, self.Sell_at[0], self.Max_profit_pt)
+            stop_price = self.Max_profit_pt + atr * 1.5
+            if lastprice >= stop_price:
+                self.Max_profit_pt = 0
+                return 1
+
+        return 0
+
+    def bband_stop(self, df):
+        if BB_KEY not in df.columns:
+            return 0
+
+        up_band = df.iloc[-1][BB_KEY][1]
+        bot_band = df.iloc[-1][BB_KEY][2]
+        pre_up_band = df.iloc[-2][BB_KEY][1]
+        pre_bot_band = df.iloc[-2][BB_KEY][2]
+
+        pre_high = df.iloc[-2]['high']
+        pre_low = df.iloc[-2]['low']
+        close = df.iloc[-1]['close']
+
+        if self.Buy_at:
+            if pre_high >= pre_up_band and close < up_band:
+                return -1
+        if self.Sell_at:
+            if pre_low <= pre_bot_band and close > bot_band:
+                return 1
+        return 0
 
     def run_test(self):
         twse_data = twse.TWSE_CSV(self.fullpath)
@@ -193,6 +298,7 @@ class Backtest():
                 self.df_1m = pd.concat([self.df_1m, new_row], ignore_index=True)
                 idicators_1m.indicators_calculation_all(self.df_1m)
                 candle_1 = 0
+                df_flag[PERIOD_1M] = 1
 
             candle_5 = self.candles_5m.get_candles(data)
             if candle_5:
@@ -208,6 +314,7 @@ class Backtest():
                 self.df_15m = pd.concat([self.df_15m, new_row], ignore_index=True)
                 idicators_15m.indicators_calculation_all(self.df_15m)
                 candle_15 = 0
+                df_flag[PERIOD_15M] = 1
 
             # 讓上面k線收完
             if data is None:
@@ -227,34 +334,38 @@ class Backtest():
                     PERIOD_15M: 0,
                 }
                 continue
-
-            # get trade type
-            trade_type = m.trend_or_consolidation_bb(self.df_1m)
-
-            # check for close position
-            if trade_type == 'trend':
-                if sig:= m.atr_trailing_stop(data, self.df_5m):
-                    self.fake_close_position(sig, self.Last_price, now)
-            else:
-                if sig:= m.atr_fixed_stop(data, self.df_1m):
-                    self.fake_close_position(sig, self.Last_price, now)
-                if sig:= m.bband_stop(self.df_1m):
-                    self.fake_close_position(sig, self.Last_price, now)
             
-            # check for open position
-            if not self.Buy_at and not self.Sell_at:
-                if trade_type == 'notrade':
-                    pass
-                elif trade_type == 'trend':
-                    if df_flag[PERIOD_5M]:
-                        if sig := m.trend_strategy(self.df_5m):
-                            self.fake_open_position(sig, self.Last_price, now)
-                        df_flag[PERIOD_5M] = 0
-                else:
-                    if df_flag[PERIOD_1M]:
-                        if sig := m.consolidation_strategy_bb(self.df_1m):
-                            self.fake_open_position(sig, self.Last_price, now)
-                        df_flag[PERIOD_1M] = 0
+            if len(self.df_1m) > 3 and len(self.df_5m) > 3:
+        
+                # get trade type
+                trade_type = m.trend_or_consolidation_bb(self.df_1m)
+
+                # check for close position
+                if self.Buy_at or self.Sell_at:
+                    if trade_type == 'trend':
+                        if sig:= self.atr_trailing_stop(data, self.df_5m):
+                            self.fake_close_position(sig, self.Last_price, now)
+                    else:
+                        if sig:= self.atr_fixed_stop(data, self.df_1m):
+                            self.fake_close_position(sig, self.Last_price, now)
+                        if sig:= self.bband_stop(self.df_1m):
+                            self.fake_close_position(sig, self.Last_price, now)
+
+        
+                # check for open position
+                if not self.Buy_at and not self.Sell_at:
+                    if trade_type == 'notrade':
+                        pass
+                    elif trade_type == 'trend':
+                        if df_flag[PERIOD_5M]:
+                            if sig := m.trend_strategy(self.df_5m):
+                                self.fake_open_position(sig, self.Last_price, now)
+                            df_flag[PERIOD_5M] = 0
+                    else:
+                        if df_flag[PERIOD_1M]:
+                            if sig := m.consolidation_strategy_bb(self.df_1m):
+                                self.fake_open_position(sig, self.Last_price, now)
+                            df_flag[PERIOD_1M] = 0
 
             idicators_1m.reset_state_if_needed(market)
             idicators_5m.reset_state_if_needed(market)
