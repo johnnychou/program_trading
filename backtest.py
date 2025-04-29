@@ -23,10 +23,12 @@ class Backtest():
         self.fullpath = fullpath
         self.trade_market = trade_market
         self.Buy_at = []
+        self.Buy_time = []
         self.Buy_profit = []
         self.Buy_record = []
 
         self.Sell_at = []
+        self.Sell_time = []
         self.Sell_profit = []
         self.Sell_record = []
 
@@ -49,10 +51,12 @@ class Backtest():
         if self.Buy_at or self.Sell_at:
             return 0
         if sig == 1:
-            self.Buy_at.append((lastprice, now))
+            self.Buy_at.append(lastprice)
+            self.Buy_time.append(now)
             self.Trade_times += 1
         elif sig == -1:
-            self.Sell_at.append((lastprice, now))
+            self.Sell_at.append(lastprice)
+            self.Sell_time.append(now)
             self.Trade_times += 1
         return
 
@@ -68,7 +72,8 @@ class Backtest():
 
         if sig == 1:
             while self.Sell_at:
-                price, open_time = self.Sell_at.pop(0)
+                price = self.Sell_at.pop(0)
+                open_time = self.Sell_time.pop(0)
                 profit += (price - lastprice)*PT_PRICE
                 self.Sell_profit.append(profit)
                 self.Sell_record.append([price, lastprice, open_time, close_time, profit])
@@ -76,7 +81,8 @@ class Backtest():
                 self.Trade_times += 1
         elif sig == -1:
             while self.Buy_at:
-                price, open_time = self.Buy_at.pop(0)
+                price = self.Buy_at.pop(0)
+                open_time = self.Buy_time.pop(0)
                 profit += (lastprice - price)*PT_PRICE
                 self.Buy_profit.append(profit)
                 self.Buy_record.append([price, lastprice, open_time, close_time, profit])
@@ -157,36 +163,6 @@ class Backtest():
         slope = ema.iloc[-1] - ema.iloc[-2]
         return 'up' if slope > 0 else 'down'
 
-    def atr_trailing_stop(self, lastprice, now, df):
-        if ATR_KEY not in df.columns:
-            return 0
-        if not (len(self.Buy_at) + len(self.Sell_at)):
-            return
-        
-        last_valid_idx = df[ATR_KEY].last_valid_index()
-        atr = df.loc[last_valid_idx, ATR_KEY]
-
-        if self.Buy_at:
-            self.Max_profit_pt = max(lastprice, self.Buy_at[0][0], self.Max_profit_pt)
-            stop_price = self.Max_profit_pt - atr * 1.5
-            if lastprice <= stop_price:
-                self.fake_close_position(-1, lastprice, now)
-                self.Max_profit_pt = 0
-                return stop_price
-
-        elif self.Sell_at:
-            if not self.Max_profit_pt:
-                self.Max_profit_pt = min(lastprice, self.Sell_at[0][0])
-            else:
-                self.Max_profit_pt = min(lastprice, self.Sell_at[0][0], self.Max_profit_pt)
-            stop_price = self.Max_profit_pt + atr * 1.5
-            if lastprice >= stop_price:
-                self.fake_close_position(1, lastprice, now)
-                self.Max_profit_pt = 0
-                return stop_price
-
-        return 0
-
     def run_test(self):
         twse_data = twse.TWSE_CSV(self.fullpath)
         idicators_1m = i.indicator_calculator()
@@ -208,7 +184,7 @@ class Backtest():
                 else:
                     self.Pre_data_time = now
                 now = data['time']
-                self.Last_price = data['price']
+                self.Last_price = data['lastprice']
                 market = data['market']
 
             candle_1 = self.candles_1m.get_candles(data)
@@ -256,24 +232,29 @@ class Backtest():
             trade_type = m.trend_or_consolidation_bb(self.df_1m)
 
             # check for close position
-            self.atr_trailing_stop(self.Last_price, now, self.df_5m)
             if trade_type == 'trend':
-                atr_trailing_stop(realtime_candle, df_fubon_5m)
+                if sig:= m.atr_trailing_stop(data, self.df_5m):
+                    self.fake_close_position(sig, self.Last_price, now)
             else:
-                atr_fixed_stop(realtime_candle, df_fubon_1m)
-                bband_stop(df_fubon_1m)
-
+                if sig:= m.atr_fixed_stop(data, self.df_1m):
+                    self.fake_close_position(sig, self.Last_price, now)
+                if sig:= m.bband_stop(self.df_1m):
+                    self.fake_close_position(sig, self.Last_price, now)
             
             # check for open position
-            if df_flag[PERIOD_5M]:
-                sig = m.trading_strategy(self.df_5m)
-                if sig:
-                    if not self.Buy_at and not self.Sell_at:
-                        self.fake_open_position(sig, self.Last_price, now)
-                    else:
-                        self.fake_close_position(sig, self.Last_price, now)
-                        self.fake_open_position(sig, self.Last_price, now)
-                df_flag[PERIOD_5M] = 0
+            if not self.Buy_at and not self.Sell_at:
+                if trade_type == 'notrade':
+                    pass
+                elif trade_type == 'trend':
+                    if df_flag[PERIOD_5M]:
+                        if sig := m.trend_strategy(self.df_5m):
+                            self.fake_open_position(sig, self.Last_price, now)
+                        df_flag[PERIOD_5M] = 0
+                else:
+                    if df_flag[PERIOD_1M]:
+                        if sig := m.consolidation_strategy_bb(self.df_1m):
+                            self.fake_open_position(sig, self.Last_price, now)
+                        df_flag[PERIOD_1M] = 0
 
             idicators_1m.reset_state_if_needed(market)
             idicators_5m.reset_state_if_needed(market)

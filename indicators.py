@@ -271,10 +271,10 @@ class indicator_calculator(object):
 
         # 根據市場類型判斷是否需要重置
         if current_market == '0' and self.RSI_state['last_market'] != '0':
-            self.reset_RSI_state(self.RSI_state)
+            self.reset_RSI_state()
             self.RSI_state['last_market'] = '0'
         elif current_market == '1' and self.RSI_state['last_market'] != '1':
-            self.reset_RSI_state(self.RSI_state)
+            self.reset_RSI_state()
             self.RSI_state['last_market'] = '1'
 
         return

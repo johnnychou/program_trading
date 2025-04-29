@@ -376,13 +376,11 @@ def chk_stop_loss(realtime_candle, df):
         entry_price = Buy_at[0]
         close_price = entry_price - atr * 1.5
         if lastprice <= close_price:
-            #close_position(-1)
             return -1
     elif Sell_at:
         entry_price = Sell_at[0]
         close_price = entry_price + atr * 1.5
         if lastprice >= close_price:
-            #close_position(1)
             return 1
     return 0
 
@@ -402,13 +400,11 @@ def chk_take_profit(realtime_candle, df):
         entry_price = Buy_at[0]
         close_price = entry_price + atr * 2
         if lastprice >= close_price:
-            #close_position(-1)
             return -1
     elif Sell_at:
         entry_price = Sell_at[0]
         close_price = entry_price - atr * 2
         if lastprice <= close_price:
-            #close_position(1)
             return 1
     return 0
 
@@ -433,7 +429,6 @@ def atr_trailing_stop(realtime_candle, df):
         if lastprice <= stop_price:
             Max_profit_pt = 0
             print(f'ATR trailing stopped at: {lastprice}')
-            #close_position(-1)
             return -1
 
     elif Sell_at:
@@ -447,11 +442,9 @@ def atr_trailing_stop(realtime_candle, df):
         if lastprice >= stop_price:
             Max_profit_pt = 0
             print(f'ATR trailing stopped at: {lastprice}')
-            #close_position(1)
             return 1
 
     return 0
-
 
 def bband_stop(df):
     if not Buy_at and not Sell_at:
@@ -470,14 +463,11 @@ def bband_stop(df):
 
     if Buy_at:
         if pre_high >= pre_up_band and close < up_band:
-            #close_position(-1)
             return -1
     if Sell_at:
         if pre_low <= pre_bot_band and close > bot_band:
-            #close_position(1)
             return 1
     return 0
-
 
 def atr_fixed_stop(realtime_candle, df):
     if not Buy_at and not Sell_at:
@@ -508,7 +498,7 @@ def trend_or_consolidation_bb(df):
     pre_bot_band = df.iloc[-2][BB_KEY][2]
     band = up_band - bot_band
     pre_band = pre_up_band - pre_bot_band
-    print(f'band: {round(band, 2)}, pre_band: {round(pre_band, 2)}')
+    #print(f'band: {round(band, 2)}, pre_band: {round(pre_band, 2)}')
     if band > 60 and band >= (pre_band*0.9):
         return 'trend'
     elif band < 30:

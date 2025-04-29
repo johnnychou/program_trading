@@ -231,7 +231,7 @@ class TWSE_CSV(object):
             if not data:
                 break
 
-            last_price = data['price']
+            last_price = data['lastprice']
             if not start_time:
                 start_time = data['time']
 
@@ -274,7 +274,7 @@ class TWSE_CSV(object):
         row_datatime = self.trans_datetime(int(row[0]), int(row[3]))
         row_market = self.is_day_market(row_datatime)
         data = {
-            'price': int(row[4]),
+            'lastprice': int(row[4]),
             'volume': int(row[5]),
             'time': row_datatime,
             'market': row_market,
@@ -326,7 +326,7 @@ class CandleCollector:
         # 如果資料結束，強制產生最後一根K線（即使不滿 period）
         if data is None:
             if self.buffer and self.start_time:
-                prices = [item['price'] for item in self.buffer]
+                prices = [item['lastprice'] for item in self.buffer]
                 volumes = [item['volume'] for item in self.buffer]
                 candle = {
                     'open': prices[0],
@@ -351,7 +351,7 @@ class CandleCollector:
         end_time = self.start_time + self.period
 
         if current_time >= end_time:
-            prices = [item['price'] for item in self.buffer]
+            prices = [item['lastprice'] for item in self.buffer]
             volumes = [item['volume'] for item in self.buffer]
             candle = {
                 'open': prices[0],
