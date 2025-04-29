@@ -175,6 +175,7 @@ def show_realtime(realtime_candle):
     print(f'Lastprice: {Last_price}, Highest: {Highest}, Lowest: {Lowest}, Level: {level}%')
     print('====================================================================')
     print(realtime_candle)
+    print('====================================================================')
     return
 
 def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
@@ -660,19 +661,17 @@ if __name__ == '__main__':
                
                 # show some key data
                 for index, row_series in dfs_1.iterrows():
-                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, KD: {row_series[KD_KEY]}, ATR: {row_series[ATR_KEY]}')
+                    print(f'BB: {row_series[BB_KEY]}, KD: {row_series[KD_KEY]}')
                 atr = dfs_1.iloc[-1][ATR_KEY]
                 adx = dfs_1.iloc[-1][ADX_KEY]
-                pre_adx = dfs_1.iloc[-2][ADX_KEY]
                 print(f'1_min: ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
                 print('====================================================================')
 
                 for index, row_series in dfs_5.iterrows():
-                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, ATR: {row_series[ATR_KEY]}')
-                atr = dfs_5.iloc[-1][ATR_KEY]
-                adx = dfs_5.iloc[-1][ADX_KEY]
-                pre_adx = dfs_5.iloc[-2][ADX_KEY]
-                print(f'5_min: ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
+                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}')
+                atr_5 = dfs_5.iloc[-1][ATR_KEY]
+                adx_5 = dfs_5.iloc[-1][ADX_KEY]
+                print(f'5_min: ATR_{ATR_PERIOD}: {atr_5}, ADX_{ADX_PERIOD}: {adx_5}')
                 print('====================================================================')
                 
                 trade_type = trend_or_consolidation_bb(df_fubon_1m)
