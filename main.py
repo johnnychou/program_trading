@@ -635,17 +635,28 @@ if __name__ == '__main__':
             print(dfs_5)
             print('====================================================================')
 
-            if len(df_fubon_5m) > 3:
+            if len(df_fubon_1m) > 3 and len(df_fubon_5m) > 3:
                
                 # show some key data
+                for index, row_series in dfs_1.iterrows():
+                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, ATR: {row_series[ATR_KEY]}')
+                atr = dfs_1.iloc[-1][ATR_KEY]
+                adx = dfs_1.iloc[-1][ADX_KEY]
+                pre_adx = dfs_1.iloc[-2][ADX_KEY]
+                print(f'1_min: ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
+                print('====================================================================')
+
                 for index, row_series in dfs_5.iterrows():
                     print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}, ATR: {row_series[ATR_KEY]}')
                 atr = dfs_5.iloc[-1][ATR_KEY]
                 adx = dfs_5.iloc[-1][ADX_KEY]
                 pre_adx = dfs_5.iloc[-2][ADX_KEY]
-                print(f'ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
+                print(f'5_min: ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
+                print('====================================================================')
                 
                 trade_type = trend_or_consolidation_bb(df_fubon_1m)
+
+                print(f'Market type: {trade_type}')
 
                 # check for close position
                 if trade_type == 'trend':
