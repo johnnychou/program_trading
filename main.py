@@ -472,7 +472,7 @@ def trend_or_consolidation_adx(df):
     return 'consolidation'
 
 def trend_or_consolidation_bb(df):
-    if len(df) < 3:
+    if len(df) < 2:
         return
     if BB_KEY not in df.columns:
         return
@@ -488,6 +488,8 @@ def trend_or_consolidation_bb(df):
     return 'consolidation'
 
 def consolidation_strategy_kd(df):
+    if len(df) < 2:
+        return
     if KD_KEY not in df.columns:
         return
     k = df.iloc[-1][KD_KEY][0]
@@ -508,6 +510,8 @@ def consolidation_strategy_kd(df):
     return 0
 
 def consolidation_strategy_bb(df):
+    if len(df) < 2:
+        return
     if BB_KEY not in df.columns:
         return
     up = df.iloc[-1][BB_KEY][1]
