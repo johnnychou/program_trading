@@ -348,9 +348,8 @@ class Backtest():
                     else:
                         if sig:= self.atr_fixed_stop(data, self.df_1m):
                             self.fake_close_position(sig, self.Last_price, now)
-                        if sig:= self.bband_stop(self.df_1m):
+                        elif sig:= self.bband_stop(self.df_1m):
                             self.fake_close_position(sig, self.Last_price, now)
-
         
                 # check for open position
                 if not self.Buy_at and not self.Sell_at:

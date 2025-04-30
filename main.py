@@ -484,7 +484,7 @@ def trend_or_consolidation_adx(df):
         return
     adx = df.iloc[-1][ADX_KEY]
     pre_adx = df.iloc[-2][ADX_KEY]
-    if adx and adx > 25 and adx > pre_adx: 
+    if adx > 30:
         return 'trend'
     return 'consolidation'
 
@@ -519,6 +519,28 @@ def consolidation_strategy_kd(df):
     pre_d = df.iloc[-2][KD_KEY][1]
 
     # golden cross
+    if pre_k <= pre_d and k > d and rsv < 30:
+        return 1
+    
+    # death cross
+    if pre_k >= pre_d and k < d and rsv > 70:
+        return -1
+
+    return 0
+
+def consolidation_strategy_kd_r(df):
+    if len(df) < 2:
+        return
+    if KD_KEY not in df.columns:
+        return
+    k = df.iloc[-1][KD_KEY][0]
+    d = df.iloc[-1][KD_KEY][1]
+    rsv = df.iloc[-1][KD_KEY][2]
+    
+    pre_k = df.iloc[-2][KD_KEY][0]
+    pre_d = df.iloc[-2][KD_KEY][1]
+
+    # golden cross
     if pre_k <= pre_d and k > d and rsv > 80:
         return -1
     
@@ -533,6 +555,8 @@ def consolidation_strategy_bb(df):
         return
     if BB_KEY not in df.columns:
         return
+    if KD_KEY not in df.columns:
+        return
     
     up_band = df.iloc[-1][BB_KEY][1]
     bot_band = df.iloc[-1][BB_KEY][2]
@@ -543,11 +567,13 @@ def consolidation_strategy_bb(df):
     pre_low = df.iloc[-2]['low']
     close = df.iloc[-1]['close']
 
+    rsv = df.iloc[-1][KD_KEY][2]
+
     # buy
-    if pre_low <= pre_bot_band and close > bot_band:
+    if pre_low < pre_bot_band and close > bot_band and rsv < 10:
         return 1
     # sell
-    elif pre_high >= pre_up_band and close < up_band:
+    elif pre_high > pre_up_band and close < up_band and rsv > 90:
         return -1
     return 0
 
@@ -711,7 +737,7 @@ if __name__ == '__main__':
                     else:
                         if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
                             close_position(sig)
-                        if sig:= bband_stop(df_fubon_1m):
+                        elif sig:= bband_stop(df_fubon_1m):
                             close_position(sig)
 
                 # check for open position
