@@ -500,7 +500,7 @@ def trend_or_consolidation_bb(df):
     band = up_band - bot_band
     pre_band = pre_up_band - pre_bot_band
     #print(f'band: {round(band, 2)}, pre_band: {round(pre_band, 2)}')
-    if band > 60 and band >= (pre_band*0.9):
+    if band > 80:
         return 'trend'
     elif band < 30:
         return 'notrade'
@@ -519,11 +519,11 @@ def consolidation_strategy_kd(df):
     pre_d = df.iloc[-2][KD_KEY][1]
 
     # golden cross
-    if pre_k <= pre_d and k > d and rsv > 85:
+    if pre_k <= pre_d and k > d and rsv > 80:
         return -1
     
     # death cross
-    if pre_k >= pre_d and k < d and rsv < 15:
+    if pre_k >= pre_d and k < d and rsv < 20:
         return 1
 
     return 0
@@ -566,12 +566,12 @@ def trend_strategy(df):
     if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
          (df.iloc[-1]['close'] > df.iloc[-1][EMA2_KEY]) and\
          (df.iloc[-1]['close'] > df.iloc[-1][VWAP_KEY]) and\
-         (df.iloc[-1][RSI_KEY] < 70):
+         (df.iloc[-1][RSI_KEY] < 50):
         signal = 1
     elif (df.iloc[-1]['close'] < df.iloc[-2]['low']) and\
          (df.iloc[-1]['close'] < df.iloc[-1][EMA2_KEY]) and\
          (df.iloc[-1]['close'] < df.iloc[-1][VWAP_KEY]) and\
-         (df.iloc[-1][RSI_KEY] > 30):
+         (df.iloc[-1][RSI_KEY] > 50):
         signal = -1
 
     return signal

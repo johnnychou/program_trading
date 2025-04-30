@@ -5,6 +5,7 @@ import csv
 import backtest
 import time
 import datetime
+import random
 from constant import *
 
 CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
@@ -47,6 +48,7 @@ Win_sell = 0
 if __name__ == '__main__':
     files = [f for f in os.listdir(CSV_INPUT_PATH) if f.endswith('.csv')]
     total_files = len(files)
+    random.shuffle(files)
     remaining = list(files)  # 還沒跑的
     running = []             # 正在跑的
 

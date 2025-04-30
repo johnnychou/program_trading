@@ -396,8 +396,7 @@ if __name__ == '__main__':
     mytest = Backtest(CSV_INPUT_DATA, 'main')
     mytest.run_test()
     print('===========================')
-    print(mytest.df_1m)
+    print(mytest.df_1m.iloc[-10:])
     print('===========================')
-    print(mytest.df_5m)
-    print('===========================')
-    print(mytest.df_15m)
+    print(mytest.df_5m.iloc[-10:])
+
