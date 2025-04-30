@@ -26,6 +26,7 @@ class Backtest():
         self.Buy_time = []
         self.Buy_profit = []
         self.Buy_record = []
+        self.Entry_type = []
 
         self.Sell_at = []
         self.Sell_time = []
@@ -47,20 +48,22 @@ class Backtest():
         self.df_15m = pd.DataFrame()
         self.df_30m = pd.DataFrame()
 
-    def fake_open_position(self, sig, lastprice, now): # 1=buy, -1=sell
+    def fake_open_position(self, sig, lastprice, now, trade_type): # 1=buy, -1=sell
         if self.Buy_at or self.Sell_at:
             return 0
         if sig == 1:
             self.Buy_at.append(lastprice)
             self.Buy_time.append(now)
+            self.Entry_type.append(trade_type)
             self.Trade_times += 1
         elif sig == -1:
             self.Sell_at.append(lastprice)
             self.Sell_time.append(now)
+            self.Entry_type.append(trade_type)
             self.Trade_times += 1
         return
 
-    def fake_close_position(self, sig, lastprice, now): # 1=close_sell_position, -1=close_buy_position
+    def fake_close_position(self, sig, lastprice, now, trade_type): # 1=close_sell_position, -1=close_buy_position
         profit = 0
         if not self.Buy_at and not self.Sell_at:
             return 0
@@ -74,27 +77,33 @@ class Backtest():
             while self.Sell_at:
                 price = self.Sell_at.pop(0)
                 open_time = self.Sell_time.pop(0)
+                entry_type = self.Entry_type.pop(0)
+                close_type = trade_type
+
                 profit += (price - lastprice)*PT_price
                 self.Sell_profit.append(profit)
-                self.Sell_record.append([price, lastprice, open_time, close_time, profit])
+                self.Sell_record.append([price, lastprice, open_time, close_time, profit, entry_type, close_type])
                 self.Total_profit += profit
                 self.Trade_times += 1
         elif sig == -1:
             while self.Buy_at:
                 price = self.Buy_at.pop(0)
                 open_time = self.Buy_time.pop(0)
+                entry_type = self.Entry_type.pop(0)
+                close_type = trade_type
+
                 profit += (lastprice - price)*PT_price
                 self.Buy_profit.append(profit)
-                self.Buy_record.append([price, lastprice, open_time, close_time, profit])
+                self.Buy_record.append([price, lastprice, open_time, close_time, profit, entry_type, close_type])
                 self.Total_profit += profit
                 self.Trade_times += 1
         return
 
     def fake_close_all_position(self,lastprice, now):
         if self.Buy_at:
-            self.fake_close_position(-1, lastprice, now)
+            self.fake_close_position(-1, lastprice, now, 'End')
         if self.Sell_at:
-            self.fake_close_position(1, lastprice, now)
+            self.fake_close_position(1, lastprice, now, 'End')
         return
 
     def export_trade_log(self):
@@ -115,24 +124,28 @@ class Backtest():
             writer.writerow([])  # 空行分隔
 
 
-        for buy, sell, entry_time, exit_time, profit in self.Buy_record:
+        for buy, sell, entry_time, exit_time, profit, entry_type, close_type in self.Buy_record:
             records.append({
                 'type': 'Buy',
                 'entry': buy,
                 'exit': sell,
                 'profit': profit,
                 'entry_time': entry_time,
-                'exit_time': exit_time
+                'exit_time': exit_time,
+                'entry_type': entry_type,
+                'close_type': close_type,
             })
 
-        for sell, buy, entry_time, exit_time, profit in self.Sell_record:
+        for sell, buy, entry_time, exit_time, profit, entry_type, close_type in self.Sell_record:
             records.append({
                 'type': 'Sell',
                 'entry': sell,
                 'exit': buy,
                 'profit': profit,
                 'entry_time': entry_time,
-                'exit_time': exit_time
+                'exit_time': exit_time,
+                'entry_type': entry_type,
+                'close_type': close_type,
             })
 
         df_record = pd.DataFrame(records)
@@ -344,12 +357,12 @@ class Backtest():
                 if self.Buy_at or self.Sell_at:
                     if trade_type == 'trend':
                         if sig:= self.atr_trailing_stop(data, self.df_5m):
-                            self.fake_close_position(sig, self.Last_price, now)
+                            self.fake_close_position(sig, self.Last_price, now, trade_type)
                     else:
                         if sig:= self.atr_fixed_stop(data, self.df_1m):
-                            self.fake_close_position(sig, self.Last_price, now)
+                            self.fake_close_position(sig, self.Last_price, now, trade_type)
                         elif sig:= self.bband_stop(self.df_1m):
-                            self.fake_close_position(sig, self.Last_price, now)
+                            self.fake_close_position(sig, self.Last_price, now, trade_type)
         
                 # check for open position
                 if not self.Buy_at and not self.Sell_at:
@@ -358,12 +371,12 @@ class Backtest():
                     elif trade_type == 'trend':
                         if df_flag[PERIOD_5M]:
                             if sig := m.trend_strategy(self.df_5m):
-                                self.fake_open_position(sig, self.Last_price, now)
+                                self.fake_open_position(sig, self.Last_price, now, trade_type)
                             df_flag[PERIOD_5M] = 0
                     else:
                         if df_flag[PERIOD_1M]:
                             if sig := m.consolidation_strategy_bb(self.df_1m):
-                                self.fake_open_position(sig, self.Last_price, now)
+                                self.fake_open_position(sig, self.Last_price, now, trade_type)
                             df_flag[PERIOD_1M] = 0
 
             idicators_1m.reset_state_if_needed(market)
