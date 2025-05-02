@@ -1,10 +1,15 @@
-Income,-10100
-Total_profit,-9200
-Trade_times,6,900
-Buy_profit,-9000,[-9000]
-Sell_profit,-200,"[-2200, 2000]"
+Income,-3600
+Total_profit,-1200
+Trade_times,16,2400
+Buy_profit,-6400,"[-2400, 3000, -7000]"
+Sell_profit,5200,"[-2200, -3400, 1600, 4400, 4800]"
 
-type,entry,exit,profit,entry_time,exit_time
-Sell,22997,23008,-2200,2024-11-25 21:55:00,2024-11-25 21:55:43
-Sell,22884,22874,2000,2024-11-26 03:53:02,2024-11-26 03:57:24
-Buy,22718,22673,-9000,2024-11-26 12:50:01,2024-11-26 12:55:41
+type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
+Sell,22995,23006,-2200,2024-11-25 21:52:11,2024-11-25 21:55:40,consolidation,consolidation
+Buy,22846,22834,-2400,2024-11-26 00:40:02,2024-11-26 00:49:24,consolidation,consolidation
+Buy,22791,22806,3000,2024-11-26 01:23:01,2024-11-26 01:36:04,consolidation,consolidation
+Sell,22821,22838,-3400,2024-11-26 01:54:00,2024-11-26 02:01:35,consolidation,trend
+Sell,22885,22877,1600,2024-11-26 03:52:05,2024-11-26 03:57:01,consolidation,consolidation
+Sell,22790,22768,4400,2024-11-26 11:19:02,2024-11-26 11:23:26,consolidation,consolidation
+Sell,22778,22754,4800,2024-11-26 12:06:01,2024-11-26 12:12:33,consolidation,consolidation
+Buy,22671,22636,-7000,2024-11-26 13:32:01,2024-11-26 13:44:00,consolidation,End

@@ -1,10 +1,8 @@
-Income,900
-Total_profit,1800
-Trade_times,6,900
-Buy_profit,5600,[5600]
-Sell_profit,-3800,"[-2000, -1800]"
+Income,2900
+Total_profit,3200
+Trade_times,2,300
+Buy_profit,0,[]
+Sell_profit,3200,[3200]
 
-type,entry,exit,profit,entry_time,exit_time
-Sell,23576,23586,-2000,2024-10-23 01:38:00,2024-10-23 01:40:11
-Sell,23586,23595,-1800,2024-10-23 01:40:11,2024-10-23 01:58:37
-Buy,23389,23417,5600,2024-10-23 13:29:00,2024-10-23 13:33:01
+type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
+Sell,23591,23575,3200,2024-10-23 01:42:00,2024-10-23 01:44:28,consolidation,consolidation
