@@ -486,6 +486,8 @@ def trend_or_consolidation_adx(df):
     pre_adx = df.iloc[-2][ADX_KEY]
     if adx > 30:
         return 'trend'
+    elif adx < 15:
+        return 'notrade'
     return 'consolidation'
 
 def trend_or_consolidation_bb(df):
@@ -493,14 +495,17 @@ def trend_or_consolidation_bb(df):
         return
     if BB_KEY not in df.columns:
         return
+    
     up_band = df.iloc[-1][BB_KEY][1]
     bot_band = df.iloc[-1][BB_KEY][2]
     pre_up_band = df.iloc[-2][BB_KEY][1]
     pre_bot_band = df.iloc[-2][BB_KEY][2]
     band = up_band - bot_band
     pre_band = pre_up_band - pre_bot_band
+
     #print(f'band: {round(band, 2)}, pre_band: {round(pre_band, 2)}')
-    if band > 60 and band > pre_band*0.8:
+
+    if band > 60 and band > pre_band*0.9:
         return 'trend'
     elif band < 40:
         return 'notrade'
@@ -628,6 +633,8 @@ def trend_strategy(df):
         return
     if KD_KEY not in df.columns:
         return
+    if RSI_KEY not in df.columns:
+        return
 
     signal = 0
 
@@ -635,13 +642,15 @@ def trend_strategy(df):
     if (df.iloc[-1]['close'] >= df.iloc[-2]['high']) and\
          (df.iloc[-1]['close'] > df.iloc[-1][EMA2_KEY]) and\
          (df.iloc[-1]['close'] > df.iloc[-1][VWAP_KEY]) and\
-         (df.iloc[-1][KD_KEY][0] > df.iloc[-1][KD_KEY][1]):
+         (df.iloc[-1][KD_KEY][0] > df.iloc[-1][KD_KEY][1]) and\
+         (df.iloc[-1][RSI_KEY] < 70):
         signal = 1
     # sell
     elif (df.iloc[-1]['close'] <= df.iloc[-2]['low']) and\
          (df.iloc[-1]['close'] < df.iloc[-1][EMA2_KEY]) and\
          (df.iloc[-1]['close'] < df.iloc[-1][VWAP_KEY]) and\
-         (df.iloc[-1][KD_KEY][0] < df.iloc[-1][KD_KEY][1]):
+         (df.iloc[-1][KD_KEY][0] < df.iloc[-1][KD_KEY][1]) and\
+         (df.iloc[-1][RSI_KEY] > 30):
         signal = -1
 
     return signal

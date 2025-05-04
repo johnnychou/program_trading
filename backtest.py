@@ -351,7 +351,8 @@ class Backtest():
             if len(self.df_1m) > 3 and len(self.df_5m) > 3:
         
                 # get trade type
-                trade_type = m.trend_or_consolidation_bb(self.df_1m)
+                # trade_type = m.trend_or_consolidation_bb(self.df_1m)
+                trade_type = m.trend_or_consolidation_adx(self.df_1m)
 
                 # check for close position
                 if self.Buy_at or self.Sell_at:

@@ -12,11 +12,11 @@ class indicator_calculator(object):
             'last_market': '-1',
         }
         self.ADX_state = {
-                'tr_list': [],
-                'dm_plus_list': [],
-                'dm_minus_list': [],
-                'dx_list': [],
-                'adx_series': []
+            'tr_list': [],
+            'dm_plus_list': [],
+            'dm_minus_list': [],
+            'dx_list': [],
+            'adx_series': []
         }
         self.RSI_state = {
             'initialized': False,
@@ -44,7 +44,6 @@ class indicator_calculator(object):
 
     def reset_state_if_needed(self, market):
         self.reset_vwap_if_needed(market)
-        self.reset_adx_if_needed(market)
         self.reset_rsi_if_needed(market)
         return
 
@@ -176,12 +175,6 @@ class indicator_calculator(object):
 
         if needs_full_calculation:
             # --- 完整計算 (Initial Calculation / Recalculation) ---
-            if len(df) < 2:
-                df[key] = np.nan
-                # 重置狀態，因為無法有效初始化
-                self.RSI_state = {'initialized': False, 'avg_gain': None, 'avg_loss': None, 'period': None, 'key': None}
-                return
-
             delta = df['close'].diff()
             up = delta.where(delta > 0, 0)
             down = -delta.where(delta < 0, 0)
@@ -285,7 +278,6 @@ class indicator_calculator(object):
         return
 
     def reset_RSI_state(self):
-        """重置 ADX_state 狀態，適用於市場切換等情境。"""
         self.RSI_state = {
             'initialized': False,
             'avg_gain': None,
@@ -537,11 +529,11 @@ class indicator_calculator(object):
         state = self.ADX_state
         
         # 檢查是否需要全量計算
-        if key not in df.columns or len(df[key].dropna()) < period:
+        if key not in df.columns:
             df[key] = np.nan
-            state['tr_list'] = []
-            state['dm_plus_list'] = []
-            state['dm_minus_list'] = []
+            state['tr14'] = 0
+            state['dm_plus14'] = 0
+            state['dm_minus14'] = 0
             state['dx_list'] = []
             state['adx_series'] = []
             
@@ -552,84 +544,73 @@ class indicator_calculator(object):
                 prev_high = df.loc[i - 1, 'high']
                 prev_low = df.loc[i - 1, 'low']
                 
-                # 計算 TR, DM+, DM-
                 tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
                 dm_plus = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
                 dm_minus = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
                 
-                state['tr_list'].append(tr)
-                state['dm_plus_list'].append(dm_plus)
-                state['dm_minus_list'].append(dm_minus)
+                if i == 1:
+                    state['tr14'] = tr
+                    state['dm_plus14'] = dm_plus
+                    state['dm_minus14'] = dm_minus
+                else:
+                    state['tr14'] = state['tr14'] - (state['tr14'] / period) + tr
+                    state['dm_plus14'] = state['dm_plus14'] - (state['dm_plus14'] / period) + dm_plus
+                    state['dm_minus14'] = state['dm_minus14'] - (state['dm_minus14'] / period) + dm_minus
                 
                 if i >= period:
-                    # 計算 TR14, +DI14, -DI14
-                    tr14 = sum(state['tr_list'][-period:])
-                    plus_di14 = 100 * sum(state['dm_plus_list'][-period:]) / tr14 if tr14 != 0 else 0
-                    minus_di14 = 100 * sum(state['dm_minus_list'][-period:]) / tr14 if tr14 != 0 else 0
+                    plus_di14 = 100 * state['dm_plus14'] / state['tr14'] if state['tr14'] != 0 else 0
+                    minus_di14 = 100 * state['dm_minus14'] / state['tr14'] if state['tr14'] != 0 else 0
                     dx = 100 * abs(plus_di14 - minus_di14) / (plus_di14 + minus_di14) if (plus_di14 + minus_di14) != 0 else 0
                     state['dx_list'].append(dx)
                     
-                    if i == period:
-                        # 初始 ADX 使用前 period 個 DX 的平均值
-                        adx = sum(state['dx_list']) / len(state['dx_list'])
-                        state['adx_series'].append(adx)
-                        df.loc[i, key] = round(adx, 1)
-                    else:
-                        # 平滑計算 ADX
-                        prev_adx = state['adx_series'][-1]
-                        adx = (prev_adx * (period - 1) + dx) / period
-                        state['adx_series'].append(adx)
-                        df.loc[i, key] = round(adx, 1)
-                    
-                    # 保持列表長度不超過 period
-                    if len(state['tr_list']) > period:
-                        state['tr_list'].pop(0)
-                        state['dm_plus_list'].pop(0)
-                        state['dm_minus_list'].pop(0)
+                    if len(state['dx_list']) > period:
                         state['dx_list'].pop(0)
+                    
+                    if len(state['dx_list']) == period and i >= 2 * period - 1:
+                        if i == 2 * period - 1:
+                            adx = sum(state['dx_list']) / period
+                        else:
+                            prev_adx = state['adx_series'][-1]
+                            adx = (prev_adx * (period - 1) + dx) / period
+                        state['adx_series'].append(adx)
+                        df.loc[i, key] = round(adx, 1)
         else:
-            # 增量計算，只處理最新一筆數據
-            i = len(df) - 1
-            high = df.loc[i, 'high']
-            low = df.loc[i, 'low']
-            prev_close = df.loc[i - 1, 'close']
-            prev_high = df.loc[i - 1, 'high']
-            prev_low = df.loc[i - 1, 'low']
-            
-            tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
-            dm_plus = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
-            dm_minus = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
-            
-            # 更新 state 列表
-            state['tr_list'].append(tr)
-            state['dm_plus_list'].append(dm_plus)
-            state['dm_minus_list'].append(dm_minus)
-            
-            # 保持列表長度為 period
-            if len(state['tr_list']) > period:
-                state['tr_list'].pop(0)
-                state['dm_plus_list'].pop(0)
-                state['dm_minus_list'].pop(0)
-            
-            # 計算 TR14, +DI14, -DI14
-            tr14 = sum(state['tr_list'])
-            plus_di14 = 100 * sum(state['dm_plus_list']) / tr14 if tr14 != 0 else 0
-            minus_di14 = 100 * sum(state['dm_minus_list']) / tr14 if tr14 != 0 else 0
-            dx = 100 * abs(plus_di14 - minus_di14) / (plus_di14 + minus_di14) if (plus_di14 + minus_di14) != 0 else 0
-            state['dx_list'].append(dx)
-            
-            # 平滑計算 ADX
-            if len(state['adx_series']) == 0:
-                prev_adx = df.loc[i - 1, key]
-            else:
-                prev_adx = state['adx_series'][-1]
-            adx = (prev_adx * (period - 1) + dx) / period
-            state['adx_series'].append(adx)
-            df.loc[i, key] = round(adx, 1)
-            
-            # 保持 dx_list 長度不超過 period
-            if len(state['dx_list']) > period:
-                state['dx_list'].pop(0)
+            # 增量更新
+            if len(df) >= 2 * period:
+                i = len(df) - 1
+                high = df.loc[i, 'high']
+                low = df.loc[i, 'low']
+                prev_close = df.loc[i - 1, 'close']
+                prev_high = df.loc[i - 1, 'high']
+                prev_low = df.loc[i - 1, 'low']
+                
+                tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
+                dm_plus = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
+                dm_minus = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
+                
+                state['tr14'] = state['tr14'] - (state['tr14'] / period) + tr
+                state['dm_plus14'] = state['dm_plus14'] - (state['dm_plus14'] / period) + dm_plus
+                state['dm_minus14'] = state['dm_minus14'] - (state['dm_minus14'] / period) + dm_minus
+                
+                plus_di14 = 100 * state['dm_plus14'] / state['tr14'] if state['tr14'] != 0 else 0
+                minus_di14 = 100 * state['dm_minus14'] / state['tr14'] if state['tr14'] != 0 else 0
+                dx = 100 * abs(plus_di14 - minus_di14) / (plus_di14 + minus_di14) if (plus_di14 + minus_di14) != 0 else 0
+                state['dx_list'].append(dx)
+                
+                if len(state['dx_list']) > period:
+                    state['dx_list'].pop(0)
+                
+                if len(state['dx_list']) == period:
+                    if len(state['adx_series']) == 0:
+                        adx = sum(state['dx_list']) / period
+                    else:
+                        prev_adx = state['adx_series'][-1]
+                        if np.isnan(prev_adx):
+                            adx = sum(state['dx_list']) / period
+                        else:
+                            adx = (prev_adx * (period - 1) + dx) / period
+                    state['adx_series'].append(adx)
+                    df.loc[i, key] = round(adx, 1)
         
         return
 
@@ -654,10 +635,10 @@ class indicator_calculator(object):
     def ADX_state_reset(self):
         """重置 ADX_state 狀態，適用於市場切換等情境。"""
         self.ADX_state = {
-                'tr_list': [],
-                'dm_plus_list': [],
-                'dm_minus_list': [],
-                'dx_list': [],
-                'adx_series': []
+            'tr_list': [],
+            'dm_plus_list': [],
+            'dm_minus_list': [],
+            'dx_list': [],
+            'adx_series': []
         }
         return

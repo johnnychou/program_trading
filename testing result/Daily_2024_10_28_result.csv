@@ -1,8 +1,14 @@
-Income,-4100
-Total_profit,-3800
-Trade_times,2,300
-Buy_profit,0,[]
-Sell_profit,-3800,[-3800]
+Income,31300
+Total_profit,33400
+Trade_times,14,2100
+Buy_profit,8400,"[11200, -2800]"
+Sell_profit,25000,"[-2000, 7200, 9800, 8800, 1200]"
 
 type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
-Sell,23611,23630,-3800,2024-10-25 21:37:01,2024-10-25 21:43:22,consolidation,consolidation
+Buy,23612,23668,11200,2024-10-25 21:40:00,2024-10-25 22:05:20,trend,trend
+Buy,23590,23576,-2800,2024-10-26 01:32:01,2024-10-26 01:34:27,consolidation,notrade
+Sell,23571,23581,-2000,2024-10-26 02:31:04,2024-10-26 02:48:38,consolidation,notrade
+Sell,23563,23527,7200,2024-10-28 09:15:00,2024-10-28 09:34:01,trend,consolidation
+Sell,23495,23446,9800,2024-10-28 09:40:00,2024-10-28 09:54:35,trend,trend
+Sell,23310,23266,8800,2024-10-28 11:45:00,2024-10-28 12:08:28,trend,trend
+Sell,23333,23327,1200,2024-10-28 13:31:00,2024-10-28 13:44:00,trend,End

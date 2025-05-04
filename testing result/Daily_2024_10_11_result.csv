@@ -1,9 +1,19 @@
-Income,1000
-Total_profit,1600
-Trade_times,4,600
-Buy_profit,0,[]
-Sell_profit,1600,"[-1800, 3400]"
+Income,4600
+Total_profit,8200
+Trade_times,24,3600
+Buy_profit,20600,"[4600, -3000, -2800, -3200, 3600, 21000, 3000, -2600]"
+Sell_profit,-12400,"[-4600, -2200, -1600, -4000]"
 
 type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
-Sell,22749,22758,-1800,2024-10-10 01:14:12,2024-10-10 01:16:10,consolidation,consolidation
-Sell,22810,22793,3400,2024-10-10 03:07:07,2024-10-10 03:07:35,consolidation,consolidation
+Sell,22628,22651,-4600,2024-10-09 22:09:00,2024-10-09 22:10:16,consolidation,consolidation
+Buy,22653,22676,4600,2024-10-09 22:15:00,2024-10-09 22:20:30,trend,consolidation
+Buy,22670,22655,-3000,2024-10-09 22:21:00,2024-10-09 22:37:46,trend,notrade
+Sell,22772,22783,-2200,2024-10-09 23:50:02,2024-10-09 23:59:45,consolidation,consolidation
+Buy,22753,22739,-2800,2024-10-10 00:08:01,2024-10-10 00:14:13,consolidation,consolidation
+Buy,22739,22723,-3200,2024-10-10 00:17:00,2024-10-10 00:18:19,consolidation,consolidation
+Buy,22733,22751,3600,2024-10-10 00:22:00,2024-10-10 00:28:17,consolidation,consolidation
+Sell,22747,22755,-1600,2024-10-10 01:19:00,2024-10-10 01:31:17,consolidation,notrade
+Buy,22870,22975,21000,2024-10-11 09:10:00,2024-10-11 09:42:39,trend,trend
+Sell,23001,23021,-4000,2024-10-11 10:26:01,2024-10-11 10:34:31,consolidation,consolidation
+Buy,22984,22999,3000,2024-10-11 11:19:00,2024-10-11 11:47:18,consolidation,notrade
+Buy,22973,22960,-2600,2024-10-11 12:10:00,2024-10-11 12:22:08,consolidation,notrade
