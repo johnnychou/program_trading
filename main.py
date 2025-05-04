@@ -435,7 +435,7 @@ def atr_trailing_stop(realtime_candle, df):
 
     if Buy_at:
         Max_profit_pt = max(lastprice, Buy_at[0], Max_profit_pt)
-        stop_price = Max_profit_pt - atr * 1.5
+        stop_price = Max_profit_pt - min(atr*1.5, MAX_LOSS_PT)
         print(f'Max Profit at: {Max_profit_pt}, {(Max_profit_pt-Buy_at[0])*PT_price}')
         print(f'ATR trailing will stop at: {stop_price}')
         if lastprice <= stop_price:
@@ -448,7 +448,7 @@ def atr_trailing_stop(realtime_candle, df):
             Max_profit_pt = min(lastprice, Sell_at[0])
         else:
             Max_profit_pt = min(lastprice, Sell_at[0], Max_profit_pt)
-        stop_price = Max_profit_pt + atr * 1.5
+        stop_price = Max_profit_pt + min(atr*1.5, MAX_LOSS_PT)
         print(f'Max Profit at: {Max_profit_pt}, {(Sell_at[0]-Max_profit_pt)*PT_price}')
         print(f'ATR trailing will stop at: {stop_price}')
         if lastprice >= stop_price:
@@ -500,9 +500,9 @@ def trend_or_consolidation_bb(df):
     band = up_band - bot_band
     pre_band = pre_up_band - pre_bot_band
     #print(f'band: {round(band, 2)}, pre_band: {round(pre_band, 2)}')
-    if band > 40 and band > pre_band*0.8:
+    if band > 60 and band > pre_band*0.8:
         return 'trend'
-    elif band < 20:
+    elif band < 40:
         return 'notrade'
     return 'consolidation'
 
@@ -521,7 +521,7 @@ def kd_signal(df):
         return
 
     k = df.iloc[-1][KD_KEY][0]
-    d = df.iloc[-1][KD_KEY][1]   
+    d = df.iloc[-1][KD_KEY][1]
     pre_k = df.iloc[-2][KD_KEY][0]
     pre_d = df.iloc[-2][KD_KEY][1]
 
@@ -606,14 +606,17 @@ def consolidation_strategy_bb(df):
 
     pre_high = df.iloc[-2]['high']
     pre_low = df.iloc[-2]['low']
+    pre_close = df.iloc[-2]['close']
     close = df.iloc[-1]['close']
 
     # buy
-    if pre_low < pre_bot_band and close > bot_band and close >= pre_high:
-        return 1
+    if pre_low < pre_bot_band and pre_close >= pre_bot_band:
+        if close > bot_band and close >= pre_high:
+            return 1
     # sell
-    elif pre_high > pre_up_band and close < up_band and close <= pre_low:
-        return -1
+    elif pre_high > pre_up_band and pre_close <= pre_up_band:
+        if close < up_band and close <= pre_low:
+            return -1
     return 0
 
 def trend_strategy(df):
@@ -623,20 +626,22 @@ def trend_strategy(df):
         return
     if VWAP_KEY not in df.columns:
         return
-    if RSI_KEY not in df.columns:
+    if KD_KEY not in df.columns:
         return
-    
+
     signal = 0
 
-    if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
+    # buy
+    if (df.iloc[-1]['close'] >= df.iloc[-2]['high']) and\
          (df.iloc[-1]['close'] > df.iloc[-1][EMA2_KEY]) and\
          (df.iloc[-1]['close'] > df.iloc[-1][VWAP_KEY]) and\
-         (df.iloc[-1][RSI_KEY] < 70):
+         (df.iloc[-1][KD_KEY][0] > df.iloc[-1][KD_KEY][1]):
         signal = 1
-    elif (df.iloc[-1]['close'] < df.iloc[-2]['low']) and\
+    # sell
+    elif (df.iloc[-1]['close'] <= df.iloc[-2]['low']) and\
          (df.iloc[-1]['close'] < df.iloc[-1][EMA2_KEY]) and\
          (df.iloc[-1]['close'] < df.iloc[-1][VWAP_KEY]) and\
-         (df.iloc[-1][RSI_KEY] > 30):
+         (df.iloc[-1][KD_KEY][0] < df.iloc[-1][KD_KEY][1]):
         signal = -1
 
     return signal
@@ -775,8 +780,8 @@ if __name__ == '__main__':
                     else:
                         if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
                             close_position(sig)
-                        elif sig:= bband_stop(df_fubon_1m):
-                            close_position(sig)
+                        # elif sig:= bband_stop(df_fubon_1m):
+                        #     close_position(sig)
 
                 # check for open position
                 if not Buy_at and not Sell_at and Last_executed_minute == now.minute:

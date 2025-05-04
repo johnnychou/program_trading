@@ -1,11 +1,19 @@
-Income,-5000
-Total_profit,-3800
-Trade_times,8,1200
-Buy_profit,0,[]
-Sell_profit,-3800,"[4600, -2400, -3000, -3000]"
+Income,4600
+Total_profit,8200
+Trade_times,24,3600
+Buy_profit,5800,"[3600, 7000, 3600, -2600, -3000, -2800]"
+Sell_profit,2400,"[-2600, 3800, 3800, 4600, -2800, -4400]"
 
 type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
-Sell,23480,23457,4600,2025-02-07 21:42:00,2025-02-07 21:52:05,consolidation,consolidation
-Sell,23494,23506,-2400,2025-02-07 22:00:00,2025-02-07 22:09:38,consolidation,consolidation
-Sell,23217,23232,-3000,2025-02-10 13:06:00,2025-02-10 13:10:28,consolidation,consolidation
-Sell,23238,23253,-3000,2025-02-10 13:12:00,2025-02-10 13:22:42,consolidation,consolidation
+Buy,23472,23490,3600,2025-02-07 21:45:00,2025-02-07 21:58:03,trend,notrade
+Sell,23485,23498,-2600,2025-02-07 22:02:00,2025-02-07 22:08:33,consolidation,consolidation
+Buy,23270,23305,7000,2025-02-08 00:17:00,2025-02-08 00:19:38,consolidation,consolidation
+Sell,23290,23271,3800,2025-02-08 00:22:01,2025-02-08 00:46:21,consolidation,notrade
+Sell,23275,23256,3800,2025-02-08 02:51:05,2025-02-08 03:00:08,trend,consolidation
+Sell,23268,23245,4600,2025-02-10 09:42:00,2025-02-10 10:01:28,trend,notrade
+Buy,23241,23259,3600,2025-02-10 10:30:00,2025-02-10 10:38:53,consolidation,notrade
+Buy,23226,23213,-2600,2025-02-10 10:51:01,2025-02-10 10:58:42,consolidation,consolidation
+Buy,23196,23181,-3000,2025-02-10 11:17:00,2025-02-10 11:19:07,consolidation,consolidation
+Buy,23181,23167,-2800,2025-02-10 11:22:00,2025-02-10 11:39:16,consolidation,notrade
+Sell,23214,23228,-2800,2025-02-10 13:08:00,2025-02-10 13:10:07,consolidation,consolidation
+Sell,23248,23270,-4400,2025-02-10 13:27:00,2025-02-10 13:31:39,consolidation,notrade

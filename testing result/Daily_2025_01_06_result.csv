@@ -1,16 +1,19 @@
-Income,-300
-Total_profit,2400
-Trade_times,18,2700
-Buy_profit,4800,[4800]
-Sell_profit,-2400,"[4000, -1800, -1400, -1400, -2800, -2400, -2000, 5400]"
+Income,-9200
+Total_profit,-5600
+Trade_times,24,3600
+Buy_profit,-3200,"[-3600, -2800, 5000, -1800]"
+Sell_profit,-2400,"[6000, -3800, 2200, -4000, 3400, -400, -2600, -3200]"
 
 type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
-Sell,23132,23112,4000,2025-01-03 23:44:00,2025-01-03 23:50:24,consolidation,consolidation
-Sell,23152,23161,-1800,2025-01-04 00:28:08,2025-01-04 00:43:57,consolidation,notrade
-Sell,23185,23192,-1400,2025-01-04 02:28:06,2025-01-04 02:29:35,consolidation,consolidation
-Sell,23238,23245,-1400,2025-01-04 03:29:05,2025-01-04 03:37:55,consolidation,consolidation
-Sell,23449,23463,-2800,2025-01-06 10:15:00,2025-01-06 10:15:28,consolidation,consolidation
-Sell,23550,23562,-2400,2025-01-06 11:23:00,2025-01-06 11:26:38,consolidation,consolidation
-Sell,23573,23583,-2000,2025-01-06 11:30:01,2025-01-06 11:31:26,consolidation,consolidation
-Buy,23572,23596,4800,2025-01-06 13:23:00,2025-01-06 13:30:16,consolidation,consolidation
-Sell,23616,23589,5400,2025-01-06 13:33:00,2025-01-06 13:37:44,consolidation,consolidation
+Sell,23116,23086,6000,2025-01-03 23:08:00,2025-01-03 23:31:02,consolidation,consolidation
+Sell,23102,23121,-3800,2025-01-03 23:38:04,2025-01-03 23:41:33,consolidation,consolidation
+Buy,23132,23114,-3600,2025-01-03 23:44:00,2025-01-03 23:52:04,trend,consolidation
+Sell,23216,23205,2200,2025-01-04 03:14:02,2025-01-04 03:15:48,consolidation,consolidation
+Sell,23354,23374,-4000,2025-01-06 09:33:00,2025-01-06 09:33:12,consolidation,consolidation
+Sell,23500,23483,3400,2025-01-06 10:36:00,2025-01-06 10:42:59,consolidation,notrade
+Sell,23520,23522,-400,2025-01-06 10:59:00,2025-01-06 11:02:00,consolidation,trend
+Sell,23521,23534,-2600,2025-01-06 11:09:01,2025-01-06 11:13:03,consolidation,notrade
+Sell,23572,23588,-3200,2025-01-06 11:33:00,2025-01-06 11:39:01,consolidation,consolidation
+Buy,23615,23601,-2800,2025-01-06 13:02:01,2025-01-06 13:13:00,trend,consolidation
+Buy,23583,23608,5000,2025-01-06 13:29:00,2025-01-06 13:30:30,consolidation,consolidation
+Buy,23607,23598,-1800,2025-01-06 13:35:00,2025-01-06 13:44:00,trend,End

@@ -1,10 +1,8 @@
-Income,-6700
-Total_profit,-5800
-Trade_times,6,900
+Income,-3450
+Total_profit,-3000
+Trade_times,3,450
 Buy_profit,0,[]
-Sell_profit,-5800,"[-2400, -2200, -1200]"
+Sell_profit,-3000,[-3000]
 
 type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
-Sell,23559,23571,-2400,2025-02-18 10:37:01,2025-02-18 10:38:22,consolidation,consolidation
-Sell,23602,23613,-2200,2025-02-18 12:48:00,2025-02-18 13:01:01,consolidation,consolidation
-Sell,23655,23661,-1200,2025-02-18 13:36:00,2025-02-18 13:39:00,consolidation,trend
+Sell,23487,23502,-3000,2025-02-18 09:05:00,2025-02-18 09:13:01,trend,trend

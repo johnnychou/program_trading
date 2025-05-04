@@ -1,12 +1,23 @@
-Income,500
-Total_profit,2000
-Trade_times,10,1500
-Buy_profit,3400,"[6200, -2800]"
-Sell_profit,-1400,"[-2200, -3400, 4200]"
+Income,12200
+Total_profit,17000
+Trade_times,32,4800
+Buy_profit,12400,"[5200, 13000, -2200, 200, 5600, -4600, -5000, -3400, 3600]"
+Sell_profit,4600,"[600, -5800, -3200, 6600, 6000, 4400, -4000]"
 
 type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
-Sell,23572,23583,-2200,2025-02-27 00:05:04,2025-02-27 00:08:23,consolidation,consolidation
-Sell,23398,23415,-3400,2025-02-27 03:40:00,2025-02-27 03:42:49,consolidation,consolidation
-Buy,23381,23412,6200,2025-02-27 09:08:01,2025-02-27 09:12:08,consolidation,consolidation
-Sell,23198,23177,4200,2025-02-27 11:13:00,2025-02-27 11:30:51,consolidation,notrade
-Buy,23162,23148,-2800,2025-02-27 12:46:00,2025-02-27 12:50:59,consolidation,consolidation
+Sell,23426,23423,600,2025-02-26 21:53:00,2025-02-26 22:05:40,trend,trend
+Buy,23387,23413,5200,2025-02-26 22:28:00,2025-02-26 22:31:16,consolidation,consolidation
+Sell,23389,23418,-5800,2025-02-26 22:34:01,2025-02-26 22:37:37,consolidation,consolidation
+Buy,23418,23483,13000,2025-02-26 22:37:37,2025-02-26 23:07:00,consolidation,consolidation
+Buy,23525,23514,-2200,2025-02-27 01:44:00,2025-02-27 01:50:14,consolidation,consolidation
+Sell,23400,23416,-3200,2025-02-27 03:45:04,2025-02-27 03:47:00,consolidation,consolidation
+Buy,23419,23420,200,2025-02-27 08:55:00,2025-02-27 08:55:00,trend,trend
+Buy,23393,23421,5600,2025-02-27 09:10:00,2025-02-27 09:16:19,consolidation,consolidation
+Sell,23403,23370,6600,2025-02-27 09:19:00,2025-02-27 09:22:41,consolidation,consolidation
+Buy,23383,23360,-4600,2025-02-27 09:24:00,2025-02-27 09:37:32,consolidation,consolidation
+Sell,23388,23358,6000,2025-02-27 09:44:00,2025-02-27 09:44:52,consolidation,consolidation
+Sell,23346,23324,4400,2025-02-27 09:50:00,2025-02-27 10:03:23,trend,consolidation
+Buy,23185,23160,-5000,2025-02-27 10:49:00,2025-02-27 10:52:41,consolidation,consolidation
+Sell,23173,23193,-4000,2025-02-27 11:05:00,2025-02-27 11:11:22,consolidation,consolidation
+Buy,23161,23144,-3400,2025-02-27 12:50:00,2025-02-27 12:56:42,consolidation,consolidation
+Buy,23159,23177,3600,2025-02-27 12:59:00,2025-02-27 13:22:41,consolidation,notrade

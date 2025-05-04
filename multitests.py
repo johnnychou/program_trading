@@ -12,7 +12,7 @@ CSV_INPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\twse_data\filtered'
 CSV_OUTPUT_PATH = r'C:\Users\ChengWei\Desktop\program trading\testing result'
 TRADE_FEE = 150
 TRADING_MARKET = 'main'
-MAX_CONCURRENT = multiprocessing.cpu_count()-3  # 最多同時跑幾個 process
+MAX_CONCURRENT = multiprocessing.cpu_count()-2  # 最多同時跑幾個 process
 # MAX_CONCURRENT = 1
 
 class TestProcess(multiprocessing.Process):

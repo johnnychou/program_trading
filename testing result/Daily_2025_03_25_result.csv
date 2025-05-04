@@ -1,11 +1,21 @@
-Income,800
-Total_profit,2000
-Trade_times,8,1200
-Buy_profit,3200,[3200]
-Sell_profit,-1200,"[-1600, 2800, -2400]"
+Income,-24600
+Total_profit,-20400
+Trade_times,28,4200
+Buy_profit,-12600,"[-2400, -2000, 2000, -5000, -3000, -2200]"
+Sell_profit,-7800,"[-2800, 6000, -3400, -2200, -3800, 3400, -3000, -2000]"
 
 type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
-Sell,22351,22359,-1600,2025-03-25 00:05:05,2025-03-25 00:06:55,consolidation,consolidation
-Sell,22350,22336,2800,2025-03-25 02:45:03,2025-03-25 02:46:04,consolidation,consolidation
-Buy,22228,22244,3200,2025-03-25 12:19:00,2025-03-25 12:28:20,consolidation,consolidation
-Sell,22264,22276,-2400,2025-03-25 12:34:03,2025-03-25 12:37:24,consolidation,consolidation
+Sell,22269,22283,-2800,2025-03-24 22:00:00,2025-03-24 22:15:12,consolidation,consolidation
+Buy,22367,22355,-2400,2025-03-25 00:08:01,2025-03-25 00:14:09,trend,consolidation
+Buy,22337,22327,-2000,2025-03-25 00:29:02,2025-03-25 00:32:00,consolidation,trend
+Buy,22325,22335,2000,2025-03-25 01:45:01,2025-03-25 01:49:21,consolidation,consolidation
+Buy,22374,22349,-5000,2025-03-25 09:25:00,2025-03-25 09:35:34,trend,consolidation
+Sell,22320,22290,6000,2025-03-25 10:00:00,2025-03-25 10:18:23,trend,consolidation
+Buy,22284,22269,-3000,2025-03-25 10:24:01,2025-03-25 10:43:28,consolidation,consolidation
+Sell,22239,22256,-3400,2025-03-25 11:22:00,2025-03-25 11:30:00,trend,consolidation
+Sell,22270,22281,-2200,2025-03-25 11:42:03,2025-03-25 11:44:41,consolidation,consolidation
+Buy,22270,22259,-2200,2025-03-25 11:59:01,2025-03-25 12:01:03,consolidation,consolidation
+Sell,22234,22253,-3800,2025-03-25 12:17:02,2025-03-25 12:28:30,trend,trend
+Sell,22305,22288,3400,2025-03-25 13:11:00,2025-03-25 13:20:58,consolidation,notrade
+Sell,22283,22298,-3000,2025-03-25 13:21:00,2025-03-25 13:24:37,consolidation,consolidation
+Sell,22289,22299,-2000,2025-03-25 13:31:00,2025-03-25 13:43:33,consolidation,notrade

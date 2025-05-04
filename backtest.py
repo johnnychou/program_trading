@@ -243,7 +243,7 @@ class Backtest():
 
         if self.Buy_at:
             self.Max_profit_pt = max(lastprice, self.Buy_at[0], self.Max_profit_pt)
-            stop_price = self.Max_profit_pt - atr * 1.5
+            stop_price = self.Max_profit_pt - min(atr*1.5, MAX_LOSS_PT)
             if lastprice <= stop_price:
                 self.Max_profit_pt = 0
                 return -1
@@ -253,7 +253,7 @@ class Backtest():
                 self.Max_profit_pt = min(lastprice, self.Sell_at[0])
             else:
                 self.Max_profit_pt = min(lastprice, self.Sell_at[0], self.Max_profit_pt)
-            stop_price = self.Max_profit_pt + atr * 1.5
+            stop_price = self.Max_profit_pt + min(atr*1.5, MAX_LOSS_PT)
             if lastprice >= stop_price:
                 self.Max_profit_pt = 0
                 return 1
@@ -361,8 +361,8 @@ class Backtest():
                     else:
                         if sig:= self.atr_fixed_stop(data, self.df_1m):
                             self.fake_close_position(sig, self.Last_price, now, trade_type)
-                        elif sig:= self.bband_stop(self.df_1m):
-                            self.fake_close_position(sig, self.Last_price, now, trade_type)
+                        # elif sig:= self.bband_stop(self.df_1m):
+                        #     self.fake_close_position(sig, self.Last_price, now, trade_type)
         
                 # check for open position
                 if not self.Buy_at and not self.Sell_at:
