@@ -500,9 +500,9 @@ def trend_or_consolidation_bb(df):
     band = up_band - bot_band
     pre_band = pre_up_band - pre_bot_band
     #print(f'band: {round(band, 2)}, pre_band: {round(pre_band, 2)}')
-    if band > 70:
+    if band > 40 and band > pre_band*0.8:
         return 'trend'
-    elif band < 30:
+    elif band < 20:
         return 'notrade'
     return 'consolidation'
 
@@ -606,16 +606,13 @@ def consolidation_strategy_bb(df):
 
     pre_high = df.iloc[-2]['high']
     pre_low = df.iloc[-2]['low']
-    pre_close = df.iloc[-2]['close']
     close = df.iloc[-1]['close']
 
-    rsv = df.iloc[-1][KD_KEY][2]
-
     # buy
-    if pre_low < pre_bot_band and close > bot_band and rsv < 15:
+    if pre_low < pre_bot_band and close > bot_band and close >= pre_high:
         return 1
     # sell
-    elif pre_high > pre_up_band and close < up_band and rsv > 85:
+    elif pre_high > pre_up_band and close < up_band and close <= pre_low:
         return -1
     return 0
 
@@ -634,12 +631,12 @@ def trend_strategy(df):
     if (df.iloc[-1]['close'] > df.iloc[-2]['high']) and\
          (df.iloc[-1]['close'] > df.iloc[-1][EMA2_KEY]) and\
          (df.iloc[-1]['close'] > df.iloc[-1][VWAP_KEY]) and\
-         (df.iloc[-1][RSI_KEY] < 60):
+         (df.iloc[-1][RSI_KEY] < 70):
         signal = 1
     elif (df.iloc[-1]['close'] < df.iloc[-2]['low']) and\
          (df.iloc[-1]['close'] < df.iloc[-1][EMA2_KEY]) and\
          (df.iloc[-1]['close'] < df.iloc[-1][VWAP_KEY]) and\
-         (df.iloc[-1][RSI_KEY] > 40):
+         (df.iloc[-1][RSI_KEY] > 30):
         signal = -1
 
     return signal
@@ -766,35 +763,35 @@ if __name__ == '__main__':
                 print('====================================================================')
                 
                 # get trade type
-                # trade_type = trend_or_consolidation_bb(df_fubon_1m)
+                trade_type = trend_or_consolidation_bb(df_fubon_1m)
 
-                # print(f'Market type: {trade_type}')
+                print(f'Market type: {trade_type}')
 
                 # check for close position
                 if Buy_at or Sell_at:
-                    # if trade_type == 'trend':
-                    if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
-                        close_position(sig)
-                    # else:
-                    #     if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
-                    #         close_position(sig)
-                    #     elif sig:= bband_stop(df_fubon_1m):
-                    #         close_position(sig)
+                    if trade_type == 'trend':
+                        if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
+                            close_position(sig)
+                    else:
+                        if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
+                            close_position(sig)
+                        elif sig:= bband_stop(df_fubon_1m):
+                            close_position(sig)
 
                 # check for open position
                 if not Buy_at and not Sell_at and Last_executed_minute == now.minute:
-                    # if trade_type == 'notrade':
-                    #     pass
-                    # elif trade_type == 'trend':
-                    if df_flag[PERIOD_5M]:
-                        if sig := trend_strategy(df_fubon_5m):
-                            open_position(sig)
-                        df_flag[PERIOD_5M] = 0
-                    # else:
-                    #     if df_flag[PERIOD_1M]:
-                    #         if sig := consolidation_strategy_bb(df_fubon_1m):
-                    #             open_position(sig)
-                    #         df_flag[PERIOD_1M] = 0
+                    if trade_type == 'notrade':
+                        pass
+                    elif trade_type == 'trend':
+                        if df_flag[PERIOD_5M]:
+                            if sig := trend_strategy(df_fubon_5m):
+                                open_position(sig)
+                            df_flag[PERIOD_5M] = 0
+                    else:
+                        if df_flag[PERIOD_1M]:
+                            if sig := consolidation_strategy_bb(df_fubon_1m):
+                                open_position(sig)
+                            df_flag[PERIOD_1M] = 0
                             
 
             time.sleep(0.01)
