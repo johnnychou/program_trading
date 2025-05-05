@@ -348,22 +348,22 @@ class Backtest():
                 }
                 continue
             
-            if len(self.df_1m) > 3 and len(self.df_5m) > 3:
+            if len(self.df_1m) > 1 and len(self.df_5m) > 3:
         
                 # get trade type
-                # trade_type = m.trend_or_consolidation_bb(self.df_1m)
-                trade_type = m.trend_or_consolidation_adx(self.df_1m)
+                # trade_type = m.trend_or_consolidation_adx(self.df_1m)
+                trade_type = m.trend_or_consolidation_bb(self.df_1m)
 
                 # check for close position
                 if self.Buy_at or self.Sell_at:
                     if trade_type == 'trend':
                         if sig:= self.atr_trailing_stop(data, self.df_5m):
-                            self.fake_close_position(sig, self.Last_price, now, trade_type)
+                            self.fake_close_position(sig, self.Last_price, now, 'trail')
                     else:
                         if sig:= self.atr_fixed_stop(data, self.df_1m):
-                            self.fake_close_position(sig, self.Last_price, now, trade_type)
-                        # elif sig:= self.bband_stop(self.df_1m):
-                        #     self.fake_close_position(sig, self.Last_price, now, trade_type)
+                            self.fake_close_position(sig, self.Last_price, now, 'fixed')
+                        elif sig:= self.bband_stop(self.df_1m):
+                            self.fake_close_position(sig, self.Last_price, now, 'bbstop')
         
                 # check for open position
                 if not self.Buy_at and not self.Sell_at:
@@ -373,7 +373,8 @@ class Backtest():
                         if df_flag[PERIOD_5M]:
                             if sig := m.trend_strategy(self.df_5m):
                                 self.fake_open_position(sig, self.Last_price, now, trade_type)
-                            df_flag[PERIOD_5M] = 0
+                            df_flag[PERIOD_5M] = 0                    
+
                     else:
                         if df_flag[PERIOD_1M]:
                             if sig := m.consolidation_strategy_bb(self.df_1m):
