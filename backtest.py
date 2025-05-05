@@ -274,10 +274,10 @@ class Backtest():
         close = df.iloc[-1]['close']
 
         if self.Buy_at:
-            if pre_high >= pre_up_band and close < up_band:
+            if pre_high >= pre_up_band and close < up_band and close <= pre_low:
                 return -1
         if self.Sell_at:
-            if pre_low <= pre_bot_band and close > bot_band:
+            if pre_low <= pre_bot_band and close > bot_band and close >= pre_high:
                 return 1
         return 0
 

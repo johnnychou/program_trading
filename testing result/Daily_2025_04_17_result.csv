@@ -1,13 +1,10 @@
-Income,-2400
-Total_profit,-600
-Trade_times,12,1800
-Buy_profit,-13800,"[-7400, -7200, 4800, -4000]"
-Sell_profit,13200,"[4600, 8600]"
+Income,-3700
+Total_profit,-2800
+Trade_times,6,900
+Buy_profit,-11400,"[-7400, -4000]"
+Sell_profit,8600,[8600]
 
 type,entry,exit,profit,entry_time,exit_time,entry_type,close_type
 Buy,19305,19268,-7400,2025-04-16 21:40:00,2025-04-16 21:45:48,trend,fixed
-Sell,19295,19272,4600,2025-04-17 01:35:01,2025-04-17 01:43:00,trend,bbstop
-Buy,19307,19271,-7200,2025-04-17 09:25:00,2025-04-17 09:26:11,trend,fixed
 Sell,19210,19167,8600,2025-04-17 09:36:00,2025-04-17 09:45:00,trend,fixed
-Buy,19289,19313,4800,2025-04-17 10:33:00,2025-04-17 10:41:01,trend,bbstop
 Buy,19343,19323,-4000,2025-04-17 11:02:00,2025-04-17 11:16:09,trend,fixed
