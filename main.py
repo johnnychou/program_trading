@@ -749,6 +749,9 @@ def double_kd_strategy(df_1m, df_5m, df_15m, now):
         sig = kd_relation(df_1m)
         trend = kd_relation(df_5m)
 
+        if trend == 0:
+            trend = sig
+
         if not Buy_at and not Sell_at:
             if sig == trend:
                 open_position(sig)
@@ -763,6 +766,9 @@ def double_kd_strategy(df_1m, df_5m, df_15m, now):
     else:
         sig = kd_relation(df_5m)
         trend = kd_relation(df_15m)
+
+        if trend == 0:
+            trend = sig
 
         if not Buy_at and not Sell_at:
             if sig == trend:
