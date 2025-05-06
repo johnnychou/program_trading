@@ -430,8 +430,9 @@ def atr_trailing_stop(realtime_candle, df):
     last_valid_idx = df[ATR_KEY].last_valid_index()
     if not last_valid_idx:
         return 0
-    else:
-        atr = df.loc[last_valid_idx, ATR_KEY]
+
+    atr = df.loc[last_valid_idx, ATR_KEY]
+    # atr = max(atr, MIN_ATR)
 
     if Buy_at:
         Max_profit_pt = max(lastprice, Buy_at[0], Max_profit_pt)
@@ -520,9 +521,26 @@ def kd_relation(df):
         return 0
     k = df.iloc[-1][KD_KEY][0]
     d = df.iloc[-1][KD_KEY][1]
+
+    diff = np.abs(k - d)
+
     if k > d:
         return 1
     elif k < d:
+        return -1
+    return 0
+
+def kd_relation_strict(df):
+    if len(df) < 1:
+        return 0
+    k = df.iloc[-1][KD_KEY][0]
+    d = df.iloc[-1][KD_KEY][1]
+
+    diff = np.abs(k - d)
+
+    if k > d and diff > 2:
+        return 1
+    elif k < d and diff > 2:
         return -1
     return 0
 
@@ -746,8 +764,8 @@ def double_kd_strategy(df_1m, df_5m, df_15m, now):
     if is_market_time(DAY_HIGH_TIME, now) or\
          is_market_time(NIGHT_HIGH_TIME, now):
         
-        sig = kd_relation(df_1m)
-        trend = kd_relation(df_5m)
+        sig = kd_relation_strict(df_1m)
+        trend = kd_relation_strict(df_5m)
 
         if trend == 0:
             trend = sig
@@ -761,7 +779,7 @@ def double_kd_strategy(df_1m, df_5m, df_15m, now):
             elif Sell_at and sig == 1:
                 close_position(1)
 
-        print(f'High time, sig: {sig}, trend: {trend}')
+        print(f'sig: {sig}, trend: {trend}')
 
     else:
         sig = kd_relation(df_5m)
@@ -882,22 +900,33 @@ if __name__ == '__main__':
             # dfs = df_twse.tail(5)
             # print(dfs)
             # print('====================================================================')
-            dfs_1 = df_fubon_1m.tail(3)
+            dfs_1 = df_fubon_1m.tail(5)
             if KD_KEY in dfs_1.columns:
-                print(dfs_1[KD_KEY])
-                print(f'trend: {kd_relation(dfs_1)}')
+                print(dfs_1)
+                print(f'1m trend: {kd_relation(dfs_1)}')
+                print(f'1m adx: {dfs_1.iloc[-1][ADX_KEY]}')
                 print('====================================================================')
             dfs_5 = df_fubon_5m.tail(3)
             if KD_KEY in dfs_5.columns:
-                print(dfs_5[KD_KEY])
-                print(f'trend: {kd_relation(dfs_5)}')
+                print(dfs_5)
+                print(f'5m trend: {kd_relation(dfs_5)}')
+                print(f'5m adx: {dfs_5.iloc[-1][ADX_KEY]}')
                 print('====================================================================')
             dfs_15 = df_fubon_15m.tail(3)
             if KD_KEY in dfs_15.columns:
-                print(dfs_15[KD_KEY])
-                print(f'trend: {kd_relation(dfs_15)}')
+                print(dfs_15)
+                print(f'15m trend: {kd_relation(dfs_15)}')
+                print(f'15m adx: {dfs_15.iloc[-1][ADX_KEY]}')
                 print('====================================================================')
     
+            # check for close positiion
+            if Buy_at or Sell_at:
+                if ATR_KEY in dfs_5.columns:
+                    print(f'5m ATR: {dfs_5.iloc[-1][ATR_KEY]}')
+                if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
+                    close_position(sig)
+
+
             if df_flag[PERIOD_1M] or df_flag[PERIOD_5M]:
                 if Last_executed_minute == now.minute:
                     double_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)

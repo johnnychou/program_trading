@@ -66,6 +66,7 @@ class TWSE(object):
                 self.df = pd.concat([self.df, new_row], ignore_index=True)
                 if len(self.df) > MAX_CANDLE_AMOUNT[self.key]:
                     self.df = self.df.iloc[-MAX_CANDLE_AMOUNT[self.key]:]
+                    self.df = self.df.reset_index(drop=True)
                 self.indicators.indicators_calculation_all(self.df)
                 self.data_queue.put((self.key, self.df))
 
