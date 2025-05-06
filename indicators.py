@@ -20,10 +20,8 @@ class indicator_calculator(object):
         }
         self.RSI_state = {
             'initialized': False,
-            'avg_gain': None,
-            'avg_loss': None,
-            'period': None,
-            'key': None  # 記錄上次計算的 key
+            'avg_gain': 0,
+            'avg_loss': 0,
         }
         return
     
@@ -45,6 +43,7 @@ class indicator_calculator(object):
     def reset_state_if_needed(self, market):
         self.reset_vwap_if_needed(market)
         self.reset_rsi_if_needed(market)
+        self.reset_adx_if_needed(market)
         return
 
     def indicator_ma(self, df, period):
@@ -167,10 +166,8 @@ class indicator_calculator(object):
 
         # --- 判斷是否需要完整重算 ---
         needs_full_calculation = (
-            key not in df.columns or          # 1. RSI 列不存在
-            not self.RSI_state.get('initialized') or # 2. 狀態未初始化
-            self.RSI_state.get('period') != period or # 3. 計算週期改變
-            self.RSI_state.get('key') != key         # 4. 請求的 key 改變
+            key not in df.columns or          # RSI 列不存在
+            not self.RSI_state.get('initialized') # 狀態未初始化
         )
 
         if needs_full_calculation:
@@ -195,9 +192,6 @@ class indicator_calculator(object):
             # 將計算結果賦值給 DataFrame 列，保留初期的 NaN
             df[key] = np.round(rsi, 1)
 
-            # --- 更新狀態 ---
-            self.RSI_state['period'] = period
-            self.RSI_state['key'] = key
             # 只有當最後的 avg_gain/loss 有效時才認為初始化成功
             last_avg_gain = avg_gain_full.iloc[-1] if not avg_gain_full.empty else None
             last_avg_loss = avg_loss_full.iloc[-1] if not avg_loss_full.empty else None
@@ -280,10 +274,8 @@ class indicator_calculator(object):
     def reset_RSI_state(self):
         self.RSI_state = {
             'initialized': False,
-            'avg_gain': None,
-            'avg_loss': None,
-            'period': None, 
-            'key': None
+            'avg_gain': 0,
+            'avg_loss': 0,
         }
         return
 

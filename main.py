@@ -178,7 +178,7 @@ def show_realtime(realtime_candle):
     print('====================================================================')
     return
 
-def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m):
+def show_candles(realtime_candle, df_twse, df_fubon_1m, df_fubon_5m, df_fubon_15m):
     global Last_price
     if 'lastprice' in realtime_candle:
         Last_price = realtime_candle['lastprice']
@@ -186,7 +186,7 @@ def show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubo
     print('==================================')
     print(realtime_candle)
     print('===30s============================')
-    print(f"{df_twse_30s.tail(5)}")
+    print(f"{df_twse.tail(5)}")
     print('===1m=============================')
     print(f"{df_fubon_1m.tail(5)}")
     print('===5m=============================')
@@ -662,6 +662,120 @@ def trend_strategy(df):
 
     return signal
 
+def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
+    if len(df_fubon_1m) < 2 or len(df_fubon_5m) < 2:
+        return
+    # show some key data
+    # for index, row_series in dfs_1.iterrows():
+    #     print(f'BB: {row_series[BB_KEY]}, KD: {row_series[KD_KEY]}')
+    # atr = dfs_1.iloc[-1][ATR_KEY]
+    # adx = dfs_1.iloc[-1][ADX_KEY]
+    # print(f'1_min: ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
+    # print('====================================================================')
+    # # show some key data
+    # for index, row_series in dfs_5.iterrows():
+    #     print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}')
+    # atr_5 = dfs_5.iloc[-1][ATR_KEY]
+    # adx_5 = dfs_5.iloc[-1][ADX_KEY]
+    # print(f'5_min: ATR_{ATR_PERIOD}: {atr_5}, ADX_{ADX_PERIOD}: {adx_5}')
+    # print('====================================================================')
+    
+    
+    if is_market_time(DAY_HIGH_TIME, now) or\
+            is_market_time(NIGHT_HIGH_TIME, now):
+        
+        print(f'High trade-rate time.')
+
+        if Buy_at or Sell_at:
+            if sig:= atr_trailing_stop(realtime_candle, df_fubon_1m):
+                close_position(sig)
+            elif df_flag[PERIOD_59S]:
+                sig = kd_signal(df_fubon_1m)
+                if (Buy_at and sig == -1) or\
+                        (Sell_at and sig == 1):
+                    close_position(sig)
+                else:
+                    df_flag[PERIOD_59S] = 0
+
+        if not Buy_at and not Sell_at and Last_executed_minute == now.minute:
+            if df_flag[PERIOD_59S]:
+                sig = kd_relation(df_fubon_1m)
+                if len(df_fubon_5m) >= KD_PERIOD[0]:
+                    trend = kd_relation(df_fubon_5m)
+                else:
+                    trend = sig
+
+                if sig == trend:
+                    open_position(sig)
+                df_flag[PERIOD_59S] = 0
+
+    else:
+        # get trade type
+        trade_type = trend_or_consolidation_bb(df_fubon_1m)
+
+        print(f'Market type: {trade_type}')
+
+        # check for close position
+        if Buy_at or Sell_at:
+            if trade_type == 'trend':
+                if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
+                    close_position(sig)
+            else:
+                if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
+                    close_position(sig)
+                elif sig:= bband_stop(df_fubon_1m):
+                    close_position(sig)
+
+        # check for open position
+        if not Buy_at and not Sell_at and Last_executed_minute == now.minute:
+            if trade_type == 'notrade':
+                pass
+            elif trade_type == 'trend':
+                if df_flag[PERIOD_5M]:
+                    if sig := trend_strategy(df_fubon_5m):
+                        open_position(sig)
+                    df_flag[PERIOD_5M] = 0
+            else:
+                if df_flag[PERIOD_1M]:
+                    if sig := consolidation_strategy_bb(df_fubon_1m):
+                        open_position(sig)
+                    df_flag[PERIOD_1M] = 0
+
+def double_kd_strategy(df_1m, df_5m, df_15m, now):
+
+    if is_market_time(DAY_HIGH_TIME, now) or\
+         is_market_time(NIGHT_HIGH_TIME, now):
+        
+        sig = kd_relation(df_1m)
+        trend = kd_relation(df_5m)
+
+        if not Buy_at and not Sell_at:
+            if sig == trend:
+                open_position(sig)
+        else:
+            if Buy_at and sig == -1:
+                close_position(-1)
+            elif Sell_at and sig == 1:
+                close_position(1)
+
+        print(f'High time, sig: {sig}, trend: {trend}')
+
+    else:
+        sig = kd_relation(df_5m)
+        trend = kd_relation(df_15m)
+
+        if not Buy_at and not Sell_at:
+            if sig == trend:
+                open_position(sig)
+        else:
+            if Buy_at and sig == -1:
+                close_position(-1)
+            elif Sell_at and sig == 1:
+                close_position(1)
+        
+        print(f'Normal, sig: {sig}, trend: {trend}')
+
+
 if __name__ == '__main__':
 
     user_input_settings()
@@ -678,7 +792,7 @@ if __name__ == '__main__':
     create_fubon_process(PERIOD_5M, Userinput_Product, data_queue, processes)
     create_fubon_process(PERIOD_15M, Userinput_Product, data_queue, processes)
 
-    df_twse_30s = pd.DataFrame()
+    df_twse = pd.DataFrame()
     df_fubon_1m = pd.DataFrame()
     df_fubon_5m = pd.DataFrame()
     df_fubon_15m = pd.DataFrame()
@@ -708,7 +822,7 @@ if __name__ == '__main__':
                 # print(f"received period[{period}] data")
                 # print(f"{tmp_df}")
                 if period == PERIOD_59S:
-                    df_twse_30s = tmp_df
+                    df_twse = tmp_df
                     df_flag[period] = 1
                 elif period == PERIOD_1M:
                     df_fubon_1m = tmp_df
@@ -726,7 +840,7 @@ if __name__ == '__main__':
                                       [df_fubon_15m, PERIOD_15M]]):
                     Last_executed_minute = now.minute
                     # print('1,5,15m data is all updated')
-                    # show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+                    # show_candles(realtime_candle, df_twse, df_fubon_1m, df_fubon_5m, df_fubon_15m)
                     # time.sleep(10)
             
             elif now.minute % 5 == 0 and now.minute != Last_executed_minute:
@@ -734,7 +848,7 @@ if __name__ == '__main__':
                                       [df_fubon_5m, PERIOD_5M]]):
                     Last_executed_minute = now.minute
                     # print('1,5m data is all updated')
-                    # show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+                    # show_candles(realtime_candle, df_twse, df_fubon_1m, df_fubon_5m, df_fubon_15m)
                     # time.sleep(10)
 
             if not is_trading_time(Userinput_Market, now):
@@ -756,95 +870,33 @@ if __name__ == '__main__':
             show_user_settings()
             show_account_info()
             show_realtime(realtime_candle)
-            #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
+            #show_candles(realtime_candle, df_twse, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
 
-
+            # dfs = df_twse.tail(5)
+            # print(dfs)
+            # print('====================================================================')
             dfs_1 = df_fubon_1m.tail(3)
-            print(dfs_1)
-            print('====================================================================')
+            if KD_KEY in dfs_1.columns:
+                print(dfs_1[KD_KEY])
+                print(f'trend: {kd_relation(dfs_1)}')
+                print('====================================================================')
             dfs_5 = df_fubon_5m.tail(3)
-            print(dfs_5)
-            print('====================================================================')
-
-            if len(df_fubon_1m) > 2 and len(df_fubon_5m) > 2:
-               
-                # show some key data
-                for index, row_series in dfs_1.iterrows():
-                    print(f'BB: {row_series[BB_KEY]}, KD: {row_series[KD_KEY]}')
-                atr = dfs_1.iloc[-1][ATR_KEY]
-                adx = dfs_1.iloc[-1][ADX_KEY]
-                print(f'1_min: ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
+            if KD_KEY in dfs_5.columns:
+                print(dfs_5[KD_KEY])
+                print(f'trend: {kd_relation(dfs_5)}')
                 print('====================================================================')
-                # show some key data
-                for index, row_series in dfs_5.iterrows():
-                    print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}')
-                atr_5 = dfs_5.iloc[-1][ATR_KEY]
-                adx_5 = dfs_5.iloc[-1][ADX_KEY]
-                print(f'5_min: ATR_{ATR_PERIOD}: {atr_5}, ADX_{ADX_PERIOD}: {adx_5}')
+            dfs_15 = df_fubon_15m.tail(3)
+            if KD_KEY in dfs_15.columns:
+                print(dfs_15[KD_KEY])
+                print(f'trend: {kd_relation(dfs_15)}')
                 print('====================================================================')
-                
-                
-                if is_market_time(DAY_HIGH_TIME, now) or\
-                     is_market_time(NIGHT_HIGH_TIME, now):
-                    
-                    print(f'High trade-rate time.')
-
-                    if Buy_at or Sell_at:
-                        if sig:= atr_trailing_stop(realtime_candle, df_fubon_1m):
-                            close_position(sig)
-                        elif df_flag[PERIOD_59S]:
-                            sig = kd_signal(df_fubon_1m)
-                            if (Buy_at and sig == -1) or\
-                                 (Sell_at and sig == 1):
-                                close_position(sig)
-                            else:
-                                df_flag[PERIOD_59S] = 0
-
-                    if not Buy_at and not Sell_at and Last_executed_minute == now.minute:
-                        if df_flag[PERIOD_59S]:
-                            sig = kd_relation(df_fubon_1m)
-                            if len(df_fubon_5m) >= KD_PERIOD[0]:
-                                trend = kd_relation(df_fubon_5m)
-                            else:
-                                trend = sig
-
-                            if sig == trend:
-                                open_position(sig)
-                            df_flag[PERIOD_59S] = 0
-
-                else:
-                    # get trade type
-                    trade_type = trend_or_consolidation_bb(df_fubon_1m)
-
-                    print(f'Market type: {trade_type}')
-
-                    # check for close position
-                    if Buy_at or Sell_at:
-                        if trade_type == 'trend':
-                            if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
-                                close_position(sig)
-                        else:
-                            if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
-                                close_position(sig)
-                            elif sig:= bband_stop(df_fubon_1m):
-                                close_position(sig)
-
-                    # check for open position
-                    if not Buy_at and not Sell_at and Last_executed_minute == now.minute:
-                        if trade_type == 'notrade':
-                            pass
-                        elif trade_type == 'trend':
-                            if df_flag[PERIOD_5M]:
-                                if sig := trend_strategy(df_fubon_5m):
-                                    open_position(sig)
-                                df_flag[PERIOD_5M] = 0
-                        else:
-                            if df_flag[PERIOD_1M]:
-                                if sig := consolidation_strategy_bb(df_fubon_1m):
-                                    open_position(sig)
-                                df_flag[PERIOD_1M] = 0
-                            
+    
+            if df_flag[PERIOD_1M] or df_flag[PERIOD_5M]:
+                if Last_executed_minute == now.minute:
+                    double_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                    df_flag[PERIOD_1M] = 0
+                    df_flag[PERIOD_5M] = 0
 
             time.sleep(0.01)
             os.system('cls')
