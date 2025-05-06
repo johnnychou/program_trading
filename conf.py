@@ -1,16 +1,18 @@
 PRODUCT = 'MXF'
 PERIOD_30S = '30s'
+PERIOD_59S = '59s'
 PERIOD_1M = '1m'
 PERIOD_5M = '5m'
 PERIOD_15M = '15m'
 PERIOD_30M = '30m'
 
 MAX_CANDLE_AMOUNT = {
-    PERIOD_30S: 2280,  # 2280 / DAY
-    PERIOD_1M:  1140,  # 1140 / DAY
-    PERIOD_5M:   684,  #  228 / Day
-    PERIOD_15M:  380,  #   76 / DAY
-    PERIOD_30M:  190,  #   38 / DAY
+    PERIOD_30S: 100,  # 2280 / DAY
+    PERIOD_59S: 100,
+    PERIOD_1M:  100,  # 1140 / DAY
+    PERIOD_5M:  100,  #  228 / Day
+    PERIOD_15M: 100,  #   76 / DAY
+    PERIOD_30M: 100,  #   38 / DAY
 }
 
 MA_PERIOD = 10

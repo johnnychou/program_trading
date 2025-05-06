@@ -96,14 +96,14 @@ def check_process_alive(processes, data_queue, realtime_candle):
         processes = [proc_info for proc_info in processes if proc_info[0].is_alive()]
 
         for period_key in restart_list:
-            if period_key == PERIOD_30S:
+            if period_key == PERIOD_59S:
                 create_twse_process(period_key, Userinput_Product, data_queue, realtime_candle, processes)
             else:
                 create_fubon_process(period_key, Userinput_Product, data_queue, processes)
             print(f'Process (Period: {period_key}) is restarted.')
 
         winsound.Beep(5000,1000)
-        time.sleep(15)
+        time.sleep(10)
 
     return processes
 
@@ -297,7 +297,7 @@ def close_position(sig):
     Total_profit += profit*PT_price
     Trade_times += 1
     update_account_info(Fubon_account)
-    return
+    return 1
 
 def close_all_position():
     if Buy_at:
@@ -508,11 +508,6 @@ def trend_or_consolidation_bb(df):
     band_2 = up_band_2 - bot_band_2
     band_3 = up_band_3 - bot_band_3
 
-    atr = df.iloc[-1][ATR_KEY]
-
-    if atr < 10:
-        return 'notrade'
-
     if band_1 > 60 and band_1 > band_2 > band_3:
         return 'trend'
     elif band_1 < 30:
@@ -678,7 +673,7 @@ if __name__ == '__main__':
     data_queue = multiprocessing.Queue()                # shared data queue
     realtime_candle = multiprocessing.Manager().dict()  # shared dict
 
-    create_twse_process(PERIOD_30S, Userinput_Product, data_queue, realtime_candle, processes)
+    create_twse_process(PERIOD_59S, Userinput_Product, data_queue, realtime_candle, processes)
     create_fubon_process(PERIOD_1M, Userinput_Product, data_queue, processes)
     create_fubon_process(PERIOD_5M, Userinput_Product, data_queue, processes)
     create_fubon_process(PERIOD_15M, Userinput_Product, data_queue, processes)
@@ -689,7 +684,7 @@ if __name__ == '__main__':
     df_fubon_15m = pd.DataFrame()
 
     df_flag = {
-        PERIOD_30S: 0,
+        PERIOD_59S: 0,
         PERIOD_1M: 0,
         PERIOD_5M: 0,
         PERIOD_15M: 0,
@@ -703,7 +698,6 @@ if __name__ == '__main__':
 
             # 隨時檢查processes
             processes = check_process_alive(processes, data_queue, realtime_candle)
-
             # 每分鐘檢查一次processes
             # if now.minute != last_minute_checked :
             #     processes = check_process_alive(processes, data_queue, realtime_candle)
@@ -713,7 +707,7 @@ if __name__ == '__main__':
                 period, tmp_df = data_queue.get()
                 # print(f"received period[{period}] data")
                 # print(f"{tmp_df}")
-                if period == PERIOD_30S:
+                if period == PERIOD_59S:
                     df_twse_30s = tmp_df
                     df_flag[period] = 1
                 elif period == PERIOD_1M:
@@ -764,10 +758,12 @@ if __name__ == '__main__':
             show_realtime(realtime_candle)
             #show_candles(realtime_candle, df_twse_30s, df_fubon_1m, df_fubon_5m, df_fubon_15m)
 
-            dfs_1 = df_fubon_1m.tail(5)
+
+
+            dfs_1 = df_fubon_1m.tail(3)
             print(dfs_1)
             print('====================================================================')
-            dfs_5 = df_fubon_5m.tail(5)
+            dfs_5 = df_fubon_5m.tail(3)
             print(dfs_5)
             print('====================================================================')
 
@@ -791,21 +787,31 @@ if __name__ == '__main__':
                 
                 if is_market_time(DAY_HIGH_TIME, now) or\
                      is_market_time(NIGHT_HIGH_TIME, now):
+                    
+                    print(f'High trade-rate time.')
 
                     if Buy_at or Sell_at:
                         if sig:= atr_trailing_stop(realtime_candle, df_fubon_1m):
                             close_position(sig)
-                        elif df_flag[PERIOD_1M]:
-                            if sig := kd_signal(df_fubon_1m):
+                        elif df_flag[PERIOD_59S]:
+                            sig = kd_signal(df_fubon_1m)
+                            if (Buy_at and sig == -1) or\
+                                 (Sell_at and sig == 1):
                                 close_position(sig)
-                                open_position(sig)
-                            df_flag[PERIOD_1M] = 0
+                            else:
+                                df_flag[PERIOD_59S] = 0
 
-                    elif not Buy_at and not Sell_at and Last_executed_minute == now.minute:
-                        if df_flag[PERIOD_1M]:
-                            if sig := kd_signal(df_fubon_1m):
+                    if not Buy_at and not Sell_at and Last_executed_minute == now.minute:
+                        if df_flag[PERIOD_59S]:
+                            sig = kd_relation(df_fubon_1m)
+                            if len(df_fubon_5m) >= KD_PERIOD[0]:
+                                trend = kd_relation(df_fubon_5m)
+                            else:
+                                trend = sig
+
+                            if sig == trend:
                                 open_position(sig)
-                            df_flag[PERIOD_1M] = 0
+                            df_flag[PERIOD_59S] = 0
 
                 else:
                     # get trade type
