@@ -541,13 +541,13 @@ def kd_relation_strict(df):
     diff = np.abs(k - d)
 
     if k > d and diff > 2:
-        if Sell_at and k < 20: # 防鈍化平倉
+        if Sell_at and k < 25: # 防鈍化平倉
             return 0
         else:
             return 1
 
     elif k < d and diff > 2:
-        if Buy_at and k > 80:  # 防鈍化平倉
+        if Buy_at and k > 75:  # 防鈍化平倉
             return 0
         else:
             return -1
@@ -932,7 +932,7 @@ if __name__ == '__main__':
             if Buy_at or Sell_at:
                 if ATR_KEY in dfs_1.columns:
                     print(f'1m ATR: {dfs_1.iloc[-1][ATR_KEY]}')
-                if dfs_1.iloc[-1][ADX_KEY] < 25:
+                if ADX_KEY in dfs_1.columns and dfs_1.iloc[-1][ADX_KEY] < 25:
                     if sig:= atr_fixed_stop(realtime_candle, df_fubon_5m):
                         close_position(sig)
                 else:
