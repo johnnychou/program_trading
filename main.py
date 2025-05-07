@@ -379,7 +379,7 @@ def chk_stop_loss(realtime_candle, df):
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
     atr = df.loc[last_valid_idx, ATR_KEY]
-    atr = min(atr, MIN_ATR)
+    atr = min(atr, MIN_ATR) # prevent atr too small
 
     if Buy_at:
         entry_price = Buy_at[0]
@@ -406,7 +406,7 @@ def chk_take_profit(realtime_candle, df):
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
     atr = df.loc[last_valid_idx, ATR_KEY]
-    atr = min(atr, MIN_ATR)
+    atr = min(atr, MIN_ATR) # prevent atr too small
 
     if Buy_at:
         entry_price = Buy_at[0]
@@ -791,36 +791,57 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
 
 def multi_kd_strategy(df_1m, df_5m, df_15m, now):
 
+    adx_1m = df_1m.iloc[-1][ADX_KEY]
+    vwap = df_1m.iloc[-1][VWAP_KEY]
+    last_close = df_1m.iloc[-1]['close']
+    vwap_trend = 0
+
+    if last_close - vwap >= 50:
+        vwap_trend = 1
+    elif vwap - last_close >= 50:
+        vwap_trend = -1
+
     if is_market_time(DAY_MARKET, now) or\
-         is_market_time(NIGHT_HIGH_TIME, now):
+         is_market_time(NIGHT_HIGH_TIME, now) or\
+         adx_1m > 25:
         
-        sig = kd_signal(df_1m)
+        sig = kd_signal(df_1m) # 單看1分鐘
+        if not vwap_trend:
+            vwap_trend = sig
 
         if not Buy_at and not Sell_at:
-            if sig:
+            if sig == vwap_trend:
                 open_position(sig)
         else:
             if Buy_at and sig == -1:
                 close_position(-1)
+                if sig == vwap_trend:
+                    open_position(-1)
             elif Sell_at and sig == 1:
                 close_position(1)
+                if sig == vwap_trend:
+                    open_position(1)
 
-    else:
-        sig = kd_relation_strict(df_1m)
-        trend = kd_relation_strict(df_5m)
-        trend_2 = kd_relation_strict(df_15m)
+    else: # 1, 5分鐘雙重確認
 
-        if trend_2 == 0:
-            trend_2 = trend
+        trend_1 = kd_relation_strict(df_1m)
+        trend_5 = kd_relation_strict(df_5m)
+        #trend_2 = kd_relation_strict(df_15m)
+
+        score = trend_1 + trend_5 + vwap_trend
 
         if not Buy_at and not Sell_at:
-            if sig == trend == trend_2:
-                open_position(sig)
+            if np.abs(score) >= 2:
+                open_position(score)
         else:
-            if Buy_at and trend == -1:
+            if Buy_at and score <= -2:
                 close_position(-1)
-            elif Sell_at and trend == 1:
+                if score == -3:
+                    open_position(-1)
+            elif Sell_at and score >= 2:
                 close_position(1)
+                if score == 3:
+                    open_position(1)
 
 
 if __name__ == '__main__':

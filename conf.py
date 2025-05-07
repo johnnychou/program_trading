@@ -27,8 +27,8 @@ ADX_PERIOD = 14
 
 MAX_LOT_RATE = 1.2
 
-MAX_LOSS_PT = 50
-MIN_ATR = 10
+MAX_LOSS_PT = 50 # prevent stop point too big
+MIN_ATR = 10 # prevent atr too small
 
 DAY_HIGH_TIME = ('08:45:00', '10:00:00')
 NIGHT_HIGH_TIME = ('21:30:00', '22:30:00')
