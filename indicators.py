@@ -9,7 +9,6 @@ class indicator_calculator(object):
         self.VWAP_state = {
             'cumulative_pv': 0.0,
             'cumulative_volume': 0.0,
-            'last_market': '-1',
         }
         self.ADX_state = {
             'tr_list': [],
@@ -436,7 +435,7 @@ class indicator_calculator(object):
 
         required_cols = ['high', 'low', 'close', 'volume']
         if not all(col in df.columns for col in required_cols):
-            print(f"錯誤：DataFrame 缺少必要欄位: {required_cols}")
+            print(f"錯誤: DataFrame 缺少必要欄位: {required_cols}")
             return
 
         df['volume'] = pd.to_numeric(df['volume'], errors='coerce').fillna(0)
@@ -504,7 +503,6 @@ class indicator_calculator(object):
         self.VWAP_state = {
             'cumulative_pv': 0.0,
             'cumulative_volume': 0.0,
-            'last_market': '-1',
         }
         return
 

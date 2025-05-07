@@ -140,8 +140,10 @@ class Fubon_trade(object):
         # 1=buy, -1=sell
         if decision == 1:
             buy_or_sell = BSAction.Buy
-        if decision == -1:
+        elif decision == -1:
             buy_or_sell = BSAction.Sell
+        else:
+            return
 
         market_type = utils.get_market_type()
         if market_type == '-1':

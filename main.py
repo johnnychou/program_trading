@@ -37,6 +37,7 @@ PT_price = 0
 Max_profit_pt = 0
 Highest = 0
 Lowest = 0
+KD_reserved = 0
 
 Last_executed_minute = -1
 
@@ -551,24 +552,44 @@ def kd_relation_strict(df):
             return 0
         else:
             return -1
+        
     return 0
 
 def kd_signal(df):
     if len(df) < KD_PERIOD[0]:
         return 0
+    
+    global KD_reserved
 
     k = df.iloc[-1][KD_KEY][0]
     d = df.iloc[-1][KD_KEY][1]
     pre_k = df.iloc[-2][KD_KEY][0]
     pre_d = df.iloc[-2][KD_KEY][1]
 
+    diff = np.abs(k - d)
+
     # golden cross
     if pre_k <= pre_d and k > d:
+        if diff < 2:
+            KD_reserved = 1
+            return 0
         return 1
     
     # death cross
     if pre_k >= pre_d and k < d:
+        if diff < 2:
+            KD_reserved = -1
+            return 0
         return -1
+    
+    if KD_reserved == 1:
+        if k > d and diff >= 2:
+            KD_reserved = 0
+            return 1
+    elif KD_reserved == -1:
+        if k < d and diff >= 2:
+            KD_reserved = 0
+            return -1
     
     return 0
 
@@ -773,14 +794,10 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
     if is_market_time(DAY_MARKET, now) or\
          is_market_time(NIGHT_HIGH_TIME, now):
         
-        sig = kd_relation_strict(df_1m)
-        trend = kd_relation_strict(df_5m)
-
-        if trend == 0:
-            trend = sig
+        sig = kd_signal(df_1m)
 
         if not Buy_at and not Sell_at:
-            if sig == trend:
+            if sig:
                 open_position(sig)
         else:
             if Buy_at and sig == -1:
@@ -906,7 +923,7 @@ if __name__ == '__main__':
             # dfs = df_twse.tail(5)
             # print(dfs)
             # print('====================================================================')
-            dfs_1 = df_fubon_1m.tail(2)
+            dfs_1 = df_fubon_1m.tail(3)
             if KD_KEY in dfs_1.columns:
                 print(dfs_1)
                 print(f'1m trend: {kd_relation(dfs_1)}')
@@ -939,14 +956,18 @@ if __name__ == '__main__':
                     if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
                         close_position(sig)
 
+            if ADX_KEY in dfs_1.columns and dfs_1.iloc[-1][ADX_KEY] > 20:
 
-            if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
-                multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
-                df_flag[PERIOD_1M] = 0
-                df_flag[PERIOD_5M] = 0
-            elif df_flag[PERIOD_1M]:
-                multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
-                df_flag[PERIOD_1M] = 0
+                if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
+                    multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                    df_flag[PERIOD_1M] = 0
+                    df_flag[PERIOD_5M] = 0
+                elif df_flag[PERIOD_1M]:
+                    multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                    df_flag[PERIOD_1M] = 0
+            
+            else:
+                print('low adx, not trading')
 
             time.sleep(0.01)
             os.system('cls')
