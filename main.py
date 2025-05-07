@@ -378,6 +378,7 @@ def chk_stop_loss(realtime_candle, df):
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
     atr = df.loc[last_valid_idx, ATR_KEY]
+    atr = min(atr, MIN_ATR)
 
     if Buy_at:
         entry_price = Buy_at[0]
@@ -404,6 +405,7 @@ def chk_take_profit(realtime_candle, df):
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
     atr = df.loc[last_valid_idx, ATR_KEY]
+    atr = min(atr, MIN_ATR)
 
     if Buy_at:
         entry_price = Buy_at[0]
@@ -912,37 +914,43 @@ if __name__ == '__main__':
             if KD_KEY in dfs_1.columns:
                 print(dfs_1)
                 print(f'1m trend: {kd_relation(dfs_1)}')
-                print(f'1m adx: {dfs_1.iloc[-1][ADX_KEY]}')
+                print(f'1m atr: {dfs_1.iloc[-1][ATR_KEY]}, adx: {dfs_1.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_1[KD_KEY]}')
                 print('====================================================================')
             dfs_5 = df_fubon_5m.tail(2)
             if KD_KEY in dfs_5.columns:
                 print(dfs_5)
                 print(f'5m trend: {kd_relation(dfs_5)}')
-                print(f'5m adx: {dfs_5.iloc[-1][ADX_KEY]}')
+                print(f'5m atr: {dfs_5.iloc[-1][ATR_KEY]}, adx: {dfs_5.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_5[KD_KEY]}')
                 print('====================================================================')
             dfs_15 = df_fubon_15m.tail(2)
             if KD_KEY in dfs_15.columns:
                 print(dfs_15)
                 print(f'15m trend: {kd_relation(dfs_15)}')
-                print(f'15m adx: {dfs_15.iloc[-1][ADX_KEY]}')
+                print(f'15m atr: {dfs_15.iloc[-1][ATR_KEY]}, adx: {dfs_15.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_15[KD_KEY]}')
                 print('====================================================================')
     
             # check for close positiion
             if Buy_at or Sell_at:
-                if ATR_KEY in dfs_5.columns:
-                    print(f'5m ATR: {dfs_5.iloc[-1][ATR_KEY]}')
-                if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
-                    close_position(sig)
+                if ATR_KEY in dfs_1.columns:
+                    print(f'1m ATR: {dfs_1.iloc[-1][ATR_KEY]}')
+                if dfs_1.iloc[-1][ADX_KEY] < 25:
+                    if sig:= atr_fixed_stop(realtime_candle, df_fubon_5m):
+                        close_position(sig)
+                else:
+                    if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
+                        close_position(sig)
 
 
-            if df_flag[PERIOD_1M] or df_flag[PERIOD_5M]:
-                if Last_executed_minute == now.minute:
-                    multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
-                    df_flag[PERIOD_1M] = 0
-                    df_flag[PERIOD_5M] = 0
+            if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
+                multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                df_flag[PERIOD_1M] = 0
+                df_flag[PERIOD_5M] = 0
+            elif df_flag[PERIOD_1M]:
+                multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                df_flag[PERIOD_1M] = 0
 
             time.sleep(0.01)
             os.system('cls')
