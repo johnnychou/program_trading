@@ -383,13 +383,13 @@ def chk_stop_loss(realtime_candle, df):
 
     if Buy_at:
         entry_price = Buy_at[0]
-        close_price = entry_price - atr * 1.5
+        close_price = entry_price - min(atr*1.5, MAX_LOSS_PT)
         print(f'Position will stop loss at {close_price}')
         if lastprice <= close_price:
             return -1
     elif Sell_at:
         entry_price = Sell_at[0]
-        close_price = entry_price + atr * 1.5
+        close_price = entry_price + min(atr*1.5, MAX_LOSS_PT)
         print(f'Position will stop loss at {close_price}')
         if lastprice >= close_price:
             return 1
@@ -410,13 +410,13 @@ def chk_take_profit(realtime_candle, df):
 
     if Buy_at:
         entry_price = Buy_at[0]
-        close_price = entry_price + atr * 2
+        close_price = entry_price + min(atr*2, MAX_LOSS_PT)
         print(f'Position will take profit at {close_price}')
         if lastprice >= close_price:
             return -1
     elif Sell_at:
         entry_price = Sell_at[0]
-        close_price = entry_price - atr * 2
+        close_price = entry_price - min(atr*2, MAX_LOSS_PT)
         print(f'Position will take profit at {close_price}')
         if lastprice <= close_price:
             return 1
@@ -670,12 +670,12 @@ def consolidation_strategy_bb(df):
     rsv = df.iloc[-1][KD_KEY][2]
 
     # buy
-    if pre_close < pre_bot_band:
-        if close > bot_band and close >= pre_high and rsv < 30:
+    if pre_low < pre_bot_band:
+        if close > bot_band and close > pre_close and rsv < 20:
             return 1
     # sell
-    elif pre_close > pre_up_band:
-        if close < up_band and close <= pre_low and rsv > 70:
+    elif pre_high > pre_up_band:
+        if close < up_band and close < pre_close and rsv > 80:
             return -1
     return 0
 
@@ -947,8 +947,8 @@ if __name__ == '__main__':
     
             # check for close positiion
             if Buy_at or Sell_at:
-                if ATR_KEY in dfs_1.columns:
-                    print(f'1m ATR: {dfs_1.iloc[-1][ATR_KEY]}')
+                if ATR_KEY in dfs_5.columns:
+                    print(f'5m ATR: {dfs_5.iloc[-1][ATR_KEY]}')
                 if ADX_KEY in dfs_1.columns and dfs_1.iloc[-1][ADX_KEY] < 25:
                     if sig:= atr_fixed_stop(realtime_candle, df_fubon_5m):
                         close_position(sig)
@@ -956,7 +956,7 @@ if __name__ == '__main__':
                     if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
                         close_position(sig)
 
-            if ADX_KEY in dfs_1.columns and dfs_1.iloc[-1][ADX_KEY] > 20:
+            if ADX_KEY in dfs_1.columns and dfs_1.iloc[-1][ADX_KEY] > 25:
 
                 if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
@@ -967,7 +967,9 @@ if __name__ == '__main__':
                     df_flag[PERIOD_1M] = 0
             
             else:
-                print('low adx, not trading')
+                if len(df_fubon_1m) > 2:
+                    consolidation_strategy_bb(df_fubon_1m)
+                    print(f'upband: {df_fubon_1m.iloc[-1][BB_KEY][1]}, lowband: {df_fubon_1m.iloc[-1][BB_KEY][2]}')
 
             time.sleep(0.01)
             os.system('cls')
