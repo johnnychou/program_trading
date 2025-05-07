@@ -788,8 +788,6 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
             elif Sell_at and sig == 1:
                 close_position(1)
 
-        print(f'sig: {sig}, trend: {trend}')
-
     else:
         sig = kd_relation_strict(df_1m)
         trend = kd_relation_strict(df_5m)
@@ -806,8 +804,6 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
                 close_position(-1)
             elif Sell_at and trend == 1:
                 close_position(1)
-        
-        print(f'Normal, sig: {sig}, trend: {trend}, trend_2: {trend_2}')
 
 
 if __name__ == '__main__':
