@@ -42,8 +42,8 @@ class indicator_calculator(object):
 
     def reset_state_if_needed(self, market):
         self.reset_vwap_if_needed(market)
-        self.reset_rsi_if_needed(market)
-        self.reset_adx_if_needed(market)
+        # self.reset_rsi_if_needed(market)
+        # self.reset_adx_if_needed(market)
         return
 
     def indicator_ma(self, df, period):

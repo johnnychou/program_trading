@@ -539,9 +539,16 @@ def kd_relation_strict(df):
     diff = np.abs(k - d)
 
     if k > d and diff > 2:
-        return 1
+        if Sell_at and k < 20: # 防鈍化平倉
+            return 0
+        else:
+            return 1
+
     elif k < d and diff > 2:
-        return -1
+        if Buy_at and k > 80:  # 防鈍化平倉
+            return 0
+        else:
+            return -1
     return 0
 
 def kd_signal(df):
@@ -759,9 +766,9 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
                         open_position(sig)
                     df_flag[PERIOD_1M] = 0
 
-def double_kd_strategy(df_1m, df_5m, df_15m, now):
+def multi_kd_strategy(df_1m, df_5m, df_15m, now):
 
-    if is_market_time(DAY_HIGH_TIME, now) or\
+    if is_market_time(DAY_MARKET, now) or\
          is_market_time(NIGHT_HIGH_TIME, now):
         
         sig = kd_relation_strict(df_1m)
@@ -782,22 +789,23 @@ def double_kd_strategy(df_1m, df_5m, df_15m, now):
         print(f'sig: {sig}, trend: {trend}')
 
     else:
-        sig = kd_relation(df_5m)
-        trend = kd_relation(df_15m)
+        sig = kd_relation_strict(df_1m)
+        trend = kd_relation_strict(df_5m)
+        trend_2 = kd_relation_strict(df_15m)
 
-        if trend == 0:
-            trend = sig
+        if trend_2 == 0:
+            trend_2 = trend
 
         if not Buy_at and not Sell_at:
-            if sig == trend:
+            if sig == trend == trend_2:
                 open_position(sig)
         else:
-            if Buy_at and sig == -1:
+            if Buy_at and trend == -1:
                 close_position(-1)
-            elif Sell_at and sig == 1:
+            elif Sell_at and trend == 1:
                 close_position(1)
         
-        print(f'Normal, sig: {sig}, trend: {trend}')
+        print(f'Normal, sig: {sig}, trend: {trend}, trend_2: {trend_2}')
 
 
 if __name__ == '__main__':
@@ -900,23 +908,26 @@ if __name__ == '__main__':
             # dfs = df_twse.tail(5)
             # print(dfs)
             # print('====================================================================')
-            dfs_1 = df_fubon_1m.tail(5)
+            dfs_1 = df_fubon_1m.tail(2)
             if KD_KEY in dfs_1.columns:
                 print(dfs_1)
                 print(f'1m trend: {kd_relation(dfs_1)}')
                 print(f'1m adx: {dfs_1.iloc[-1][ADX_KEY]}')
+                print(f'{dfs_1[KD_KEY]}')
                 print('====================================================================')
-            dfs_5 = df_fubon_5m.tail(3)
+            dfs_5 = df_fubon_5m.tail(2)
             if KD_KEY in dfs_5.columns:
                 print(dfs_5)
                 print(f'5m trend: {kd_relation(dfs_5)}')
                 print(f'5m adx: {dfs_5.iloc[-1][ADX_KEY]}')
+                print(f'{dfs_5[KD_KEY]}')
                 print('====================================================================')
-            dfs_15 = df_fubon_15m.tail(3)
+            dfs_15 = df_fubon_15m.tail(2)
             if KD_KEY in dfs_15.columns:
                 print(dfs_15)
                 print(f'15m trend: {kd_relation(dfs_15)}')
                 print(f'15m adx: {dfs_15.iloc[-1][ADX_KEY]}')
+                print(f'{dfs_15[KD_KEY]}')
                 print('====================================================================')
     
             # check for close positiion
@@ -929,7 +940,7 @@ if __name__ == '__main__':
 
             if df_flag[PERIOD_1M] or df_flag[PERIOD_5M]:
                 if Last_executed_minute == now.minute:
-                    double_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                    multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
                     df_flag[PERIOD_1M] = 0
                     df_flag[PERIOD_5M] = 0
 
