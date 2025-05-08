@@ -383,13 +383,13 @@ def chk_stop_loss(realtime_candle, df):
 
     if Buy_at:
         entry_price = Buy_at[0]
-        close_price = entry_price - min(atr*1.5, MAX_LOSS_PT)
+        close_price = int(entry_price - min(atr*1.5, MAX_LOSS_PT))
         print(f'Position will stop loss at {close_price}')
         if lastprice <= close_price:
             return -1
     elif Sell_at:
         entry_price = Sell_at[0]
-        close_price = entry_price + min(atr*1.5, MAX_LOSS_PT)
+        close_price = int(entry_price + min(atr*1.5, MAX_LOSS_PT))
         print(f'Position will stop loss at {close_price}')
         if lastprice >= close_price:
             return 1
@@ -410,13 +410,13 @@ def chk_take_profit(realtime_candle, df):
 
     if Buy_at:
         entry_price = Buy_at[0]
-        close_price = entry_price + min(atr*2, MAX_LOSS_PT)
+        close_price = int(entry_price + min(atr*2, MAX_LOSS_PT))
         print(f'Position will take profit at {close_price}')
         if lastprice >= close_price:
             return -1
     elif Sell_at:
         entry_price = Sell_at[0]
-        close_price = entry_price - min(atr*2, MAX_LOSS_PT)
+        close_price = int(entry_price - min(atr*2, MAX_LOSS_PT))
         print(f'Position will take profit at {close_price}')
         if lastprice <= close_price:
             return 1
@@ -1000,6 +1000,12 @@ if __name__ == '__main__':
                         close_position(sig)
                     elif sig:= bband_stop(df_fubon_1m):
                         close_position(sig)
+                    else:
+                        sig = kd_signal(df_fubon_1m)
+                        if Buy_at and sig == -1:
+                            close_position(-1)
+                        elif Sell_at and sig == 1:
+                            close_position(1)
                 # else:
                 #     if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
                 #         close_position(sig)
