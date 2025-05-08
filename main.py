@@ -379,7 +379,7 @@ def chk_stop_loss(realtime_candle, df):
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
     atr = df.loc[last_valid_idx, ATR_KEY]
-    atr = min(atr, MIN_ATR) # prevent atr too small
+    atr = max(atr, MIN_ATR) # prevent atr too small
 
     if Buy_at:
         entry_price = Buy_at[0]
@@ -406,7 +406,7 @@ def chk_take_profit(realtime_candle, df):
     lastprice = realtime_candle['lastprice']
     last_valid_idx = df[ATR_KEY].last_valid_index()
     atr = df.loc[last_valid_idx, ATR_KEY]
-    atr = min(atr, MIN_ATR) # prevent atr too small
+    atr = max(atr, MIN_ATR) # prevent atr too small
 
     if Buy_at:
         entry_price = Buy_at[0]
@@ -464,6 +464,8 @@ def atr_trailing_stop(realtime_candle, df):
 
 def bband_stop(df):
     if BB_KEY not in df.columns:
+        return 0
+    if len(df) < 2:
         return 0
 
     up_band = df.iloc[-1][BB_KEY][1]
@@ -670,13 +672,15 @@ def consolidation_strategy_bb(df):
     rsv = df.iloc[-1][KD_KEY][2]
 
     # buy
-    if pre_low < pre_bot_band:
-        if close > bot_band and close > pre_close and rsv < 20:
-            return 1
-    # sell
-    elif pre_high > pre_up_band:
-        if close < up_band and close < pre_close and rsv > 80:
-            return -1
+    if not Buy_at and not Sell_at:
+        if pre_low < pre_bot_band:
+            if close > bot_band and close > pre_close and rsv < 20:
+                open_position(1)
+        # sell
+        elif pre_high > pre_up_band:
+            if close < up_band and close < pre_close and rsv > 80:
+                open_position(-1)
+
     return 0
 
 def trend_strategy(df):
@@ -790,16 +794,31 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
                     df_flag[PERIOD_1M] = 0
 
 def multi_kd_strategy(df_1m, df_5m, df_15m, now):
-
     adx_1m = df_1m.iloc[-1][ADX_KEY]
     vwap = df_1m.iloc[-1][VWAP_KEY]
     last_close = df_1m.iloc[-1]['close']
     vwap_trend = 0
 
-    if last_close - vwap >= 50:
+    # 先選取 'close' 和 VWAP_KEY 欄位的最後5筆
+    last_5_closes = df_1m['close'].tail(5)
+    last_5_vwaps = df_1m[VWAP_KEY].tail(5)
+
+    buy_energy = last_5_closes > last_5_vwaps
+    sell_energy = last_5_closes < last_5_vwaps
+
+    buy_energy = buy_energy.sum()
+    sell_energy = sell_energy.sum()
+
+    if buy_energy >= 4:
         vwap_trend = 1
-    elif vwap - last_close >= 50:
+    elif sell_energy >= 4:
         vwap_trend = -1
+
+    if not vwap_trend:
+        if last_close - vwap >= 50:
+            vwap_trend = 1
+        elif vwap - last_close >= 50:
+            vwap_trend = -1
 
     if is_market_time(DAY_MARKET, now) or\
          is_market_time(NIGHT_HIGH_TIME, now) or\
@@ -893,8 +912,9 @@ if __name__ == '__main__':
                     df_twse = tmp_df
                     df_flag[period] = 1
                 elif period == PERIOD_1M:
+                    update_account_info(Fubon_account)
                     df_fubon_1m = tmp_df
-                    df_flag[period] = 1
+                    df_flag[period] = 1                    
                 elif period == PERIOD_5M:
                     df_fubon_5m = tmp_df
                     df_flag[period] = 1
@@ -944,7 +964,7 @@ if __name__ == '__main__':
             # dfs = df_twse.tail(5)
             # print(dfs)
             # print('====================================================================')
-            dfs_1 = df_fubon_1m.tail(3)
+            dfs_1 = df_fubon_1m.tail(2)
             if KD_KEY in dfs_1.columns:
                 print(dfs_1)
                 print(f'1m trend: {kd_relation(dfs_1)}')
@@ -965,21 +985,25 @@ if __name__ == '__main__':
                 print(f'15m atr: {dfs_15.iloc[-1][ATR_KEY]}, adx: {dfs_15.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_15[KD_KEY]}')
                 print('====================================================================')
-    
-            # check for close positiion
-            if Buy_at or Sell_at:
-                if ATR_KEY in dfs_5.columns:
-                    print(f'5m ATR: {dfs_5.iloc[-1][ATR_KEY]}')
-                if ADX_KEY in dfs_1.columns and dfs_1.iloc[-1][ADX_KEY] < 25:
-                    if sig:= atr_fixed_stop(realtime_candle, df_fubon_5m):
-                        close_position(sig)
-                else:
-                    if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
-                        close_position(sig)
-            
+
+
             adx_trend = np.nan
             if ADX_KEY in dfs_1.columns:
                 adx_trend = dfs_1.iloc[-1][ADX_KEY]
+
+            # check for close positiion
+            if Buy_at or Sell_at:
+                if ATR_KEY in dfs_1.columns:
+                    print(f'1m ATR: {dfs_1.iloc[-1][ATR_KEY]}')
+                if adx_trend and adx_trend < 25:
+                    if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
+                        close_position(sig)
+                    elif sig:= bband_stop(df_fubon_1m):
+                        close_position(sig)
+                # else:
+                #     if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
+                #         close_position(sig)
+
 
             if np.isnan(adx_trend) or adx_trend > 25:
 
