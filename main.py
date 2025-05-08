@@ -976,8 +976,12 @@ if __name__ == '__main__':
                 else:
                     if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
                         close_position(sig)
+            
+            adx_trend = np.nan
+            if ADX_KEY in dfs_1.columns:
+                adx_trend = dfs_1.iloc[-1][ADX_KEY]
 
-            if ADX_KEY in dfs_1.columns and dfs_1.iloc[-1][ADX_KEY] > 25:
+            if np.isnan(adx_trend) or adx_trend > 25:
 
                 if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
