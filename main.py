@@ -546,18 +546,22 @@ def kd_relation_strict(df):
     if k > d and diff > 2:
         if Sell_at and k < 25: # 防鈍化平倉
             return 0
+        elif k > 80:
+            return 0
         else:
             return 1
 
     elif k < d and diff > 2:
         if Buy_at and k > 75:  # 防鈍化平倉
             return 0
+        elif k < 20:
+            return 0
         else:
             return -1
         
     return 0
 
-def kd_signal(df):
+def kd_cross_signal(df):
     if len(df) < KD_PERIOD[0]:
         return 0
     
@@ -751,7 +755,7 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
             if sig:= atr_trailing_stop(realtime_candle, df_fubon_1m):
                 close_position(sig)
             elif df_flag[PERIOD_59S]:
-                sig = kd_signal(df_fubon_1m)
+                sig = kd_cross_signal(df_fubon_1m)
                 if (Buy_at and sig == -1) or\
                         (Sell_at and sig == 1):
                     close_position(sig)
@@ -831,7 +835,7 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
     if is_market_time(DAY_MARKET, now) or\
          is_market_time(NIGHT_HIGH_TIME, now):
         
-        sig = kd_signal(df_1m) # 單看1分鐘
+        sig = kd_relation_strict(df_1m) # 單看1分鐘
         if not vwap_trend:
             vwap_trend = sig
 
@@ -1006,7 +1010,7 @@ if __name__ == '__main__':
                     elif sig:= bband_stop(df_fubon_1m):
                         close_position(sig)
                     else:
-                        sig = kd_signal(df_fubon_1m)
+                        sig = kd_cross_signal(df_fubon_1m)
                         if Buy_at and sig == -1:
                             close_position(-1)
                         elif Sell_at and sig == 1:
