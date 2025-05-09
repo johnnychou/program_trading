@@ -435,16 +435,17 @@ def atr_trailing_stop(realtime_candle, df):
         return 0
 
     atr = df.loc[last_valid_idx, ATR_KEY]
-    # atr = max(atr, MIN_ATR)
+    atr = max(atr, MIN_ATR)
+    atr_gap = min(atr*1.5, MAX_LOSS_PT)
+    print(f'ATR: {atr}, gap: {atr_gap}')
 
     if Buy_at:
         Max_profit_pt = max(lastprice, Buy_at[0], Max_profit_pt)
-        stop_price = Max_profit_pt - min(atr*1.5, MAX_LOSS_PT)
+        stop_price = Max_profit_pt - atr_gap
         print(f'Max Profit at: {Max_profit_pt}, {(Max_profit_pt-Buy_at[0])*PT_price}')
         print(f'ATR trailing will stop at: {stop_price}')
         if lastprice <= stop_price:
             Max_profit_pt = 0
-            print(f'ATR trailing stopped at: {lastprice}')
             return -1
 
     elif Sell_at:
@@ -452,12 +453,11 @@ def atr_trailing_stop(realtime_candle, df):
             Max_profit_pt = min(lastprice, Sell_at[0])
         else:
             Max_profit_pt = min(lastprice, Sell_at[0], Max_profit_pt)
-        stop_price = Max_profit_pt + min(atr*1.5, MAX_LOSS_PT)
+        stop_price = Max_profit_pt + atr_gap
         print(f'Max Profit at: {Max_profit_pt}, {(Sell_at[0]-Max_profit_pt)*PT_price}')
         print(f'ATR trailing will stop at: {stop_price}')
         if lastprice >= stop_price:
             Max_profit_pt = 0
-            print(f'ATR trailing stopped at: {lastprice}')
             return 1
 
     return 0
@@ -572,6 +572,8 @@ def kd_signal(df):
 
     # golden cross
     if pre_k <= pre_d and k > d:
+        if k > 80:
+            return 0
         if diff < 2:
             KD_reserved = 1
             return 0
@@ -579,6 +581,8 @@ def kd_signal(df):
     
     # death cross
     if pre_k >= pre_d and k < d:
+        if k < 20:
+            return 0
         if diff < 2:
             KD_reserved = -1
             return 0
@@ -587,10 +591,15 @@ def kd_signal(df):
     if KD_reserved == 1:
         if k > d and diff >= 2:
             KD_reserved = 0
+            if k > 80:
+                return 0
             return 1
+        
     elif KD_reserved == -1:
         if k < d and diff >= 2:
             KD_reserved = 0
+            if k < 20:
+                return 0
             return -1
     
     return 0
@@ -674,11 +683,11 @@ def consolidation_strategy_bb(df):
     # buy
     if not Buy_at and not Sell_at:
         if pre_low < pre_bot_band:
-            if close > bot_band and close > pre_close and rsv < 20:
+            if close > bot_band and close > pre_close and rsv < 30:
                 open_position(1)
         # sell
         elif pre_high > pre_up_band:
-            if close < up_band and close < pre_close and rsv > 80:
+            if close < up_band and close < pre_close and rsv > 70:
                 open_position(-1)
 
     return 0
@@ -794,25 +803,24 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
                     df_flag[PERIOD_1M] = 0
 
 def multi_kd_strategy(df_1m, df_5m, df_15m, now):
-    adx_1m = df_1m.iloc[-1][ADX_KEY]
+    #adx_1m = df_1m.iloc[-1][ADX_KEY]
+    if len(df_1m) < 2:
+        return
     vwap = df_1m.iloc[-1][VWAP_KEY]
     last_close = df_1m.iloc[-1]['close']
     vwap_trend = 0
 
     # 先選取 'close' 和 VWAP_KEY 欄位的最後5筆
-    last_5_closes = df_1m['close'].tail(5)
-    last_5_vwaps = df_1m[VWAP_KEY].tail(5)
-
-    buy_energy = last_5_closes > last_5_vwaps
-    sell_energy = last_5_closes < last_5_vwaps
-
-    buy_energy = buy_energy.sum()
-    sell_energy = sell_energy.sum()
-
-    if buy_energy >= 4:
-        vwap_trend = 1
-    elif sell_energy >= 4:
-        vwap_trend = -1
+    # last_5_closes = df_1m['close'].tail(5)
+    # last_5_vwaps = df_1m[VWAP_KEY].tail(5)
+    # buy_energy = last_5_closes > last_5_vwaps
+    # sell_energy = last_5_closes < last_5_vwaps
+    # buy_energy = buy_energy.sum()
+    # sell_energy = sell_energy.sum()
+    # if buy_energy >= 4:
+    #     vwap_trend = 1
+    # elif sell_energy >= 4:
+    #     vwap_trend = -1
 
     if not vwap_trend:
         if last_close - vwap >= 50:
@@ -821,15 +829,14 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
             vwap_trend = -1
 
     if is_market_time(DAY_MARKET, now) or\
-         is_market_time(NIGHT_HIGH_TIME, now) or\
-         adx_1m > 25:
+         is_market_time(NIGHT_HIGH_TIME, now):
         
         sig = kd_signal(df_1m) # 單看1分鐘
         if not vwap_trend:
             vwap_trend = sig
 
         if not Buy_at and not Sell_at:
-            if sig == vwap_trend:
+            if sig == vwap_trend and sig != 0:
                 open_position(sig)
         else:
             if Buy_at and sig == -1:
@@ -853,11 +860,11 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
             if np.abs(score) >= 2:
                 open_position(score)
         else:
-            if Buy_at and score <= -2:
+            if Buy_at and score <= -1: # -1, -1, 1
                 close_position(-1)
                 if score == -3:
                     open_position(-1)
-            elif Sell_at and score >= 2:
+            elif Sell_at and score >= 1: # 1, 1, -1
                 close_position(1)
                 if score == 3:
                     open_position(1)
@@ -993,8 +1000,6 @@ if __name__ == '__main__':
 
             # check for close positiion
             if Buy_at or Sell_at:
-                if ATR_KEY in dfs_1.columns:
-                    print(f'1m ATR: {dfs_1.iloc[-1][ATR_KEY]}')
                 if adx_trend and adx_trend < 25:
                     if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
                         close_position(sig)
@@ -1006,9 +1011,9 @@ if __name__ == '__main__':
                             close_position(-1)
                         elif Sell_at and sig == 1:
                             close_position(1)
-                # else:
-                #     if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
-                #         close_position(sig)
+                else:
+                    if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
+                        close_position(sig)
 
 
             if np.isnan(adx_trend) or adx_trend > 25:
