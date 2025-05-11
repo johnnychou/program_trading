@@ -16,7 +16,6 @@ import utils
 import indicators as i
 from conf import *
 
-sys.path.append("C:\\Users\\ChengWei\\Desktop\\my project")
 import accinfo as key
 
 MONTH_CODE = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L')
