@@ -261,6 +261,14 @@ def update_account_info(account):
     #time.sleep(5)
     return
 
+def direct_trading(sig):
+    if not Buy_at and not Sell_at:
+        open_position(sig)
+    else:
+        close_position(sig)
+        open_position(sig)
+    return
+
 def open_position(sig):
     global Trade_times
     if Buy_at or Sell_at:
@@ -821,49 +829,25 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
                     df_flag[PERIOD_1M] = 0
 
 def multi_kd_strategy(df_1m, df_5m, df_15m, now):
-    #adx_1m = df_1m.iloc[-1][ADX_KEY]
-    if len(df_1m) < 2:
+    if len(df_1m) < KD_PERIOD:
         return
-    vwap = df_1m.iloc[-1][VWAP_KEY]
-    last_close = df_1m.iloc[-1]['close']
-    vwap_trend = 0
-
-    # 先選取 'close' 和 VWAP_KEY 欄位的最後5筆
-    # last_5_closes = df_1m['close'].tail(5)
-    # last_5_vwaps = df_1m[VWAP_KEY].tail(5)
-    # buy_energy = last_5_closes > last_5_vwaps
-    # sell_energy = last_5_closes < last_5_vwaps
-    # buy_energy = buy_energy.sum()
-    # sell_energy = sell_energy.sum()
-    # if buy_energy >= 4:
-    #     vwap_trend = 1
-    # elif sell_energy >= 4:
-    #     vwap_trend = -1
-
-    if not vwap_trend:
-        if last_close - vwap >= 50:
-            vwap_trend = 1
-        elif vwap - last_close >= 50:
-            vwap_trend = -1
 
     if is_market_time(DAY_MARKET, now) or\
          is_market_time(NIGHT_HIGH_TIME, now):
         
         sig = kd_relation_strict(df_1m) # 單看1分鐘
-        if not vwap_trend:
-            vwap_trend = sig
 
         if not Buy_at and not Sell_at:
-            if sig == vwap_trend and sig != 0:
+            if sig:
                 open_position(sig)
         else:
             if Buy_at and sig == -1:
                 close_position(-1)
-                if sig == vwap_trend:
+                if sig == VWAP_trend:
                     open_position(-1)
             elif Sell_at and sig == 1:
                 close_position(1)
-                if sig == vwap_trend:
+                if sig == VWAP_trend:
                     open_position(1)
 
     else: # 1, 5分鐘雙重確認
@@ -872,7 +856,7 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
         trend_5 = kd_relation_strict(df_5m)
         #trend_2 = kd_relation_strict(df_15m)
 
-        score = trend_1 + trend_5 + vwap_trend
+        score = trend_1 + trend_5 + VWAP_trend
 
         if not Buy_at and not Sell_at:
             if np.abs(score) >= 2:
@@ -887,9 +871,9 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
                 if score == 3:
                     open_position(1)
 
-def chk_candle_shadow(df):
+def candle_shadow_signal(df):
     if len(df) < 1:
-        return
+        return 0
     
     MIN_BODY = 4         # body最小點數
     MIN_CANDLE = 20      # 整根K線高低
@@ -972,6 +956,8 @@ if __name__ == '__main__':
     }
 
     # last_minute_checked = -1
+    close_ratio = 50
+    shadow_sig = 0
 
     try:
         while True:
@@ -991,7 +977,9 @@ if __name__ == '__main__':
                     df_fubon_1m = tmp_df
                     df_flag[period] = 1
                     update_account_info(Fubon_account)
-                    vwap_trend(df_fubon_1m)     
+                    vwap_trend(df_fubon_1m)
+                    close_ratio = current_close_ratio(df_fubon_1m)
+                    shadow_sig = candle_shadow_signal(df_fubon_1m)
                 elif period == PERIOD_5M:
                     df_fubon_5m = tmp_df
                     df_flag[period] = 1
@@ -1061,6 +1049,15 @@ if __name__ == '__main__':
                 print(f'{dfs_15[KD_KEY]}')
                 print('====================================================================')
 
+            if shadow_sig:
+                if shadow_sig == 1 and close_ratio < 15:
+                    direct_trading(1)
+                elif shadow_sig == -1 and close_ratio > 85:
+                    direct_trading(-1)
+                shadow_sig = 0
+
+            else:
+                multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
 
 
             # adx_trend = np.nan
