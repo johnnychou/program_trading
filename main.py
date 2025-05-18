@@ -1075,6 +1075,7 @@ if __name__ == '__main__':
                     df_flag[PERIOD_1M] = 0
 
             print(f'VWAP trend: {VWAP_trend}')
+            print(f'Close rate: {close_ratio}')
 
             # adx_trend = np.nan
             # if ADX_KEY in dfs_1.columns:
