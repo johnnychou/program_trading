@@ -1055,9 +1055,16 @@ if __name__ == '__main__':
                 elif shadow_sig == -1 and close_ratio > 85:
                     direct_trading(-1)
                 shadow_sig = 0
-
+                df_flag[PERIOD_1M] = 0
+                df_flag[PERIOD_5M] = 0
             else:
-                multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
+                    multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                    df_flag[PERIOD_1M] = 0
+                    df_flag[PERIOD_5M] = 0
+                elif df_flag[PERIOD_1M] and Last_executed_minute == now.minute:
+                    multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+                    df_flag[PERIOD_1M] = 0
 
 
             # adx_trend = np.nan
@@ -1088,7 +1095,7 @@ if __name__ == '__main__':
             #         multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
             #         df_flag[PERIOD_1M] = 0
             #         df_flag[PERIOD_5M] = 0
-            #     elif df_flag[PERIOD_1M]:
+            #     elif df_flag[PERIOD_1M] and Last_executed_minute == now.minute:
             #         multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
             #         df_flag[PERIOD_1M] = 0
             
