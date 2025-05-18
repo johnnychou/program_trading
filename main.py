@@ -1027,39 +1027,40 @@ if __name__ == '__main__':
             # dfs = df_twse.tail(5)
             # print(dfs)
             # print('====================================================================')
-            dfs_1 = df_fubon_1m.tail(2)
+            dfs_1 = df_fubon_1m.tail(5)
             if KD_KEY in dfs_1.columns:
                 print(dfs_1)
                 print(f'1m trend: {kd_relation(dfs_1)}')
                 print(f'1m atr: {dfs_1.iloc[-1][ATR_KEY]}, adx: {dfs_1.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_1[KD_KEY]}')
                 print('====================================================================')
-            dfs_5 = df_fubon_5m.tail(2)
+            dfs_5 = df_fubon_5m.tail(3)
             if KD_KEY in dfs_5.columns:
                 print(dfs_5)
                 print(f'5m trend: {kd_relation(dfs_5)}')
                 print(f'5m atr: {dfs_5.iloc[-1][ATR_KEY]}, adx: {dfs_5.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_5[KD_KEY]}')
                 print('====================================================================')
-            dfs_15 = df_fubon_15m.tail(2)
-            if KD_KEY in dfs_15.columns:
-                print(dfs_15)
-                print(f'15m trend: {kd_relation(dfs_15)}')
-                print(f'15m atr: {dfs_15.iloc[-1][ATR_KEY]}, adx: {dfs_15.iloc[-1][ADX_KEY]}')
-                print(f'{dfs_15[KD_KEY]}')
-                print('====================================================================')
+            # dfs_15 = df_fubon_15m.tail(2)
+            # if KD_KEY in dfs_15.columns:
+            #     print(dfs_15)
+            #     print(f'15m trend: {kd_relation(dfs_15)}')
+            #     print(f'15m atr: {dfs_15.iloc[-1][ATR_KEY]}, adx: {dfs_15.iloc[-1][ADX_KEY]}')
+            #     print(f'{dfs_15[KD_KEY]}')
+            #     print('====================================================================')
 
             traded = 0
 
             if shadow_sig: # sig comes every 1 minute
-                if shadow_sig == 1 and close_ratio < 15:
+                if shadow_sig == 1 and close_ratio <= 15:
                     direct_trading(1)
                     traded = 1
-                elif shadow_sig == -1 and close_ratio > 85:
+                elif shadow_sig == -1 and close_ratio >= 85:
                     direct_trading(-1)
                     traded = 1
 
                 shadow_sig = 0
+
                 if traded:
                     df_flag[PERIOD_1M] = 0
                     df_flag[PERIOD_5M] = 0
@@ -1073,6 +1074,7 @@ if __name__ == '__main__':
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
                     df_flag[PERIOD_1M] = 0
 
+            print(f'VWAP trend: {VWAP_trend}')
 
             # adx_trend = np.nan
             # if ADX_KEY in dfs_1.columns:
