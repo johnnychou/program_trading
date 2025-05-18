@@ -1049,20 +1049,27 @@ if __name__ == '__main__':
                 print(f'{dfs_15[KD_KEY]}')
                 print('====================================================================')
 
-            if shadow_sig:
+            traded = 0
+
+            if shadow_sig: # sig comes every 1 minute
                 if shadow_sig == 1 and close_ratio < 15:
                     direct_trading(1)
+                    traded = 1
                 elif shadow_sig == -1 and close_ratio > 85:
                     direct_trading(-1)
+                    traded = 1
+
                 shadow_sig = 0
-                df_flag[PERIOD_1M] = 0
-                df_flag[PERIOD_5M] = 0
-            else:
+                if traded:
+                    df_flag[PERIOD_1M] = 0
+                    df_flag[PERIOD_5M] = 0
+
+            elif not traded:
                 if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
                     df_flag[PERIOD_1M] = 0
                     df_flag[PERIOD_5M] = 0
-                elif df_flag[PERIOD_1M] and Last_executed_minute == now.minute:
+                elif df_flag[PERIOD_1M]:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
                     df_flag[PERIOD_1M] = 0
 
@@ -1095,7 +1102,7 @@ if __name__ == '__main__':
             #         multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
             #         df_flag[PERIOD_1M] = 0
             #         df_flag[PERIOD_5M] = 0
-            #     elif df_flag[PERIOD_1M] and Last_executed_minute == now.minute:
+            #     elif df_flag[PERIOD_1M]:
             #         multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
             #         df_flag[PERIOD_1M] = 0
             
