@@ -891,9 +891,9 @@ def chk_candle_shadow(df):
     if len(df) < 1:
         return
     
-    MIN_BODY = 4        # 實體最小點數
-    MIN_CANDLE = 20
-    SHADOW_RATIO = 2  # 影線長度需至少為實體的倍數
+    MIN_BODY = 4         # body最小點數
+    MIN_CANDLE = 20      # 整根K線高低
+    SHADOW_RATIO = 2     # 影線長度需至少為實體的倍數
     DOMINANCE_RATIO = 2  # 主導影線需為對側影線的倍數
 
     open = df.iloc[-1]['open']
@@ -922,7 +922,7 @@ def chk_candle_shadow(df):
             elif lower_shadow >= upper_shadow * DOMINANCE_RATIO:
                 shadow_reverse = 1
 
-    if not shadow_reverse and (candle_length >= MIN_CANDLE):
+    if not shadow_reverse and (candle_length >= MIN_CANDLE): #較次要
         if (upper_shadow / candle_length) > 0.6:
             shadow_reverse = -1
         elif (lower_shadow / candle_length) > 0.6:
@@ -930,6 +930,17 @@ def chk_candle_shadow(df):
 
     return shadow_reverse
 
+def current_close_ratio(df, window=15):
+    if len(df) < window:
+        return 50
+    highest = df['high'].tail(window).max()
+    lowest = df['low'].tail(window).min()
+    last_close = df.iloc[-1]['close']
+    if (highest == lowest):
+        ratio = 50
+    else:
+        ratio = round((last_close - lowest)/(highest - lowest)*100, 1)
+    return ratio
 
 
 if __name__ == '__main__':
