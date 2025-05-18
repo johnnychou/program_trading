@@ -38,6 +38,7 @@ Max_profit_pt = 0
 Highest = 0
 Lowest = 0
 KD_reserved = 0
+VWAP_trend = 0
 
 Last_executed_minute = -1
 
@@ -201,7 +202,6 @@ def show_user_settings():
     print(f'Product: {Userinput_Product}/{OrderAmount},\
             Market: {Userinput_Market},\
             Direction: {Userinput_Direction}')
-
     return
 
 def show_account_info():
@@ -263,11 +263,14 @@ def update_account_info(account):
 
 def open_position(sig):
     global Trade_times
+    if Buy_at or Sell_at:
+        return 0
     if (Userinput_Direction == 'buy' and sig == -1) or\
          (Userinput_Direction == 'sell' and sig == 1):
         return 0
-    if Buy_at or Sell_at:
-        return 0
+    if (Userinput_Direction == 'auto'):
+        if VWAP_trend != 0 and VWAP_trend != sig:
+            return 0
     Fubon_account.send_order(sig, OrderAmount)
     Trade_times += 1
     update_account_info(Fubon_account)
@@ -619,6 +622,17 @@ def bb_bandwidth(df):
 
     return (up_band - bot_band)
 
+def vwap_trend(df):
+    if len(df) < VWAP_TREND_WINDOW:
+        return
+    global VWAP_trend
+    if (df.tail(VWAP_TREND_WINDOW)['close'] >= df.tail(VWAP_TREND_WINDOW)['vwap']).all():
+        VWAP_trend = 1
+    elif (df.tail(VWAP_TREND_WINDOW)['close'] <= df.tail(VWAP_TREND_WINDOW)['vwap']).all():
+        VWAP_trend = -1
+    else:
+        VWAP_trend = 0
+    return
 
 def consolidation_strategy_kd(df):
     if len(df) < 2:
@@ -910,10 +924,6 @@ if __name__ == '__main__':
 
             # 隨時檢查processes
             processes = check_process_alive(processes, data_queue, realtime_candle)
-            # 每分鐘檢查一次processes
-            # if now.minute != last_minute_checked :
-            #     processes = check_process_alive(processes, data_queue, realtime_candle)
-            #     last_minute_checked = now.minute
 
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
@@ -923,9 +933,10 @@ if __name__ == '__main__':
                     df_twse = tmp_df
                     df_flag[period] = 1
                 elif period == PERIOD_1M:
-                    update_account_info(Fubon_account)
                     df_fubon_1m = tmp_df
-                    df_flag[period] = 1                    
+                    df_flag[period] = 1
+                    update_account_info(Fubon_account)
+                    vwap_trend(df_fubon_1m)     
                 elif period == PERIOD_5M:
                     df_fubon_5m = tmp_df
                     df_flag[period] = 1
@@ -969,8 +980,6 @@ if __name__ == '__main__':
             show_user_settings()
             show_account_info()
             show_realtime(realtime_candle)
-            #show_candles(realtime_candle, df_twse, df_fubon_1m, df_fubon_5m, df_fubon_15m)
-
 
             # dfs = df_twse.tail(5)
             # print(dfs)
@@ -998,42 +1007,42 @@ if __name__ == '__main__':
                 print('====================================================================')
 
 
-            adx_trend = np.nan
-            if ADX_KEY in dfs_1.columns:
-                adx_trend = dfs_1.iloc[-1][ADX_KEY]
+            # adx_trend = np.nan
+            # if ADX_KEY in dfs_1.columns:
+            #     adx_trend = dfs_1.iloc[-1][ADX_KEY]
 
-            # check for close positiion
-            if Buy_at or Sell_at:
-                if adx_trend and adx_trend < 25:
-                    if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
-                        close_position(sig)
-                    elif sig:= bband_stop(df_fubon_1m):
-                        close_position(sig)
-                    else:
-                        sig = kd_cross_signal(df_fubon_1m)
-                        if Buy_at and sig == -1:
-                            close_position(-1)
-                        elif Sell_at and sig == 1:
-                            close_position(1)
-                else:
-                    if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
-                        close_position(sig)
+            # # check for close positiion
+            # if Buy_at or Sell_at:
+            #     if adx_trend and adx_trend < 25:
+            #         if sig:= atr_fixed_stop(realtime_candle, df_fubon_1m):
+            #             close_position(sig)
+            #         elif sig:= bband_stop(df_fubon_1m):
+            #             close_position(sig)
+            #         else:
+            #             sig = kd_cross_signal(df_fubon_1m)
+            #             if Buy_at and sig == -1:
+            #                 close_position(-1)
+            #             elif Sell_at and sig == 1:
+            #                 close_position(1)
+            #     else:
+            #         if sig:= atr_trailing_stop(realtime_candle, df_fubon_5m):
+            #             close_position(sig)
 
 
-            if np.isnan(adx_trend) or adx_trend > 25:
+            # if np.isnan(adx_trend) or adx_trend > 25:
 
-                if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
-                    multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
-                    df_flag[PERIOD_1M] = 0
-                    df_flag[PERIOD_5M] = 0
-                elif df_flag[PERIOD_1M]:
-                    multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
-                    df_flag[PERIOD_1M] = 0
+            #     if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
+            #         multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+            #         df_flag[PERIOD_1M] = 0
+            #         df_flag[PERIOD_5M] = 0
+            #     elif df_flag[PERIOD_1M]:
+            #         multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
+            #         df_flag[PERIOD_1M] = 0
             
-            else:
-                if len(df_fubon_1m) > 2:
-                    consolidation_strategy_bb(df_fubon_1m)
-                    print(f'upband: {df_fubon_1m.iloc[-1][BB_KEY][1]}, lowband: {df_fubon_1m.iloc[-1][BB_KEY][2]}')
+            # else:
+            #     if len(df_fubon_1m) > 2:
+            #         consolidation_strategy_bb(df_fubon_1m)
+            #         print(f'upband: {df_fubon_1m.iloc[-1][BB_KEY][1]}, lowband: {df_fubon_1m.iloc[-1][BB_KEY][2]}')
 
             time.sleep(0.01)
             os.system('cls')
