@@ -622,13 +622,13 @@ def bb_bandwidth(df):
 
     return (up_band - bot_band)
 
-def vwap_trend(df):
-    if len(df) < VWAP_TREND_WINDOW:
+def vwap_trend(df, period=VWAP_TREND_WINDOW):
+    if len(df) < period:
         return
     global VWAP_trend
-    if (df.tail(VWAP_TREND_WINDOW)['close'] >= df.tail(VWAP_TREND_WINDOW)['vwap']).all():
+    if (df.tail(period)['close'] >= df.tail(period)['vwap']).all():
         VWAP_trend = 1
-    elif (df.tail(VWAP_TREND_WINDOW)['close'] <= df.tail(VWAP_TREND_WINDOW)['vwap']).all():
+    elif (df.tail(period)['close'] <= df.tail(period)['vwap']).all():
         VWAP_trend = -1
     else:
         VWAP_trend = 0
@@ -887,6 +887,50 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
                 if score == 3:
                     open_position(1)
 
+def chk_candle_shadow(df):
+    if len(df) < 1:
+        return
+    
+    MIN_BODY = 4        # 實體最小點數
+    MIN_CANDLE = 20
+    SHADOW_RATIO = 2  # 影線長度需至少為實體的倍數
+    DOMINANCE_RATIO = 2  # 主導影線需為對側影線的倍數
+
+    open = df.iloc[-1]['open']
+    close = df.iloc[-1]['close']
+    high = df.iloc[-1]['high']
+    low = df.iloc[-1]['low']
+
+    candle_length = high - low
+    body_length = abs(open-close)
+    upper_shadow = high - max(open, close)
+    lower_shadow = min(open, close) - low
+
+    shadow_reverse = 0
+
+    if body_length >= MIN_BODY:
+        if upper_shadow >= body_length * SHADOW_RATIO and lower_shadow < body_length * SHADOW_RATIO:
+        # 僅上影線顯著（下影線不顯著）→ 判斷為壓力
+            shadow_reverse = -1
+        elif lower_shadow >= body_length * SHADOW_RATIO and upper_shadow < body_length * SHADOW_RATIO:
+            # 僅下影線顯著（上影線不顯著）→ 判斷為支撐
+            shadow_reverse = 1
+        elif upper_shadow >= body_length * SHADOW_RATIO and lower_shadow >= body_length * SHADOW_RATIO:
+            # 雙邊影線皆滿足，需判斷是否有主導性
+            if upper_shadow >= lower_shadow * DOMINANCE_RATIO:
+                shadow_reverse = -1
+            elif lower_shadow >= upper_shadow * DOMINANCE_RATIO:
+                shadow_reverse = 1
+
+    if not shadow_reverse and (candle_length >= MIN_CANDLE):
+        if (upper_shadow / candle_length) > 0.6:
+            shadow_reverse = -1
+        elif (lower_shadow / candle_length) > 0.6:
+            shadow_reverse = 1
+
+    return shadow_reverse
+
+
 
 if __name__ == '__main__':
 
@@ -1005,6 +1049,7 @@ if __name__ == '__main__':
                 print(f'15m atr: {dfs_15.iloc[-1][ATR_KEY]}, adx: {dfs_15.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_15[KD_KEY]}')
                 print('====================================================================')
+
 
 
             # adx_trend = np.nan
