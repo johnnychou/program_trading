@@ -372,6 +372,28 @@ def is_data_ready(now, datas):
     else:
         return False
 
+def chk_fixed_stop_loss(realtime_candle):
+    if not Buy_at and not Sell_at:
+        return 0
+    if 'lastprice' not in realtime_candle:
+        return 0
+
+    lastprice = realtime_candle['lastprice']
+
+    if Buy_at:
+        entry_price = Buy_at[0]
+        close_price = entry_price - MAX_LOSS_PT
+        print(f'Position will stop loss at {close_price}')
+        if lastprice <= close_price:
+            return -1
+    elif Sell_at:
+        entry_price = Sell_at[0]
+        close_price = entry_price + MAX_LOSS_PT
+        print(f'Position will stop loss at {close_price}')
+        if lastprice >= close_price:
+            return 1
+    return 0
+
 def atr_fixed_stop(realtime_candle, df):
     if sig := chk_stop_loss(realtime_candle, df):
         return sig
@@ -919,7 +941,7 @@ def candle_shadow_signal(df):
 
     return shadow_reverse
 
-def current_close_ratio(df, window=15):
+def current_close_ratio(df, window=CLOSE_RATIO_WINDOW):
     if len(df) < window:
         return 50
     highest = df['high'].tail(window).max()
@@ -1081,6 +1103,10 @@ if __name__ == '__main__':
 
             print(f'VWAP trend: {VWAP_trend}')
             print(f'Close rate: {close_ratio}')
+
+            # check for stop loss
+            chk_fixed_stop_loss(realtime_candle)
+
 
             # adx_trend = np.nan
             # if ADX_KEY in dfs_1.columns:
