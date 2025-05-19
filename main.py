@@ -553,14 +553,21 @@ def trend_or_consolidation_bb(df):
         return 'notrade'
     return 'consolidation'
 
+def is_sideways_market(df, ma_period=15, slope_window=5, threshold=1.5):
+    if len(df) < ma_period + slope_window:
+        return False
+    df['ma'] = df['close'].rolling(ma_period).mean()
+    recent_ma = df['ma'].tail(slope_window)
+    x = np.arange(slope_window)
+    y = recent_ma.values
+    slope = np.polyfit(x, y, 1)[0]
+    return abs(slope) < threshold
 
 def kd_relation(df):
     if len(df) < 1:
         return 0
     k = df.iloc[-1][KD_KEY][0]
     d = df.iloc[-1][KD_KEY][1]
-
-    diff = np.abs(k - d)
 
     if k > d:
         return 1
@@ -573,13 +580,17 @@ def kd_relation_strict(df):
         return 0
     k = df.iloc[-1][KD_KEY][0]
     d = df.iloc[-1][KD_KEY][1]
+    rsv = df.iloc[-1][KD_KEY][2]
+    wave = price_range(df, KD_PERIOD)
 
     diff = np.abs(k - d)
 
     if k > d and diff > 2:
         if Sell_at and k < 25: # 防鈍化平倉
             return 0
-        elif k > 80:
+        elif k > 80: # 防追高
+            return 0
+        elif wave < 25 and rsv > 80: # 防橫盤追高
             return 0
         else:
             return 1
@@ -587,7 +598,9 @@ def kd_relation_strict(df):
     elif k < d and diff > 2:
         if Buy_at and k > 75:  # 防鈍化平倉
             return 0
-        elif k < 20:
+        elif k < 20: # 防追低
+            return 0
+        elif wave < 25 and rsv < 20: # 防橫盤追低
             return 0
         else:
             return -1
@@ -953,6 +966,11 @@ def current_close_ratio(df, window=CLOSE_RATIO_WINDOW):
         ratio = round((last_close - lowest)/(highest - lowest)*100, 1)
     return ratio
 
+def price_range(df, window=CLOSE_RATIO_WINDOW):
+    highest = df['high'].tail(window).max()
+    lowest = df['low'].tail(window).min()
+    width = highest - lowest
+    return width
 
 if __name__ == '__main__':
 
