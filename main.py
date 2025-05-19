@@ -109,6 +109,62 @@ def check_process_alive(processes, data_queue, realtime_candle):
 
     return processes
 
+def restart_all_processes(processes, data_queue, realtime_candle):
+
+    print("Initiating restart of all processes to reinitialize data...")
+
+    # 1. Store all period_keys for recreation later
+    # We need these because we're about to terminate the processes holding them.
+    all_period_keys = []
+    if processes: # Ensure processes list is not empty
+        all_period_keys = [p_info[1] for p_info in processes]
+        print(f"Identified {len(all_period_keys)} processes to restart: {all_period_keys}")
+    else:
+        print("No processes currently in the list to restart.")
+        return processes # Return the empty list
+
+    # 2. Terminate all existing processes
+    print("**Terminating all current processes...**")
+    for p_info in processes:
+        process_obj = p_info[0]
+        period_key = p_info[1]
+        if process_obj.is_alive():
+            try:
+                print(f"   Terminating process (Period: {period_key})...")
+                process_obj.terminate()
+                process_obj.join(timeout=5) # Wait for the process to end (max 5 seconds)
+                if process_obj.is_alive():
+                    print(f"   Warning: Process (Period: {period_key}) did not terminate after 5 seconds.")
+                else:
+                    print(f"   Process (Period: {period_key}) terminated. Exit code: {process_obj.exitcode}")
+            except Exception as e:
+                print(f"   Error terminating process (Period: {period_key}): {e}")
+        else:
+            # If already dead, still good to call join to clean up zombie process if any
+            process_obj.join(timeout=1) # Short timeout for already dead processes
+            print(f"   ℹProcess (Period: {period_key}) was already dead. Exit code: {process_obj.exitcode}")
+
+    # 3. Clear the old processes list (in-place)
+    # The create functions will append new process objects to this list.
+    processes.clear()
+    print("Cleared the old processes list.")
+
+    # 4. Recreate all processes using the stored period_keys
+    print("Recreating all processes...")
+    for period_key in all_period_keys:
+        print(f"   Attempting to create new process for (Period: {period_key}).")
+        if period_key == PERIOD_59S:
+            create_twse_process(period_key, Userinput_Product, data_queue, realtime_candle, processes)
+        else:
+            create_fubon_process(period_key, Userinput_Product, data_queue, processes)
+        print(f'   ✨ Process (Period: {period_key}) has been recreated.')
+
+    print(f"All {len(all_period_keys)} processes have been requested to restart.")
+
+    time.sleep(5) # Give a moment for processes to initialize
+
+    return processes
+
 def user_input_settings():
     global Userinput_Market, Userinput_Direction, Userinput_Product, Userinput_OrderAmount, PT_price
 
