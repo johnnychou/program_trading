@@ -34,3 +34,7 @@ MIN_ATR = 10 # prevent atr too small
 
 DAY_HIGH_TIME = ('08:45:00', '10:00:00')
 NIGHT_HIGH_TIME = ('21:30:00', '22:30:00')
+
+
+KD_MIN_DIFF_RATIO = 1.5
+KD_MIN_DIFF_FIXED = 2
