@@ -175,9 +175,9 @@ def show_realtime(realtime_candle):
     if Highest != Lowest:
         level = round((Last_price - Lowest) / (Highest - Lowest) * 100, 2)
     print(f'Lastprice: {Last_price}, Highest: {Highest}, Lowest: {Lowest}, Level: {level}%')
-    print('====================================================================')
+    print('==============================================================================')
     print(realtime_candle)
-    print('====================================================================')
+    print('==============================================================================')
     return
 
 def show_candles(realtime_candle, df_twse, df_fubon_1m, df_fubon_5m, df_fubon_15m):
@@ -198,10 +198,17 @@ def show_candles(realtime_candle, df_twse, df_fubon_1m, df_fubon_5m, df_fubon_15
     return
 
 def show_user_settings():
-    print('====================================================================')
+    print('==============================================================================')
+    if VWAP_trend == 1:
+        trend = 'buy only'
+    elif VWAP_trend == -1:
+        trend = 'sell only'
+    else: 
+        trend = 'none'
+
     print(f'Product: {Userinput_Product}/{OrderAmount},\
             Market: {Userinput_Market},\
-            Direction: {Userinput_Direction}')
+            Direction: {Userinput_Direction}/{trend}')
     return
 
 def show_account_info():
@@ -215,10 +222,10 @@ def show_account_info():
         position = f'Sell: {Sell_at}'
         if Last_price:
             unrealized = (Sell_at[0] - Last_price)*PT_price*OrderAmount
-    print('====================================================================')
+    print('==============================================================================')
     print(f'Balance: {Balance}, Profit: {Total_profit}, TradeTimes: {Trade_times}')
     print(f'Position: {position}, Unrealized: {unrealized}')
-    print('====================================================================')
+    print('==============================================================================')
     return
 
 def is_market_time(market_hours, now):
@@ -553,16 +560,16 @@ def trend_or_consolidation_bb(df):
         return 'notrade'
     return 'consolidation'
 
-def is_sideways_market(df, slope_window=5, threshold=1.5):
-    if len(df) < MA_PERIOD + slope_window:
+def is_sideways_market(df, angle_threshold=20):
+    if len(df) < MA_PERIOD:
         return False
 
-    recent_ma = df[MA_KEY].tail(slope_window)
-    x = np.arange(slope_window)
-    y = recent_ma.values
+    x = np.arange(MA_PERIOD)
+    y = df[MA_KEY].tail(MA_PERIOD).values
     slope = np.polyfit(x, y, 1)[0]
-    print(f'MA slope: {slope:.2f}, Threshold: {threshold}')
-    return abs(slope) < threshold
+    angle = abs(np.degrees(np.arctan(slope)))
+    print(f'MA slope: {slope:.2f}, Angle: {angle:.2f}, Threshold: {angle_threshold}')
+    return angle < angle_threshold
 
 def kd_relation(df):
     if len(df) < 1:
@@ -582,7 +589,7 @@ def kd_relation_strict(df):
     k = df.iloc[-1][KD_KEY][0]
     d = df.iloc[-1][KD_KEY][1]
     rsv = df.iloc[-1][KD_KEY][2]
-    wave = price_range(df, KD_PERIOD)
+    wave = price_range(df, KD_PERIOD[0])
 
     diff = np.abs(k - d)
 
@@ -799,14 +806,14 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
     # atr = dfs_1.iloc[-1][ATR_KEY]
     # adx = dfs_1.iloc[-1][ADX_KEY]
     # print(f'1_min: ATR_{ATR_PERIOD}: {atr}, ADX_{ADX_PERIOD}: {adx}')
-    # print('====================================================================')
+    # print('==============================================================================')
     # # show some key data
     # for index, row_series in dfs_5.iterrows():
     #     print(f'EMA_5: {row_series[EMA_KEY]}, EMA_20: {row_series[EMA2_KEY]}, RSI: {row_series[RSI_KEY]}')
     # atr_5 = dfs_5.iloc[-1][ATR_KEY]
     # adx_5 = dfs_5.iloc[-1][ADX_KEY]
     # print(f'5_min: ATR_{ATR_PERIOD}: {atr_5}, ADX_{ADX_PERIOD}: {adx_5}')
-    # print('====================================================================')
+    # print('==============================================================================')
     
     
     if is_market_time(DAY_HIGH_TIME, now) or\
@@ -964,10 +971,12 @@ def current_close_ratio(df, window=CLOSE_RATIO_WINDOW):
     if (highest == lowest):
         ratio = 50
     else:
-        ratio = round((last_close - lowest)/(highest - lowest)*100, 1)
+        ratio = round((last_close - lowest)/(highest - lowest)*100, 2)
     return ratio
 
 def price_range(df, window=CLOSE_RATIO_WINDOW):
+    # if len(df) < window:
+    #     return 0
     highest = df['high'].tail(window).max()
     lowest = df['low'].tail(window).min()
     width = highest - lowest
@@ -1072,36 +1081,36 @@ if __name__ == '__main__':
 
             # dfs = df_twse.tail(5)
             # print(dfs)
-            # print('====================================================================')
+            # print('==============================================================================')
             dfs_1 = df_fubon_1m.tail(5)
             if KD_KEY in dfs_1.columns:
                 print(dfs_1)
                 print(f'1m trend: {kd_relation(dfs_1)}')
                 print(f'1m atr: {dfs_1.iloc[-1][ATR_KEY]}, adx: {dfs_1.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_1[KD_KEY]}')
-                print('====================================================================')
+                print('==============================================================================')
             dfs_5 = df_fubon_5m.tail(3)
             if KD_KEY in dfs_5.columns:
                 print(dfs_5)
                 print(f'5m trend: {kd_relation(dfs_5)}')
                 print(f'5m atr: {dfs_5.iloc[-1][ATR_KEY]}, adx: {dfs_5.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_5[KD_KEY]}')
-                print('====================================================================')
+                print('==============================================================================')
             # dfs_15 = df_fubon_15m.tail(2)
             # if KD_KEY in dfs_15.columns:
             #     print(dfs_15)
             #     print(f'15m trend: {kd_relation(dfs_15)}')
             #     print(f'15m atr: {dfs_15.iloc[-1][ATR_KEY]}, adx: {dfs_15.iloc[-1][ADX_KEY]}')
             #     print(f'{dfs_15[KD_KEY]}')
-            #     print('====================================================================')
+            #     print('==============================================================================')
 
             traded = 0
 
             if shadow_sig: # sig comes every 1 minute
-                if shadow_sig == 1 and close_ratio <= 15:
+                if shadow_sig == 1 and close_ratio <= 25:
                     direct_trading(1)
                     traded = 1
-                elif shadow_sig == -1 and close_ratio >= 85:
+                elif shadow_sig == -1 and close_ratio >= 75:
                     direct_trading(-1)
                     traded = 1
 
@@ -1127,7 +1136,7 @@ if __name__ == '__main__':
                     df_flag[PERIOD_1M] = 0
 
             print(f'VWAP trend: {VWAP_trend}')
-            print(f'Close rate: {close_ratio}')
+            print(f'Close price ratio: {close_ratio}%')
 
             # check for stop loss
             chk_fixed_stop_loss(realtime_candle)
