@@ -650,7 +650,7 @@ def get_min_diff(d):
     return round(min_diff*KD_MIN_DIFF_RATIO, 2)
 
 def kd_relation_strict(df):
-    if len(df) < 1:
+    if len(df) < KD_PERIOD[0]:
         return 0
     k = df.iloc[-1][KD_KEY][0]
     d = df.iloc[-1][KD_KEY][1]
