@@ -59,7 +59,7 @@ class TWSE(object):
             if market == '-1':
                 time.sleep(60)
                 continue
-            self.indicators.reset_state_if_needed(market)
+            #self.indicators.reset_state_if_needed(market)
             candle = self._get_candles_from_twse()
             if candle:
                 new_row = pd.DataFrame([candle])

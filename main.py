@@ -157,10 +157,11 @@ def restart_all_processes(processes, data_queue, realtime_candle):
             create_twse_process(period_key, Userinput_Product, data_queue, realtime_candle, processes)
         else:
             create_fubon_process(period_key, Userinput_Product, data_queue, processes)
-        print(f'   ✨ Process (Period: {period_key}) has been recreated.')
+        print(f'   Process (Period: {period_key}) has been recreated.')
 
     print(f"All {len(all_period_keys)} processes have been requested to restart.")
 
+    winsound.Beep(2000,200)
     time.sleep(5) # Give a moment for processes to initialize
 
     return processes
@@ -264,7 +265,7 @@ def show_user_settings():
 
     print(f'Product: {Userinput_Product}/{OrderAmount},\
             Market: {Userinput_Market},\
-            Direction: {Userinput_Direction}/{trend}')
+            Direction: {Userinput_Direction}: {trend}')
     return
 
 def show_account_info():
@@ -435,7 +436,7 @@ def is_data_ready(now, datas):
     else:
         return False
 
-def chk_fixed_stop_loss(realtime_candle):
+def chk_max_stop_loss(realtime_candle):
     if not Buy_at and not Sell_at:
         return 0
     if 'lastprice' not in realtime_candle:
@@ -448,14 +449,18 @@ def chk_fixed_stop_loss(realtime_candle):
         close_price = entry_price - MAX_LOSS_PT
         print(f'Position will stop loss at {close_price}')
         if lastprice <= close_price:
-            return -1
+            close_position(-1)
+            return
+        
     elif Sell_at:
         entry_price = Sell_at[0]
         close_price = entry_price + MAX_LOSS_PT
         print(f'Position will stop loss at {close_price}')
         if lastprice >= close_price:
-            return 1
-    return 0
+            close_position(1)
+            return
+        
+    return
 
 def atr_fixed_stop(realtime_candle, df):
     if sig := chk_stop_loss(realtime_candle, df):
@@ -650,7 +655,7 @@ def kd_relation_strict(df):
     k = df.iloc[-1][KD_KEY][0]
     d = df.iloc[-1][KD_KEY][1]
     rsv = df.iloc[-1][KD_KEY][2]
-    #wave = price_range(df, KD_PERIOD[0])
+    wave = price_range(df, KD_PERIOD[0])
 
     diff = np.abs(k - d)
     kd_min_diff = max(get_min_diff(d), KD_MIN_DIFF_FIXED)
@@ -660,7 +665,7 @@ def kd_relation_strict(df):
             return 0
         elif k > 80: # 防追高
             return 0
-        elif rsv > 75: # 防橫盤追高
+        elif wave < 20 and rsv > 70: # 防橫盤追高
             return 0
         else:
             return 1
@@ -670,11 +675,11 @@ def kd_relation_strict(df):
             return 0
         elif k < 20: # 防追低
             return 0
-        elif rsv < 25: # 防橫盤追低
+        elif wave < 20 and rsv < 30: # 防橫盤追低
             return 0
         else:
             return -1
-        
+
     return 0
 
 def kd_cross_signal(df):
@@ -1078,6 +1083,7 @@ if __name__ == '__main__':
     # last_minute_checked = -1
     close_ratio = 50
     shadow_sig = 0
+    restart_processes_flag = 0
 
     try:
         while True:
@@ -1086,6 +1092,7 @@ if __name__ == '__main__':
             # 隨時檢查processes
             processes = check_process_alive(processes, data_queue, realtime_candle)
 
+            # 檢查 data queue 有無新資料
             while not data_queue.empty():  # 非阻塞檢查Queue
                 period, tmp_df = data_queue.get()
                 # print(f"received period[{period}] data")
@@ -1107,6 +1114,39 @@ if __name__ == '__main__':
                     df_fubon_15m = tmp_df
                     df_flag[period] = 1
 
+            # show some data
+            show_user_settings()
+            show_account_info()
+            show_realtime(realtime_candle)
+
+            # 在交易時段結束前1分鐘平倉
+            if before_end_of_market(Userinput_Market, now):
+                print(f"[{now.strftime('%H:%M:%S')}] Closing positions before the end of market...")
+                close_all_position()
+                time.sleep(60)
+                continue
+
+            # 檢查是否在使用者想要的交易時間
+            if not is_trading_time(Userinput_Market, now):
+                show_account_info()
+                show_realtime(realtime_candle)
+                restart_processes_flag = 1
+
+                print(df_fubon_5m.tail(5))
+                print(f"[{now.strftime('%H:%M:%S')}] Not in trading time now...")
+
+                time.sleep(60)
+                os.system('cls')
+                continue
+
+            # 重啟processes以重置所有資料，避免舊資料影響計算
+            if restart_processes_flag:
+                restart_processes_flag = 0
+                processes = restart_all_processes(processes, data_queue, realtime_candle)
+                continue
+
+
+            # 等同分鐘資料都到齊才設置 Last_executed_minute flag
             if now.minute % 15 == 0 and now.minute != Last_executed_minute:
                 if is_data_ready(now, [[df_fubon_1m, PERIOD_1M],\
                                       [df_fubon_5m, PERIOD_5M],\
@@ -1124,25 +1164,7 @@ if __name__ == '__main__':
                     # show_candles(realtime_candle, df_twse, df_fubon_1m, df_fubon_5m, df_fubon_15m)
                     # time.sleep(10)
 
-            if not is_trading_time(Userinput_Market, now):
-                show_account_info()
-                show_realtime(realtime_candle)
-                print(df_fubon_5m.tail(5))
-
-                print(f"[{now.strftime('%H:%M:%S')}] Not in trading time now...")
-                time.sleep(60)
-                os.system('cls')
-                continue
-
-            if before_end_of_market(Userinput_Market, now):
-                print(f"[{now.strftime('%H:%M:%S')}] Closing positions before the end of market...")
-                close_all_position()
-                time.sleep(60)
-                continue
-
-            show_user_settings()
-            show_account_info()
-            show_realtime(realtime_candle)
+            # show some df key data
 
             # dfs = df_twse.tail(5)
             # print(dfs)
@@ -1161,16 +1183,11 @@ if __name__ == '__main__':
                 print(f'5m atr: {dfs_5.iloc[-1][ATR_KEY]}, adx: {dfs_5.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_5[KD_KEY]}')
                 print('==============================================================================')
-            # dfs_15 = df_fubon_15m.tail(2)
-            # if KD_KEY in dfs_15.columns:
-            #     print(dfs_15)
-            #     print(f'15m trend: {kd_relation(dfs_15)}')
-            #     print(f'15m atr: {dfs_15.iloc[-1][ATR_KEY]}, adx: {dfs_15.iloc[-1][ADX_KEY]}')
-            #     print(f'{dfs_15[KD_KEY]}')
-            #     print('==============================================================================')
 
-            # check for stop loss
-            chk_fixed_stop_loss(realtime_candle)
+            ### 策略區段開始 ###
+
+            # check for max stop loss
+            chk_max_stop_loss(realtime_candle)
 
             traded = 0
 
@@ -1208,6 +1225,7 @@ if __name__ == '__main__':
 
             print(f'VWAP trend: {VWAP_trend}')
             print(f'Close price ratio: {close_ratio}%')
+            ### 策略區段結束 ###
 
             # adx_trend = np.nan
             # if ADX_KEY in dfs_1.columns:
