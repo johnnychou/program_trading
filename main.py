@@ -679,7 +679,7 @@ def bb_bandwidth(df):
 
     return (up_band - bot_band)
 
-def vwap_trend(df, window=VWAP_TREND_WINDOW, threshold=5, min_rate=0.9):
+def vwap_trend(df, window=VWAP_TREND_WINDOW, threshold=10, min_rate=0.95):
     if len(df) < window:
         return
     global VWAP_trend
@@ -1113,13 +1113,16 @@ if __name__ == '__main__':
             #     print(f'{dfs_15[KD_KEY]}')
             #     print('==============================================================================')
 
+            # check for stop loss
+            chk_fixed_stop_loss(realtime_candle)
+
             traded = 0
 
             if shadow_sig: # sig comes every 1 minute
-                if shadow_sig == 1 and close_ratio <= 25:
+                if shadow_sig == 1 and close_ratio <= 30:
                     direct_trading(1)
                     traded = 1
-                elif shadow_sig == -1 and close_ratio >= 75:
+                elif shadow_sig == -1 and close_ratio >= 70:
                     direct_trading(-1)
                     traded = 1
 
@@ -1130,10 +1133,13 @@ if __name__ == '__main__':
                     df_flag[PERIOD_5M] = 0
 
             elif not traded:
-                if is_sideways_market(df_fubon_1m):
+                if df_flag[PERIOD_1M] and is_sideways_market(df_fubon_1m):
                     df_flag[PERIOD_1M] = 0
                     df_flag[PERIOD_5M] = 0
-                    pass
+                    if Buy_at and close_ratio >= 90:
+                        close_position(-1)
+                    elif Sell_at and close_ratio <= 10:
+                        close_position(1)
 
                 elif df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
@@ -1146,10 +1152,6 @@ if __name__ == '__main__':
 
             print(f'VWAP trend: {VWAP_trend}')
             print(f'Close price ratio: {close_ratio}%')
-
-            # check for stop loss
-            chk_fixed_stop_loss(realtime_candle)
-
 
             # adx_trend = np.nan
             # if ADX_KEY in dfs_1.columns:
