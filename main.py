@@ -914,7 +914,10 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
 
         if not Buy_at and not Sell_at:
             if np.abs(score) >= 2:
-                open_position(score)
+                if score > 0:
+                    open_position(1)
+                else:
+                    open_position(-1)
         else:
             if Buy_at and score <= -1: # -1, -1, 1
                 close_position(-1)
