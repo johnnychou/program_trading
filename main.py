@@ -630,13 +630,18 @@ def bb_bandwidth(df):
 
     return (up_band - bot_band)
 
-def vwap_trend(df, period=VWAP_TREND_WINDOW):
-    if len(df) < period:
+def vwap_trend(df, window=VWAP_TREND_WINDOW, threshold=5, min_rate=0.9):
+    if len(df) < window:
         return
     global VWAP_trend
-    if (df.tail(period)['close'] >= df.tail(period)['vwap']).all():
+    min_count = int(window * min_rate)
+    recent = df.tail(window)
+    above_vwap = (recent['close'] >= recent['vwap'] + threshold).sum()
+    below_vwap = (recent['close'] <= recent['vwap'] - threshold).sum()
+
+    if above_vwap >= min_count:
         VWAP_trend = 1
-    elif (df.tail(period)['close'] <= df.tail(period)['vwap']).all():
+    elif below_vwap >= min_count:
         VWAP_trend = -1
     else:
         VWAP_trend = 0
@@ -829,7 +834,7 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
                     df_flag[PERIOD_1M] = 0
 
 def multi_kd_strategy(df_1m, df_5m, df_15m, now):
-    if len(df_1m) < KD_PERIOD:
+    if len(df_1m) < KD_PERIOD[0]:
         return
 
     if is_market_time(DAY_MARKET, now) or\
@@ -906,7 +911,7 @@ def candle_shadow_signal(df):
             elif lower_shadow >= upper_shadow * DOMINANCE_RATIO:
                 shadow_reverse = 1
 
-    if not shadow_reverse and (candle_length >= MIN_CANDLE): #較次要
+    if (not shadow_reverse) and (candle_length >= MIN_CANDLE): #較次要
         if (upper_shadow / candle_length) > 0.6:
             shadow_reverse = -1
         elif (lower_shadow / candle_length) > 0.6:
