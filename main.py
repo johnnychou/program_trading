@@ -553,14 +553,15 @@ def trend_or_consolidation_bb(df):
         return 'notrade'
     return 'consolidation'
 
-def is_sideways_market(df, ma_period=15, slope_window=5, threshold=1.5):
-    if len(df) < ma_period + slope_window:
+def is_sideways_market(df, slope_window=5, threshold=1.5):
+    if len(df) < MA_PERIOD + slope_window:
         return False
-    df['ma'] = df['close'].rolling(ma_period).mean()
-    recent_ma = df['ma'].tail(slope_window)
+
+    recent_ma = df[MA_KEY].tail(slope_window)
     x = np.arange(slope_window)
     y = recent_ma.values
     slope = np.polyfit(x, y, 1)[0]
+    print(f'MA slope: {slope:.2f}, Threshold: {threshold}')
     return abs(slope) < threshold
 
 def kd_relation(df):
@@ -1111,10 +1112,16 @@ if __name__ == '__main__':
                     df_flag[PERIOD_5M] = 0
 
             elif not traded:
-                if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
+                if is_sideways_market(df_fubon_1m):
+                    df_flag[PERIOD_1M] = 0
+                    df_flag[PERIOD_5M] = 0
+                    pass
+
+                elif df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
                     df_flag[PERIOD_1M] = 0
                     df_flag[PERIOD_5M] = 0
+
                 elif df_flag[PERIOD_1M]:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
                     df_flag[PERIOD_1M] = 0
