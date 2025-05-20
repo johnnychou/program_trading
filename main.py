@@ -658,12 +658,13 @@ def kd_relation_strict(df):
     pre_k = df.iloc[-2][KD_KEY][0]
     pre_d = df.iloc[-2][KD_KEY][1]
     wave = price_range(df, KD_PERIOD[0])
+    positions = len(Buy_at) + len(Sell_at)
 
     diff = np.abs(k - d)
     kd_min_diff = max(get_min_diff(d), KD_MIN_DIFF_FIXED)
 
     if k > d and diff > kd_min_diff:
-        if not Buy_at:
+        if not positions:
             if pre_d > 30:
                 return 0
             return 1   # 做多
@@ -673,7 +674,7 @@ def kd_relation_strict(df):
             return 1   # 平空倉
 
     elif k < d and diff > kd_min_diff:
-        if not Sell_at:
+        if not positions:
             if pre_d < 70:
                 return 0        
             return -1  # 做空
