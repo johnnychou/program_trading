@@ -950,7 +950,7 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
         return
 
     if is_market_time(DAY_MARKET, now) or\
-         is_market_time(NIGHT_HIGH_TIME, now):
+         is_market_time(AMER_MARKET, now):
         
         sig = kd_relation_strict(df_1m) # 單看1分鐘
 
@@ -976,7 +976,7 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
         score = trend_1 + trend_5 + VWAP_trend
 
         if not Buy_at and not Sell_at:
-            if np.abs(score) >= 2:
+            if np.abs(score) >= 2:    # 1, 1, 0
                 if score > 0:
                     open_position(1)
                 else:
@@ -1226,7 +1226,7 @@ if __name__ == '__main__':
                     df_flag[PERIOD_1M] = 0
 
             print(f'VWAP trend: {VWAP_trend}')
-            print(f'Close price ratio: {close_ratio}%')
+            print(f'Close price ratio in {CLOSE_RATIO_WINDOW}m: {close_ratio}%')
             ### 策略區段結束 ###
 
             # adx_trend = np.nan
