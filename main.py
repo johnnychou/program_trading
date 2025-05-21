@@ -667,13 +667,11 @@ def kd_relation_strict(df):
         if not positions:
             if VWAP_trend == 1:
                 return 1
-            elif pre_d < 30:
-                return 1
             return 0
         elif Sell_at:
             if k < 10: # 極高檔獲利了結
                 return 1
-            elif k < 30: # 防鈍化平倉
+            elif k < 25: # 防鈍化平倉
                 return 0
             return 1   # 平空倉
 
@@ -681,13 +679,11 @@ def kd_relation_strict(df):
         if not positions:
             if VWAP_trend == -1:
                 return -1
-            if pre_d > 70:
-                return -1
             return 0
         elif Buy_at:
             if k > 90: # 極高檔獲利了結
                 return -1
-            elif k > 70: # 防鈍化平倉
+            elif k > 75: # 防鈍化平倉
                 return 0
             return -1  # 平多倉
 
@@ -751,7 +747,7 @@ def bb_bandwidth(df):
 
     return (up_band - bot_band)
 
-def vwap_trend(df, window=VWAP_TREND_WINDOW, threshold=10, min_rate=0.95):
+def vwap_trend(df, window=VWAP_TREND_WINDOW, threshold=20, min_rate=0.95):
     if len(df) < window:
         return
     global VWAP_trend
@@ -1005,7 +1001,7 @@ def candle_shadow_signal(df):
         return 0
     
     MIN_BODY = 4         # body最小點數
-    MIN_CANDLE = 20      # 整根K線高低
+    MIN_CANDLE = 10      # 整根K線高低
     SHADOW_RATIO = 1.8     # 影線長度需至少為實體的倍數
     DOMINANCE_RATIO = 1.8  # 主導影線需為對側影線的倍數
 
@@ -1041,9 +1037,9 @@ def candle_shadow_signal(df):
                 return 1
 
     if (not shadow_reverse) and (candle_length >= MIN_CANDLE): #較次要
-        if (upper_shadow / candle_length) > 0.6:
+        if (upper_shadow / candle_length) > 0.7:
             shadow_reverse = -1
-        elif (lower_shadow / candle_length) > 0.6:
+        elif (lower_shadow / candle_length) > 0.7:
             shadow_reverse = 1
 
     return shadow_reverse
@@ -1186,20 +1182,20 @@ if __name__ == '__main__':
             # dfs = df_twse.tail(5)
             # print(dfs)
             # print('==============================================================================')
-            dfs_1 = df_fubon_1m.tail(5)
+            dfs_1 = df_fubon_1m.tail(15)
             if KD_KEY in dfs_1.columns:
                 print(dfs_1)
                 print(f'1m trend: {kd_relation(dfs_1)}')
                 print(f'1m atr: {dfs_1.iloc[-1][ATR_KEY]}, adx: {dfs_1.iloc[-1][ADX_KEY]}')
                 print(f'{dfs_1[KD_KEY]}')
                 print('==============================================================================')
-            dfs_5 = df_fubon_5m.tail(3)
-            if KD_KEY in dfs_5.columns:
-                print(dfs_5)
-                print(f'5m trend: {kd_relation(dfs_5)}')
-                print(f'5m atr: {dfs_5.iloc[-1][ATR_KEY]}, adx: {dfs_5.iloc[-1][ADX_KEY]}')
-                print(f'{dfs_5[KD_KEY]}')
-                print('==============================================================================')
+            # dfs_5 = df_fubon_5m.tail(3)
+            # if KD_KEY in dfs_5.columns:
+            #     print(dfs_5)
+            #     print(f'5m trend: {kd_relation(dfs_5)}')
+            #     print(f'5m atr: {dfs_5.iloc[-1][ATR_KEY]}, adx: {dfs_5.iloc[-1][ADX_KEY]}')
+            #     print(f'{dfs_5[KD_KEY]}')
+            #     print('==============================================================================')
 
             ### 策略區段開始 ###
 
