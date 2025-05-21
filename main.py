@@ -621,7 +621,7 @@ def trend_or_consolidation_bb(df):
         return 'notrade'
     return 'consolidation'
 
-def is_sideways_market(df, angle_threshold=20):
+def is_sideways_market(df, angle_threshold=SIDEWAY_MARKET_ANGLE):
     if len(df) < MA_PERIOD:
         return False
 
@@ -1006,8 +1006,8 @@ def candle_shadow_signal(df):
     
     MIN_BODY = 4         # body最小點數
     MIN_CANDLE = 20      # 整根K線高低
-    SHADOW_RATIO = 2     # 影線長度需至少為實體的倍數
-    DOMINANCE_RATIO = 2  # 主導影線需為對側影線的倍數
+    SHADOW_RATIO = 1.8     # 影線長度需至少為實體的倍數
+    DOMINANCE_RATIO = 1.8  # 主導影線需為對側影線的倍數
 
     open = df.iloc[-1]['open']
     close = df.iloc[-1]['close']
@@ -1019,21 +1019,26 @@ def candle_shadow_signal(df):
     upper_shadow = high - max(open, close)
     lower_shadow = min(open, close) - low
 
+    shadow_threshold = body_length * SHADOW_RATIO
     shadow_reverse = 0
 
     if body_length >= MIN_BODY:
-        if upper_shadow >= body_length * SHADOW_RATIO and lower_shadow < body_length * SHADOW_RATIO:
+        if (upper_shadow >= shadow_threshold) and (lower_shadow < shadow_threshold):
         # 僅上影線顯著（下影線不顯著）→ 判斷為壓力
             shadow_reverse = -1
-        elif lower_shadow >= body_length * SHADOW_RATIO and upper_shadow < body_length * SHADOW_RATIO:
+            return -1
+        elif (lower_shadow >= shadow_threshold) and (upper_shadow < shadow_threshold):
             # 僅下影線顯著（上影線不顯著）→ 判斷為支撐
             shadow_reverse = 1
-        elif upper_shadow >= body_length * SHADOW_RATIO and lower_shadow >= body_length * SHADOW_RATIO:
+            return 1
+        elif (upper_shadow >= shadow_threshold) and (lower_shadow >= shadow_threshold):
             # 雙邊影線皆滿足，需判斷是否有主導性
-            if upper_shadow >= lower_shadow * DOMINANCE_RATIO:
+            if upper_shadow >= (lower_shadow * DOMINANCE_RATIO):
                 shadow_reverse = -1
-            elif lower_shadow >= upper_shadow * DOMINANCE_RATIO:
+                return -1
+            elif lower_shadow >= (upper_shadow * DOMINANCE_RATIO):
                 shadow_reverse = 1
+                return 1
 
     if (not shadow_reverse) and (candle_length >= MIN_CANDLE): #較次要
         if (upper_shadow / candle_length) > 0.6:
@@ -1139,11 +1144,12 @@ if __name__ == '__main__':
 
             # 檢查是否在使用者想要的交易時間
             if not is_trading_time(Userinput_Market, now):
-                show_account_info()
-                show_realtime(realtime_candle)
                 restart_processes_flag = 1
 
+                print(df_twse.tail(5))
+                print('==============================================================================')
                 print(df_fubon_5m.tail(5))
+                print('==============================================================================')
                 print(f"[{now.strftime('%H:%M:%S')}] Not in trading time now...")
 
                 time.sleep(60)
@@ -1203,10 +1209,10 @@ if __name__ == '__main__':
             traded = 0
 
             if shadow_sig: # sig comes every 1 minute
-                if shadow_sig == 1 and close_ratio <= 30:
+                if shadow_sig == 1:
                     direct_trading(1)
                     traded = 1
-                elif shadow_sig == -1 and close_ratio >= 70:
+                elif shadow_sig == -1:
                     direct_trading(-1)
                     traded = 1
 
