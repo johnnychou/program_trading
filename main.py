@@ -671,7 +671,9 @@ def kd_relation_strict(df):
                 return 1
             return 0
         elif Sell_at:
-            if k < 30: # 防鈍化平倉
+            if k < 10: # 極高檔獲利了結
+                return 1
+            elif k < 30: # 防鈍化平倉
                 return 0
             return 1   # 平空倉
 
@@ -683,7 +685,9 @@ def kd_relation_strict(df):
                 return -1
             return 0
         elif Buy_at:
-            if k > 70: # 防鈍化平倉
+            if k > 90: # 極高檔獲利了結
+                return -1
+            elif k > 70: # 防鈍化平倉
                 return 0
             return -1  # 平多倉
 
