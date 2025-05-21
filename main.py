@@ -665,9 +665,11 @@ def kd_relation_strict(df):
 
     if k > d and diff > kd_min_diff:
         if not positions:
-            if pre_d > 30:
-                return 0
-            return 1   # 做多
+            if VWAP_trend == 1:
+                return 1
+            elif pre_d < 30:
+                return 1
+            return 0
         elif Sell_at:
             if k < 30: # 防鈍化平倉
                 return 0
@@ -675,9 +677,11 @@ def kd_relation_strict(df):
 
     elif k < d and diff > kd_min_diff:
         if not positions:
-            if pre_d < 70:
-                return 0        
-            return -1  # 做空
+            if VWAP_trend == -1:
+                return -1
+            if pre_d > 70:
+                return -1
+            return 0
         elif Buy_at:
             if k > 70: # 防鈍化平倉
                 return 0
