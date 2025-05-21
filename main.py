@@ -1194,7 +1194,7 @@ if __name__ == '__main__':
 
             traded = 0
 
-            if shadow_sig and len(df_fubon_1m) > 5: # sig comes every 1 minute
+            if shadow_sig: # sig comes every 1 minute
                 if shadow_sig == 1 and close_ratio <= 30:
                     direct_trading(1)
                     traded = 1
@@ -1208,7 +1208,7 @@ if __name__ == '__main__':
                     df_flag[PERIOD_1M] = 0
                     df_flag[PERIOD_5M] = 0
 
-            elif not traded:
+            if not traded:
                 if is_sideways_market(df_fubon_1m) and df_flag[PERIOD_1M]:
                     df_flag[PERIOD_1M] = 0
                     df_flag[PERIOD_5M] = 0
