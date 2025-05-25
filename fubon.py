@@ -8,6 +8,7 @@ import traceback
 import winsound
 import pandas as pd
 import numpy as np
+from dotenv import load_dotenv
 
 import fubon_neo
 from fubon_neo.sdk import FubonSDK, Mode, FutOptOrder
@@ -15,8 +16,6 @@ from fubon_neo.constant import TimeInForce, FutOptOrderType, FutOptPriceType, Fu
 import utils
 import indicators as i
 from conf import *
-
-import accinfo as key
 
 MONTH_CODE = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L')
 
@@ -26,6 +25,12 @@ class Fubon_trade(object):
         self.Acc_futures = None
         self.Restfut = None
         self.product = product
+
+        load_dotenv()
+        self.userid = os.getenv("USERID")
+        self.userpwd = os.getenv("USERPWD")
+        self.ca = os.getenv("CA")
+        self.capwd = os.getenv("CAPWD")
 
         if product == 'TXF':
             self.chk_symbol = 'FITX'
@@ -45,7 +50,7 @@ class Fubon_trade(object):
 
     def login_account(self):
         try:
-            self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
+            self.Account = self.SDK.login(self.userid, self.userpwd, self.ca, self.capwd)
         except Exception as error:
             print(f"Exception: {error}")
         
@@ -100,7 +105,7 @@ class Fubon_trade(object):
         if code == "300":
             print("Reconnecting...")
             try:
-                self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
+                self.Account = self.SDK.login(self.userid, self.userpwd, self.ca, self.capwd)
                 self.login_account()
                 print("Reconnect successs")
                 print(self.Account)
@@ -278,6 +283,11 @@ class Fubon_data(object):
 
         self.key = period
         self.product = product
+        load_dotenv()
+        self.userid = os.getenv("USERID")
+        self.userpwd = os.getenv("USERPWD")
+        self.ca = os.getenv("CA")
+        self.capwd = os.getenv("CAPWD")
         self.data_queue = data_queue
         self.df = pd.DataFrame()
         return
@@ -374,7 +384,7 @@ class Fubon_data(object):
 
     def login_account(self):
         try:
-            self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
+            self.Account = self.SDK.login(self.userid, self.userpwd, self.ca, self.capwd)
         except Exception as error:
             print(f"Exception: {error}")
         
@@ -463,7 +473,7 @@ class Fubon_data(object):
         if code == "300":
             print("Reconnecting...")
             try:
-                self.Account = self.SDK.login(key.id, key.pwd, key.ca, key.ca_pwd)
+                self.Account = self.SDK.login(self.userid, self.userpwd, self.ca, self.capwd)
                 self.login_account()
                 print("Reconnect successs")
                 print(self.Account)

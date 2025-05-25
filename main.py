@@ -621,15 +621,17 @@ def trend_or_consolidation_bb(df):
         return 'notrade'
     return 'consolidation'
 
-def is_sideways_market(df, angle_threshold=SIDEWAY_MARKET_ANGLE):
-    if len(df) < MA_PERIOD:
+def Ma_angle(df, key=MA_KEY, period=MA_PERIOD):
+    if len(df) < period:
         return False
-
-    x = np.arange(MA_PERIOD)
-    y = df[MA_KEY].tail(MA_PERIOD).values
+    x = np.arange(period)
+    y = df[key].tail(period).values
     slope = np.polyfit(x, y, 1)[0]
     angle = abs(np.degrees(np.arctan(slope)))
-    print(f'MA slope: {slope:.2f}, Angle: {angle:.2f}, Threshold: {angle_threshold}')
+    print(f'{key} slope: {slope:.2f}, Angle: {angle:.2f}')
+    return angle
+
+def is_sideways_market(angle, angle_threshold=SIDEWAY_MARKET_ANGLE):
     return angle < angle_threshold
 
 def kd_relation(df):
@@ -654,38 +656,15 @@ def kd_relation_strict(df):
         return 0
     k = df.iloc[-1][KD_KEY][0]
     d = df.iloc[-1][KD_KEY][1]
-    rsv = df.iloc[-1][KD_KEY][2]
-    pre_k = df.iloc[-2][KD_KEY][0]
-    pre_d = df.iloc[-2][KD_KEY][1]
-    wave = price_range(df, KD_PERIOD[0])
-    positions = len(Buy_at) + len(Sell_at)
 
     diff = np.abs(k - d)
     kd_min_diff = max(get_min_diff(d), KD_MIN_DIFF_FIXED)
 
     if k > d and diff > kd_min_diff:
-        if not positions:
-            if VWAP_trend == 1:
-                return 1
-            return 0
-        elif Sell_at:
-            if k < 10: # 極高檔獲利了結
-                return 1
-            elif k < 25: # 防鈍化平倉
-                return 0
-            return 1   # 平空倉
+        return 1
 
     elif k < d and diff > kd_min_diff:
-        if not positions:
-            if VWAP_trend == -1:
-                return -1
-            return 0
-        elif Buy_at:
-            if k > 90: # 極高檔獲利了結
-                return -1
-            elif k > 75: # 防鈍化平倉
-                return 0
-            return -1  # 平多倉
+        return -1
 
     return 0
 
@@ -747,10 +726,12 @@ def bb_bandwidth(df):
 
     return (up_band - bot_band)
 
-def vwap_trend(df, window=VWAP_TREND_WINDOW, threshold=20, min_rate=0.95):
+def vwap_trend(df, window=VWAP_TREND_WINDOW, threshold=20, min_rate=0.9):
     if len(df) < window:
         return
     global VWAP_trend
+    atr = df.iloc[-1][ATR_KEY]
+    threshold = atr
     min_count = int(window * min_rate)
     recent = df.tail(window)
     above_vwap = (recent['close'] >= recent['vwap'] + threshold).sum()
@@ -953,30 +934,58 @@ def strategy_1(realtime_candle, df_fubon_1m, df_fubon_5m, df_flag, now):
 def multi_kd_strategy(df_1m, df_5m, df_15m, now):
     if len(df_1m) < KD_PERIOD[0]:
         return
+    
+    k_1m = df_1m.iloc[-1][KD_KEY][0]
+    d_1m = df_1m.iloc[-1][KD_KEY][1]
+    rsv_1m = df_1m.iloc[-1][KD_KEY][2]
+
+    is_sideways_market(df_fubon_1m)
 
     if is_market_time(DAY_MARKET, now) or\
-         is_market_time(AMER_MARKET, now):
+         is_market_time(NIGHT_HIGH_TIME, now):
         
         sig = kd_relation_strict(df_1m) # 單看1分鐘
 
         if not Buy_at and not Sell_at:
-            if sig:
+            if VWAP_trend:
+                if sig == VWAP_trend:
+                    open_position(sig)
+            else:
                 open_position(sig)
+            
+            return
+
         else:
             if Buy_at and sig == -1:
-                close_position(-1)
+                if k_1m > 90: # 極低檔結算
+                    close_position(-1)
+                elif k_1m > 75: # 防鈍化平倉
+                    pass
+                else:
+                    close_position(-1)
+
                 if sig == VWAP_trend:
                     open_position(-1)
+                
+                return
+
             elif Sell_at and sig == 1:
-                close_position(1)
+                if k_1m < 10: # 極低檔結算
+                    close_position(1)
+                elif k_1m < 25: # 防鈍化平倉
+                    pass
+                else:
+                    close_position(1)
+
                 if sig == VWAP_trend:
                     open_position(1)
 
-    else: # 1, 5分鐘雙重確認
+                return
+
+    else: # 5分鐘為主，1分鐘為輔
 
         trend_1 = kd_relation_strict(df_1m)
         trend_5 = kd_relation_strict(df_5m)
-        #trend_2 = kd_relation_strict(df_15m)
 
         score = trend_1 + trend_5 + VWAP_trend
 
@@ -996,14 +1005,43 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
                 if score == 3:
                     open_position(1)
 
-def candle_shadow_signal(df):
+def candle_shadow_signal_body(df):
     if len(df) < 1:
         return 0
     
     MIN_BODY = 4         # body最小點數
-    MIN_CANDLE = 10      # 整根K線高低
-    SHADOW_RATIO = 1.8     # 影線長度需至少為實體的倍數
-    DOMINANCE_RATIO = 1.8  # 主導影線需為對側影線的倍數
+    SHADOW_RATIO = 2     # 影線長度需至少為實體的倍數
+    DOMINANCE_RATIO = 2  # 主導影線需為對側影線的倍數
+
+    open = df.iloc[-1]['open']
+    close = df.iloc[-1]['close']
+    high = df.iloc[-1]['high']
+    low = df.iloc[-1]['low']
+
+    body_length = abs(open-close)
+    upper_shadow = high - max(open, close)
+    lower_shadow = min(open, close) - low
+
+    shadow_threshold = body_length * SHADOW_RATIO
+
+    if body_length >= MIN_BODY:
+        if (upper_shadow >= shadow_threshold) and (lower_shadow < shadow_threshold):
+        # 僅上影線顯著（下影線不顯著）→ 判斷為壓力
+            return -1
+        elif (lower_shadow >= shadow_threshold) and (upper_shadow < shadow_threshold):
+            # 僅下影線顯著（上影線不顯著）→ 判斷為支撐
+            return 1
+        elif (upper_shadow >= shadow_threshold) and (lower_shadow >= shadow_threshold):
+            # 雙邊影線皆滿足，需判斷是否有主導性
+            if upper_shadow >= (lower_shadow * DOMINANCE_RATIO):
+                return -1
+            elif lower_shadow >= (upper_shadow * DOMINANCE_RATIO):
+                return 1
+    return 0
+
+def candle_shadow_signal(df):
+    if len(df) < 1:
+        return 0
 
     open = df.iloc[-1]['open']
     close = df.iloc[-1]['close']
@@ -1011,38 +1049,16 @@ def candle_shadow_signal(df):
     low = df.iloc[-1]['low']
 
     candle_length = high - low
-    body_length = abs(open-close)
     upper_shadow = high - max(open, close)
     lower_shadow = min(open, close) - low
 
-    shadow_threshold = body_length * SHADOW_RATIO
-    shadow_reverse = 0
-
-    if body_length >= MIN_BODY:
-        if (upper_shadow >= shadow_threshold) and (lower_shadow < shadow_threshold):
-        # 僅上影線顯著（下影線不顯著）→ 判斷為壓力
-            shadow_reverse = -1
+    if candle_length >= SHADOW_MIN_CANDLE:
+        if (upper_shadow / candle_length) > SHADOW_RATIO:
             return -1
-        elif (lower_shadow >= shadow_threshold) and (upper_shadow < shadow_threshold):
-            # 僅下影線顯著（上影線不顯著）→ 判斷為支撐
-            shadow_reverse = 1
+        elif (lower_shadow / candle_length) > SHADOW_RATIO:
             return 1
-        elif (upper_shadow >= shadow_threshold) and (lower_shadow >= shadow_threshold):
-            # 雙邊影線皆滿足，需判斷是否有主導性
-            if upper_shadow >= (lower_shadow * DOMINANCE_RATIO):
-                shadow_reverse = -1
-                return -1
-            elif lower_shadow >= (upper_shadow * DOMINANCE_RATIO):
-                shadow_reverse = 1
-                return 1
 
-    if (not shadow_reverse) and (candle_length >= MIN_CANDLE): #較次要
-        if (upper_shadow / candle_length) > 0.7:
-            shadow_reverse = -1
-        elif (lower_shadow / candle_length) > 0.7:
-            shadow_reverse = 1
-
-    return shadow_reverse
+    return 0
 
 def current_close_ratio(df, window=CLOSE_RATIO_WINDOW):
     if len(df) < window:
@@ -1202,6 +1218,9 @@ if __name__ == '__main__':
             # check for max stop loss
             chk_max_stop_loss(realtime_candle)
 
+            ma_trend_1 = Ma_angle(df_fubon_1m, MA_KEY, MA_PERIOD)
+            ma_trend_2 = Ma_angle(df_fubon_1m, MA2_KEY, MA2_PERIOD)
+
             traded = 0
 
             if shadow_sig: # sig comes every 1 minute
@@ -1219,15 +1238,7 @@ if __name__ == '__main__':
                     df_flag[PERIOD_5M] = 0
 
             if not traded:
-                if is_sideways_market(df_fubon_1m) and df_flag[PERIOD_1M]:
-                    df_flag[PERIOD_1M] = 0
-                    df_flag[PERIOD_5M] = 0
-                    if Buy_at and close_ratio >= 90:
-                        close_position(-1)
-                    elif Sell_at and close_ratio <= 10:
-                        close_position(1)
-
-                elif df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
+                if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
                     df_flag[PERIOD_1M] = 0
                     df_flag[PERIOD_5M] = 0

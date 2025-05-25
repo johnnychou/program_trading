@@ -28,6 +28,7 @@ class indicator_calculator(object):
         if len(df) < 2:
             return
         self.indicator_ma(df, MA_PERIOD)
+        self.indicator_ma(df, MA2_PERIOD)
         self.indicator_ema(df, EMA_PERIOD)
         self.indicator_ema(df, EMA2_PERIOD)
         self.indicator_atr(df, ATR_PERIOD)
