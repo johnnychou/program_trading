@@ -1,9 +1,6 @@
 import datetime
-import math
 import os
 import numpy as np
-import requests as r
-import csv
 import time
 import multiprocessing
 import pandas as pd
@@ -11,7 +8,6 @@ import winsound
 
 import twse
 import fubon
-import indicators
 import utils
 from constant import *
 from conf import *
@@ -939,8 +935,6 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
     d_1m = df_1m.iloc[-1][KD_KEY][1]
     rsv_1m = df_1m.iloc[-1][KD_KEY][2]
 
-    is_sideways_market(df_fubon_1m)
-
     if is_market_time(DAY_MARKET, now) or\
          is_market_time(NIGHT_HIGH_TIME, now):
         
@@ -982,7 +976,7 @@ def multi_kd_strategy(df_1m, df_5m, df_15m, now):
 
                 return
 
-    else: # 5分鐘為主，1分鐘為輔
+    else:
 
         trend_1 = kd_relation_strict(df_1m)
         trend_5 = kd_relation_strict(df_5m)
@@ -1238,6 +1232,14 @@ if __name__ == '__main__':
                     df_flag[PERIOD_5M] = 0
 
             if not traded:
+                if is_sideways_market(df_fubon_1m):
+                    if Buy_at:
+                        if close_ratio >= 90:
+                            close_position(-1)
+                    elif Sell_at:
+                        if close_ratio <= 10:
+                            close_position(1)
+
                 if df_flag[PERIOD_5M] and Last_executed_minute == now.minute:
                     multi_kd_strategy(df_fubon_1m, df_fubon_5m, df_fubon_15m, now)
                     df_flag[PERIOD_1M] = 0
